@@ -33,7 +33,7 @@ for char in dict.fromkeys(chars):
  glyphs[char]={'rows':rows,'width':max(1,round(chosen.getlength(char)))+1 if not mark else 0,'mark':bool(mark),'anchors':anchors.get(name,[]),'markAnchor':mark}
  if char==' ':glyphs[char]['width']=5
 copyright=Path('/usr/share/doc/fonts-noto-core/copyright').read_text()
-section=copyright.split('\nLicense: OFL-1.1\n')[2].split('\nLicense: GPL')[0]
+section=copyright.rsplit('\nLicense: OFL-1.1\n',1)[1].split('\nLicense: GPL')[0]
 license='Copyright 2010,2012-2020 Google Inc.; 2015-2020 Google LLC.\nBitmap modifications: RomTranslate contributors, 2026.\n\nSIL OPEN FONT LICENSE Version 1.1\n'+ '\n'.join('' if l.strip()=='.' else l[1:] if l.startswith(' ') else l for l in section.splitlines())
 (root/'fonts'/'OFL.txt').write_text(license)
 metadata={'name':'Siam Retro','version':2,'license':'OFL-1.1','copyright':'Copyright Google Inc./Google LLC; bitmap modifications RomTranslate contributors 2026.','source':'Renamed bitmap derivative of Noto Looped Thai Bold (16px), Noto Sans Bold / Symbols 2 (12px), with custom pixel layout and shadow rendering.','licenseText':license,'tileWidth':16,'tileHeight':24,'bodyHeight':9,'layout':{'lineHeight':28,'topPadding':5,'baseline':16,'toneOffsetWithAboveVowel':-4,'saraAmDecomposition':'ํา'},'description':'Looped, bold Thai pixel font prototype with a one-pixel shadow. Not installed in the ROM. Tiles use foreground palette index 1, shadow index 2; other pixels transparent.','glyphs':glyphs}
