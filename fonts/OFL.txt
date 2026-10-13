@@ -1,0 +1,4 @@
+Copyright 2010,2012-2020 Google Inc.; 2015-2020 Google LLC.
+Bitmap modifications: RomTranslate contributors, 2026.
+
+SIL OPEN FONT LICENSE Version 1.1

@@ -1,0 +1,12 @@
+const glyphs=FONT.glyphs,tones='่้๊๋์',above='ัิีึื็ํ';
+function layout(text,width){const ops=[];let x=0,y=FONT.layout.topPadding,base=null,upper=false;const normalized=text.replace(/([่้๊๋]?)ำ/g,'ํ$1า');
+for(const c of normalized){if(c==='\n'){x=0;y+=FONT.layout.lineHeight;base=null;upper=false;continue;}const g=glyphs[c]||glyphs['?'];if(g.mark){if(!base)continue;const a=g.markAnchor,anchor=base.g.anchors[a.class];let dx=anchor?anchor.x-a.x:0,dy=anchor?-(anchor.y-a.y):0;if(tones.includes(c)&&upper)dy+=FONT.layout.toneOffsetWithAboveVowel;ops.push({c,g,x:base.x+dx,y:base.y+dy});if(above.includes(c))upper=true;continue;}
+if(x+g.width>width&&x){x=0;y+=FONT.layout.lineHeight;}const op={c,g,x,y};ops.push(op);x+=g.width;base=op;upper=false;}
+return {ops,height:Math.max(48,y+FONT.tileHeight+2)};}
+function glyphPixels(g){const points=[];g.rows.forEach((row,y)=>{for(let x=0;x<16;x++)if(row&(1<<(15-x)))points.push([x,y]);});return points;}
+function paint(ctx,ops,scale,color,shadow){for(const [fill,offset]of [[shadow,1],[color,0]]){ctx.fillStyle=fill;for(const o of ops)for(const [x,y]of glyphPixels(o.g))ctx.fillRect((o.x+x+offset)*scale,(o.y+y+offset)*scale,scale,scale);}}
+function draw(canvas,text,{scale=3,color='#fffdf1',shadow='#354349',width=240}={}){const result=layout(text,width);canvas.width=width*scale;canvas.height=result.height*scale;const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;paint(ctx,result.ops,scale,color,shadow);return canvas;}
+function atlas(){const canvas=document.createElement('canvas'),chars=Object.keys(glyphs),cols=16;canvas.width=cols*20;canvas.height=Math.ceil(chars.length/cols)*28;const ctx=canvas.getContext('2d');ctx.fillStyle='#7fa7b8';ctx.fillRect(0,0,canvas.width,canvas.height);paint(ctx,chars.map((c,i)=>({g:glyphs[c],x:(i%cols)*20,y:Math.floor(i/cols)*28})),1,'#fffdf1','#354349');return canvas;}
+function data(){return JSON.parse(JSON.stringify(FONT));}
+function tiles(){const bytes=[];for(const g of Object.values(glyphs)){const pixels=Array.from({length:24},()=>Array(16).fill(0));for(const [x,y]of glyphPixels(g))if(x+1<16&&y+1<24)pixels[y+1][x+1]=2;for(const [x,y]of glyphPixels(g))pixels[y][x]=1;for(let ty=0;ty<3;ty++)for(let tx=0;tx<2;tx++)for(let y=0;y<8;y++)for(let x=0;x<8;x+=2)bytes.push(pixels[ty*8+y][tx*8+x]|(pixels[ty*8+y][tx*8+x+1]<<4));}return Uint8Array.from(bytes);}
+return {draw,atlas,data,tiles,glyphs,layout};
