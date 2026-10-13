@@ -14,4 +14,8 @@ for name in ('rom-core.js', 'pixel-font.js', 'app.js'):
 out = Path('/workspace/artifacts/index.html')
 out.parent.mkdir(parents=True, exist_ok=True)
 out.write_text(html)
+release = root / 'download' / 'index.html'
+release.parent.mkdir(parents=True, exist_ok=True)
+release.write_text(html)
 print(out)
+print(release)

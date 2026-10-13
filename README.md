@@ -13,7 +13,7 @@ npm run bundle
 npm run dev
 ```
 
-`npm run bundle` produces `/workspace/artifacts/index.html` with all scripts/styles embedded and no remote font requests. Generate this single-file release after every update as requested. Codex Web in this session cannot expose workspace paths as downloadable attachments; do not present local file links as downloads. See PUBLISHING.md for the prepared GitHub Pages path, which requires source publication and user settings before a live site can be verified. The Python server on port 5173 is for development only. Direct file opening is intended, but the cloud Chromium policy blocks `file://`, so browser validation uses HTTP. Browser storage / clipboard support varies on local files; JSON export remains available.
+`npm run bundle` produces `/workspace/artifacts/index.html` with all scripts/styles embedded and no remote font requests. Generate this single-file release after every update as requested; the build also saves `download/index.html` in the repository for download through GitHub. Codex Web in this session cannot expose workspace paths as downloadable attachments; do not present local file links as downloads. See PUBLISHING.md for the prepared GitHub Pages path, which requires source publication and user settings before a live site can be verified. The Python server on port 5173 is for development only. Direct file opening is intended, but the cloud Chromium policy blocks `file://`, so browser validation uses HTTP. Browser storage / clipboard support varies on local files; JSON export remains available.
 
 ## Actual supported workflow
 

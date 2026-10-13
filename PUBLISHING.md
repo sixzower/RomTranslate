@@ -11,10 +11,14 @@ The website is a dependency-free static application. The repository root contain
 3. Wait for the Pages deployment and use the URL GitHub reports. Verify it loads before calling it published.
 4. Open the URL in a browser, choose your local GBA ROM, and test translation editing and project export/import. The ROM is read on your device; it is not included in the repository or uploaded by the app.
 
-Publishing source and enabling Pages are separate actions. Neither has been performed in this task. Do not claim a site URL is live until an HTTP check of the actual deployment passes.
+Publishing source and enabling Pages are separate actions. Source has been pushed to main; Pages activation and live-site validation remain pending. Do not claim a site URL is live until an HTTP check of the actual deployment passes.
 
 ## Local machine alternative
 
 With the source checkout available on your own computer, run `python3 -m http.server 5173` from the repository root, then open the local address printed by the command in your browser. Cloud-environment localhost addresses are not reachable from your own computer.
 
 `npm run bundle` produces a self-contained HTML file for offline transfer when a supported file-download channel is available.
+
+## Single-file download on GitHub
+
+`download/index.html` is the self-contained release (no ROM and no credentials). Open that file on GitHub and use its Download raw file button to save index.html. The build script refreshes it on every update.
