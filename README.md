@@ -1,4 +1,4 @@
-# RomTranslate 0.17.0
+# RomTranslate 0.17.1
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
@@ -79,15 +79,13 @@ The supplied ROM has 13,957 eligible work entries; the menu target has 204. Its 
 
 Control-prefixed text is translated without changing its codes: `{CTRL:01 06}{CTRL:03 07}Auto Run` becomes `{CTRL:01 06}{CTRL:03 07}วิ่งอัตโนมัติ`. Keep separate rows when codes differ, even for the same visible words. Instructions and the shared web/Excel AI prompt include this example; imports reject lost/changed/reordered codes. Sources with codes alone stay unchanged or have blank translation.
 
-## Review workflow and navigation
+## Automatic checks and issue navigation
 
-**ตรวจรูปแบบ** checks tokens, encoded bytes, pixel/line bounds, font capacity and glossary consistency; it does not certify meaning. **จุดที่ต้องแก้ถัดไป** refreshes the audit and cycles through unique error entries first (then warnings), selecting the correct category/page and clearing filters that would hide the target.
+Version 0.17.1 removes the manual reviewed/confirmation workflow, per-row review badges, review counters, unreviewed filter, review dialog and checksum module. The table now shows only translated/untranslated status, category completed counts and translation progress. No confirmation step is required to translate, export Excel, build ROM or create BPS patches.
 
-**ตรวจแล้ว / ยืนยันชุด** confirms user review of inclusive ranges such as `1-200`, or all current filtered verified entries. Blank/code-only sources are skipped; rows with automatic errors are excluded and counted in the dialog. A single-entry confirmation is also available. Review is optional: it does not block ROM export or change the translation percentage. Tabs, dropdowns, list rows and the progress summary separately report translated and user-reviewed work. **ยังไม่ตรวจ** filters translated entries needing user review.
+Automatic checks remain: ordered control tokens, bytes, font support and screen bounds. The current-entry format indicator and **ตรวจรูปแบบ / จุดที่ต้องแก้ถัดไป** help locate errors directly. Issue navigation clears filters as needed to show the relevant entry. Tools remain grouped and AI panels stay collapsible.
 
-Review stamps bind to source/translation/speaker plus font pixels/spacing, glossary and effective game genre using a content checksum (not a security signature). Changing final text or speaker clears only that entry's stamp through the same history transaction; undo/checkpoint restore can restore it. Changing font/terminology/context makes old stamps stale until their original context is restored or the user rechecks them. AI draft edits do not invalidate final-text review. JSON, IndexedDB and new ROM recovery data preserve stamps; old projects/ROMs start unreviewed. XLSX imports clear review only for actually changed final text/speaker and never let AI mark rows reviewed.
-
-The duplicate name shortcut buttons were removed; exact name/description subcategories remain in the category dropdown. **เครื่องมือ** groups font presets, glossary, category coverage and AI settings. AI literal/context panels collapse and persist their open state, leaving more room for source/Thai comparison. Existing quill/theme, font design room, emulator, history and Excel batch features remain available.
+Old project/ROM review fields and old history/checkpoint deltas are accepted as inert compatibility data so previous translations and undo remain readable. New edits do not generate or invalidate review stamps; old fields do not affect status, counts, filtering or building.
 
 ## Open a translated test ROM
 
@@ -122,7 +120,7 @@ node tests/font-editor.cjs /path/to/original.gba
 node tests/sheet-batches.cjs /path/to/original.gba
 node tests/inline-translation.cjs /path/to/original.gba
 node tests/font-spacing.cjs /path/to/original.gba
-node tests/review.cjs /path/to/original.gba
+node tests/review-removal.cjs /path/to/original.gba
 ```
 
 Browser tests use cloud Playwright/Chromium and an internal server on port 5175. Run sheet tests first for workbook fixtures. `tests/browser.cjs` checks the standalone release; `tests/workflow.cjs` builds and plays Thai in mGBA; `tests/recovery-browser.cjs` exercises new ROM reopening, edits, category export naming, name tabs and legacy pairing. The recovery-browser legacy fixture is the earlier menu test output, so retain it outside the repository before generating a new menu-coverage output.
