@@ -1,4 +1,4 @@
-# RomTranslate 0.19.0
+# RomTranslate 0.20.0
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
@@ -192,3 +192,13 @@ Sword & Shield TH v1.7 and Emerald Seaglass TH v1.1.3 are bundled in the site an
 Unmapped characters are visibly listed and block rendering, rather than copying shapes from another font: Sword & Shield currently has 84/85 editor characters (฿ unmapped); Seaglass has 68/85. Drawing an unmapped character enables it. These presets do not promise identical layout for every possible Thai cluster. Rename from the font dialog; built-in names persist locally, imported fonts rename without creating a duplicate locally, and cloud copies retain older immutable versions. Built-ins survive browser storage deletion; custom names and imported fonts require backups/cloud.
 
 Reproduce extraction from the matching locally owned ROMs: `python3 scripts/extract_hack_fonts.py /path/to/extracted-rom-directory`. Test against source files with `HACK_FONT_ROMS=/path/to/extracted-rom-directory IMPERIUM_ROM=/path/to/original-imperium.gba node tests/hack-fonts.cjs`. Without these environment variables, the test covers rendering, native overrides, presets and rename in Chromium.
+
+## Work files, pending scopes and Gemini imports (0.20.0)
+
+The uploaded 654-row ability workbook has 327 blank name translations and 327 translated descriptions. With the default Quetzal font, 34 descriptions wrap beyond the two-line screen limit. Import now accepts the 293 descriptions that pass and retains the other 34 as contextual AI drafts. Drafts do not count as final translations; identity/hash/source/token/formula/duplicate errors still block import, and building a ROM still validates final text.
+
+“งานค้าง / เปิดต่อข้ามเครื่อง” captures canonical entry IDs, category/search, editing position and Excel range settings. Active export scopes use the frozen ID order, even if the untranslated filter changes. Work files include translations, drafts, font, history and progress categories; they contain no ROM bytes or API keys. Download JSON and use “เปิดโปรเจกต์” with the matching original ROM on another device. Pause/close/cancel leaves translation data intact; closed/cancelled task records can be removed. Choosing an unrelated category pauses the active work scope.
+
+Optional cloud storage reuses the font library's private-code or account connection. Run `cloud/workspace-library.sql` once in the same Supabase project (copy from the work dialog); it adds an owner-isolated table and RPCs without creating a new vault code or changing presets. The dialog lists cloud copies, restores them, saves updates and deletes a selected cloud copy. Autosync is opt-in. Revisions prevent stale devices overwriting newer work; a conflict stops autosync and retains local edits for JSON backup. Opening a cloud copy does not write another revision. Backend requests never contain ROM bytes; private connection codes stay outside the work payload.
+
+Validation: `node tests/gemini-workspace.cjs ORIGINAL_ROM UPLOADED_XLSX`, `node tests/workspace-cloud.cjs ORIGINAL_ROM` (mocked private RPC transport), and `PGLITE_MODULE=/path/to/@electric-sql/pglite node tests/workspace-sql.cjs` (actual PostgreSQL permissions, isolation, CAS and migration repeatability). Live Supabase configuration and GitHub Pages deployment must be checked separately.
