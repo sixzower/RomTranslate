@@ -1,4 +1,4 @@
-"""Bundle the user's bitmap font. No system font or legacy Thai font is used."""
+"""Bundle the selected default bitmap font and verify its source exports."""
 from pathlib import Path
 import json
 root=Path(__file__).resolve().parent.parent
@@ -12,5 +12,5 @@ for g in data['glyphs']:
    for x in range(0,8,2):expected.append(int(g['rows'][y][x])|(int(g['rows'][y][x+1])<<4))
 assert raw==bytes(expected),'User JSON and 4bpp differ'
 data['spacing']='compact'
-(root/'game-font.js').write_text('/* Default font supplied by the user. */\nconst GameFont=(()=>{let DATA='+json.dumps(data,ensure_ascii=False,separators=(',',':'))+';\n'+(root/'scripts/game_font_runtime.js').read_text()+'\n})();\nif(typeof module!=="undefined")module.exports=GameFont;\n')
-(root/'pixel-font.js').write_text('/* User 8x16 bitmap font and original 4bpp export. */\nconst PixelFont=(()=>{let FONT='+json.dumps(data,ensure_ascii=False,separators=(',',':'))+';let TILES='+json.dumps(list(raw),separators=(',',':'))+';\n'+(root/'scripts/user_pixel_runtime.js').read_text()+'\n})();\n')
+(root/'game-font.js').write_text('/* Default Quetzal Thai bitmap shapes, adapted for this editor. */\nconst GameFont=(()=>{let DATA='+json.dumps(data,ensure_ascii=False,separators=(',',':'))+';\n'+(root/'scripts/game_font_runtime.js').read_text()+'\n})();\nif(typeof module!=="undefined")module.exports=GameFont;\n')
+(root/'pixel-font.js').write_text('/* Default Quetzal Thai 8x16 bitmap and monochrome source export. */\nconst PixelFont=(()=>{let FONT='+json.dumps(data,ensure_ascii=False,separators=(',',':'))+';let TILES='+json.dumps(list(raw),separators=(',',':'))+';\n'+(root/'scripts/user_pixel_runtime.js').read_text()+'\n})();\n')

@@ -1,10 +1,10 @@
-# RomTranslate 0.15.1
+# RomTranslate 0.16.0
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
 ## Default font
 
-The default Thai font is the user's **Thai font 8x16 (Arabic digits)** from `files.zip`. Its original JSON, PNG atlas/preview and 4bpp bytes are in `fonts/`. `scripts/build_user_font.py` validates JSON against the supplied 4bpp and bundles browser modules. It needs only Python 3. No Noto/Siam Retro font assets, rendering code or generation dependencies remain.
+The default Thai font is **Quetzal TH 1.0.3 — adapted 8×16**, extracted from the user's Quetzal ROM and adapted to the editor's bitmap schema. JSON, monochrome PNG/4bpp exports, preview and extraction provenance are in `fonts/`. `scripts/build_user_font.py` verifies JSON against the exported 4bpp bytes and bundles the browser modules using Python's standard library. The optional extractor additionally uses Pillow and requires the exact privately supplied source ROM; no ROM is shipped.
 
 Thai marks compose with the supplied base pixels. The game variant removes one vertical gap to fit its 15-pixel renderer; a 12-pixel variant fits the native small-font bank. Existing Latin game glyphs remain intact. Thai glyphs now default to **compact** spacing: trim the horizontal blank margin of the entire composed cluster (base plus marks), keep its internal alignment, and advance by the ink width plus one pixel of clearance. Narrow vowels consequently use less room. The same widths feed layout checks, browser previews and the native ROM width tables. **ระยะเดิม 8px** retains the original fixed advance and bitmap position. Both modes keep the source atlas/4bpp pixels intact; the render/ROM variant alone trims margins.
 
@@ -152,3 +152,11 @@ Use [cloud/font-code-library.sql](cloud/font-code-library.sql) instead of email 
 Only admin SQL can create a vault. The server stores its SHA-256 hash; anonymous clients can only call fixed SECURITY DEFINER RPCs with a valid code. Direct table privileges are revoked and RLS is enabled with no public policies. Writes are bound to the matching existing vault, at most 25 entries per call and 1000 fonts per vault, retaining previous versions. Supabase's public key alone cannot read/write these fonts. Re-running the SQL creates a new independent vault and returns a NEW code; previous vaults remain. Email libraries remain separate; local presets sync into the new vault when connected. ROMs and translation data remain local.
 
 `tests/font-code-cloud.cjs` covers no-email flow with mocked RPC, separate browser contexts, reload persistence, unknown code rejection, duplicate sync and disconnect. `tests/font-code-sql.cjs` executes the SQL in actual PostgreSQL via temporary PGlite and checks denied direct table access, RPC grants, wrong code rejection, vault isolation and safe repeat setup. To run the SQL test, install @electric-sql/pglite outside the repo and set PGLITE_MODULE to its module path. No live Supabase service was configured here.
+
+## Quetzal Thai default font (0.16.0)
+
+The default preset is now **Quetzal TH 1.0.3 — adapted 8×16**, extracted from the user-provided ROM (source SHA-256 and offsets in `fonts/quetzal-font-provenance.json`). 42 supported base consonants retain the original native ink shape exactly. 73 source shapes/mark regions are extracted; 12 additional/separated shapes are adapted to complete the 85-character editor font, including obsolete consonants, rare symbols, separated ื and normalized ำ. Tone marks are repositioned for stacking in this renderer and the original ROM's many precomposed syllables are not copied verbatim. No full ROM is included.
+
+The default uses compact spacing and a 1px down-right shadow. Existing custom presets and unsaved drafts are retained. If an existing device still displays an older font, choose ค่าเริ่มต้น · Quetzal TH in Tools → Font; to design it, click เริ่มจากฟอนต์ที่ใช้อยู่ in the studio (download any existing draft JSON first). Existing ROMs must be rebuilt to install the new font. Source PNG/BIN remain monochrome; JSON carries shadow settings.
+
+`python3 scripts/extract_quetzal_font.py /path/to/user-rom.gba` regenerates the extracted assets for the exact source SHA only; `python3 scripts/build_user_font.py` rebuilds the JS defaults from those assets. Runtime templates now match the current shadow-enabled runtime so regeneration retains shadow support. `tests/quetzal-font.cjs` verifies exact source base ink, palette bytes, 12/15px composition bounds and original Imperium patch/recovery. Character appearance and line wrapping must still be checked in each game screen; this extraction does not add translation support for Quetzal itself.
