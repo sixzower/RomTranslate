@@ -1,0 +1,25 @@
+{
+  "mgba": {
+    "name": "@thenick775/mgba-wasm",
+    "version": "2.5.1",
+    "integrity": "sha512-FXgorZQXF2kiMtI4yxFj2Vw6d00T98uOcZ7dteA5kf4rk19IUhNtoNHdasXOnblFNF0i1w9Ci8akzPQUCDUeaw==",
+    "url": "https://registry.npmjs.org/@thenick775/mgba-wasm/-/mgba-wasm-2.5.1.tgz",
+    "gitHead": "e974b288bd7e5cfc7c7b96f8b4d32b673ddfb68c",
+    "repository": "git+https://github.com/thenick775/mgba.git",
+    "license": "MPL-2.0"
+  },
+  "exceljs": {
+    "name": "exceljs",
+    "version": "4.4.0",
+    "integrity": "sha512-XctvKaEMaj1Ii9oDOqbW/6e1gXknSY4g/aLCDicOXqBE4M0nRWkUu0PTp++UPNzoFY12BNHMfs/VadKIS6llvg==",
+    "url": "https://registry.npmjs.org/exceljs/-/exceljs-4.4.0.tgz",
+    "gitHead": "ac96f9a61e9799c7776bd940f05c4a51d7200209",
+    "repository": "git+https://github.com/exceljs/exceljs.git",
+    "license": "MIT"
+  },
+  "coi-serviceworker": {
+    "version": "0.1.7",
+    "integrity": "sha512-bjSUqEngCPOkErY2vbyWsaIGCNRODYzlNycaREVw5s12/C8SM+RnRUUeX6pZbTtov6C52ZLY/+tvHK+BDxuUuA==",
+    "tarball": "https://registry.npmjs.org/coi-serviceworker/-/coi-serviceworker-0.1.7.tgz"
+  }
+}

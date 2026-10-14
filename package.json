@@ -1,10 +1,10 @@
 {
   "name": "romtranslate",
-  "version": "0.3.0",
+  "version": "0.5.0",
   "private": true,
   "scripts": {
     "dev": "python3 -m http.server 5173 --bind 0.0.0.0",
-    "check": "node --check app.js && node --check rom-core.js && node --check pixel-font.js",
+    "check": "node --check app.js && node --check rom-core.js && node --check pixel-font.js && node --check imperium-profile.js && node --check game-font.js && node --check sheet.js && node --check emulator.js",
     "bundle": "python3 scripts/bundle.py"
   }
 }
