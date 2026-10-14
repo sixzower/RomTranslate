@@ -1,6 +1,6 @@
 {
   "name": "romtranslate",
-  "version": "0.12.1",
+  "version": "0.13.0",
   "private": true,
   "scripts": {
     "dev": "python3 -m http.server 5173 --bind 0.0.0.0",
