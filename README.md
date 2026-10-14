@@ -1,4 +1,4 @@
-# RomTranslate 0.16.1
+# RomTranslate 0.17.0
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
@@ -162,3 +162,11 @@ The default uses compact spacing and a 1px down-right shadow. Existing custom pr
 `python3 scripts/extract_quetzal_font.py /path/to/user-rom.gba` regenerates the extracted assets for the exact source SHA only; `python3 scripts/build_user_font.py` rebuilds the JS defaults from those assets. Runtime templates now match the current shadow-enabled runtime so regeneration retains shadow support. `tests/quetzal-font.cjs` verifies exact source base ink, palette bytes, 12/15px composition bounds and original Imperium patch/recovery. Character appearance and line wrapping must still be checked in each game screen; this extraction does not add translation support for Quetzal itself.
 
 Version 0.16.1 adds a copy-AI-prompt button to Excel export, with a batch selector and collapsible preview. It uses the exact Instructions prompt for the chosen snapshot/category/range; invalid ranges disable copying. Every workbook also opens with a Prompt sheet containing the complete prompt in A3, named AI_PROMPT for easy selection and Ctrl/Cmd+C. Plain XLSX cannot provide a portable clipboard button without macros, so the actual one-click button is in the web export dialog.
+
+## BPS translation patches (0.17.0)
+
+Use **แพตช์ / ไฟล์พร้อมเล่น** to create a `.bps` from the currently loaded translation project, or **สร้าง ROM ทดสอบ → ดาวน์โหลดแพตช์ BPS** to export the already built ROM as a patch. Export runs the same format/font/size validation as ROM building. It captures original bytes, translations and font options before building; a reopened web-generated ROM uses its recovered original as the source. The patch includes font changes and translation/recovery data. It does not require every row to be translated or manually marked reviewed. Play-test relevant screens before sharing.
+
+To apply, open the patch dialog, choose the exact original `.gba` and `.bps`, then click **ใช้แพตช์และดาวน์โหลด .gba พร้อมเล่น**. This works without loading a translation project, and in the standalone HTML. Files remain local. BPS supports 32 MB ROMs, unlike classic IPS's 24-bit offsets. The source length/CRC, patch CRC and final target CRC are checked. Web-created patches also embed and validate source/target SHA-256 metadata. The importer supports all four BPS action types; this release exports SourceRead/TargetRead to keep it straightforward and interoperable. Limit is 64 MB per source/target/patch. IPS/UPS are not accepted by this importer.
+
+`tests/rom-patch.cjs` verifies small fixtures, 32 MB actual-ROM roundtrip, exact recovery, wrong ROM and damaged/truncated patch rejection. `tests/patch-browser.cjs` verifies both export buttons and applying in a fresh browser with no loaded project. `tests/bps-compatibility.cjs` checks interoperability in both directions with an independently cloned marcrobledo/RomPatcher.js, including SourceCopy/overlapping TargetCopy; set BPS_REFERENCE_ROOT to that temporary checkout. No external patcher library is bundled.
