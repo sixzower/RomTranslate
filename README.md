@@ -1,4 +1,4 @@
-# RomTranslate 0.9.0
+# RomTranslate 0.10.0
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
@@ -11,6 +11,14 @@ Thai marks compose with the supplied base pixels. The game variant removes one v
 External font presets accept JSON using this same 8×16 schema: `name`, `glyphWidth: 8`, `glyphHeight: 16`, and `glyphs`, each with a unique `char` and 16 `rows` of eight binary digits. All 85 default characters are required; uploads are limited to 1 MB and 256 glyphs. **รูปแบบไฟล์ฟอนต์** opens details and downloads a template. PNG/BIN alone lack character mapping; extract JSON from ZIP, or convert TTF/OTF/WOFF to the template. Presets persist in this browser/device via IndexedDB. Project JSON and new translated ROM exports carry their active font snapshot for another device. The original 8x16 atlas/data/4bpp exports are retained unchanged. No license was declared in the user archive; do not invent one.
 
 `legacy-glyph-map.js` contains read-only fingerprints and Unicode candidates for decoding previous web exports. It contains no old bitmap pixels and is never used to render the default font. Ambiguous legacy glyphs are reported for manual review.
+
+## Font design room
+
+**ห้องออกแบบฟอนต์** works before opening any ROM. Choose a glyph from the searchable character library and draw on the 8×16 grid with mouse, touch or keyboard. Pencil/eraser, right-click erase, continuous drag interpolation, row/column shifting, horizontal flip, glyph copy/paste, clear and restore are supported. Each stroke is one undo transaction; undo/redo retains at most 40 full snapshots within 2 MB per session.
+
+The room edits a separate draft. Its sample and glyph previews show the raw bitmap and the native 15px/12px adaptation without changing the active font. Combining marks use a base consonant for native single-glyph previews; invalid mark placement or bounds show a message. The game keeps native Latin digits and spaces; those draft glyphs can be exported, while only Thai clusters are installed in ROMs.
+
+Draft font, starting reference, saved reference, character selection and sample persist in this browser's localStorage, independently of a ROM. Export JSON, transparent PNG atlas and matching top/bottom GBA 4bpp BIN without applying the draft. **บันทึกเป็น preset และใช้ฟอนต์นี้** validates and applies it via the existing preset system; project and ROM exports then include that font. Download JSON backups because clearing browser data deletes local drafts/presets. Switching to the room pauses emulator execution and releases held game keys/speed boost.
 
 ## Categories and limits
 
@@ -90,8 +98,11 @@ node tests/recovery-names-font.cjs /path/to/original.gba
 node tests/quality-history.cjs /path/to/original.gba
 node tests/presets-layout-prompt.cjs /path/to/original.gba
 node tests/progress-controls.cjs /path/to/original.gba
+node tests/font-editor.cjs /path/to/original.gba
 ```
 
 Browser tests use cloud Playwright/Chromium and an internal server on port 5175. Run sheet tests first for workbook fixtures. `tests/browser.cjs` checks the standalone release; `tests/workflow.cjs` builds and plays Thai in mGBA; `tests/recovery-browser.cjs` exercises new ROM reopening, edits, category export naming, name tabs and legacy pairing. The recovery-browser legacy fixture is the earlier menu test output, so retain it outside the repository before generating a new menu-coverage output.
+
+The managed cloud Chromium blocks navigation to `file://` URLs with `ERR_BLOCKED_BY_ADMINISTRATOR`; the standalone font studio is functionally tested through the internal HTTP server. Direct local-file opening is not verified in that browser.
 
 A full playthrough, every battle/summary caller and every long localized name are not verified. Screenshots of item/move/ability labels in diagnostic intro scenes check the native printer, not those original menu callers. Native headless tooling remains outside application dependencies. Never commit ROMs, saves or credentials.
