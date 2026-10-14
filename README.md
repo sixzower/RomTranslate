@@ -1,4 +1,4 @@
-# RomTranslate 0.6.1
+# RomTranslate 0.6.2
 
 Thai ROM translation workspace based on the user's desktop reference. Static, local processing: the game is not uploaded to a server.
 
@@ -90,7 +90,7 @@ These exercise every extracted codec round trip, bounded Thai writes, font-slot 
 
 Browser tests use the cloud-provided Playwright/Chromium. Serve the source on port 5175 (or set `ROMTRANSLATE_TEST_URL`); `tests/workflow.cjs` verifies the service-worker isolation path without special server headers, filtered workbook export, imported translations, building and playing that ROM in mGBA, visible translated menu/dialogue, input isolation, pause/resume, audio toggle and reset. `tests/browser.cjs` tests the single-file release on the same server under `/download/index.html`, including persistence, category filtering and project import/export. `tests/mgba_runner.c` is the native mGBA 0.10.5 harness used during font research; native tooling is outside the application dependency path.
 
-Additional 0.6.1 checks:
+Additional 0.6.2 checks:
 
 ```sh
 node tests/quality-history.cjs '/path/to/original.gba'
