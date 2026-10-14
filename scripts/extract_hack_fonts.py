@@ -7,7 +7,7 @@ from PIL import Image
 import json,hashlib,sys
 if len(sys.argv)!=2:raise SystemExit(__doc__)
 root=Path(__file__).resolve().parent.parent; src=Path(sys.argv[1]); template=json.loads((root/'fonts/thai_font_data.json').read_text()); presets=[]; provenance=[]
-configs=[('sword-shield-th','Sword & Shield TH v1.7',src/'Sword_and_Shield_Ultimate_Plus_-_TH_v1.7_Nonplae.gba',0xb34000,0xb3c000,14,True),('seaglass-th','Emerald Seaglass TH v1.1.3',src/'Pokemon-Emerald-Seaglass-v1.1.3_-TH.gba',0xf20000,0xf30000,15,False)]
+configs=[('sword-shield-th','ไทยเส้นคม · Sword 14px',src/'Sword_and_Shield_Ultimate_Plus_-_TH_v1.7_Nonplae.gba',0xb34000,0xb3c000,14,True),('seaglass-th','ไทยเงานุ่ม · Seaglass 15px',src/'Pokemon-Emerald-Seaglass-v1.1.3_-TH.gba',0xf20000,0xf30000,15,False)]
 for ident,name,path,bank,widthbank,height,jp in configs:
  rom=path.read_bytes(); expected={'sword-shield-th':'9f6cd04a499a56a5fbb453b4f66ff45fa2b15fa5ef440983b4c093b2fe77327c','seaglass-th':'ff82e88ad4d8511587ab39efdcc4e701955dce193231df4fcffc5f3f4a57257d'}; assert hashlib.sha256(rom).hexdigest()==expected[ident], 'Unsupported ROM version'; mapping={}; glyphs=[]
  def pixels(code,latin=False):

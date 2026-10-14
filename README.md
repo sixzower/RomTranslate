@@ -1,4 +1,4 @@
-# RomTranslate 0.21.0
+# RomTranslate 0.21.1
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
@@ -213,3 +213,8 @@ The main bar keeps ROM open/build and undo/redo visible. File/work/cloud/patch o
 ROM loading, builds and patch work display a foreground operation popup. Builds and quality audits can be cancelled before releasing controls. Audits yield between 25-entry chunks, report actual checked counts, and preserve missing/reordered command, layout, capacity and glossary checks. Both audit actions support cancellation/retry; reports display the first 300 issues and downloadable reports retain all issues. Emulator initialization has a 45-second timeout with retryable controls.
 
 Validated with the supplied Imperium ROM: responsive Day/Dark layout, category/subcategory counts, ROM build cancellation/retry and error recovery, 1,500-entry quality audit cancellation/missing-command navigation, real mGBA pause/resume/Space speed, Gemini Excel draft import, portable work restoration, and mocked two-device cloud conflict protection. Live Supabase and GitHub Pages deployment require their respective external services.
+
+
+### Interface polish (0.21.1)
+
+Rooms are named งานแปลเกม, สตูดิโอฟอนต์ and ทดลองเล่นเกม. Contextual AI generation and automatic contextual requests are removed; imported/persisted contextual drafts remain editable under ร่างคำแปลที่รอแก้ไข. Direct literal translation and the Excel AI instructions still work. Built-in labels describe the font appearance: ไทยคลาสสิก · Quetzal 8×16, ไทยเส้นคม · Sword 14px and ไทยเงานุ่ม · Seaglass 15px. Stable preset IDs and glyph pixels are preserved; custom preset names remain user-controlled. Progress bars use green in Day/Dark.
