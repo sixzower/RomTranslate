@@ -13,7 +13,7 @@ css = (root / 'style.css').read_text()
 css = re.sub(r"@import url\([^;]+;\s*", '', css, count=1)
 js = (root / 'app.js').read_text().replace('</script', '<\\/script')
 html = re.sub(r'<link rel="stylesheet" href="style\.css(?:\?[^"]*)?">', lambda _: '<style>' + css + '</style>', html)
-for name in ('theme.js', 'vendor/exceljs.min.js', 'imperium-profile.js', 'game-font.js', 'rom-core.js', 'legacy-glyph-map.js', 'pixel-font.js', 'history.js', 'quality.js', 'xlsx-loader.js', 'sheet.js', 'bundled-fonts.js', 'font-presets.js', 'progress.js', 'translation-tasks.js', 'views.js', 'font-editor.js', 'sheet-batches.js', 'rom-patch.js', 'sheet-progress.js', 'app.js', 'patch-ui.js', 'font-cloud.js', 'workspace-schema.js', 'work-manager.js'):
+for name in ('theme.js', 'vendor/exceljs.min.js', 'imperium-profile.js', 'game-font.js', 'rom-core.js', 'legacy-glyph-map.js', 'pixel-font.js', 'history.js', 'quality.js', 'xlsx-loader.js', 'sheet.js', 'bundled-fonts.js', 'font-presets.js', 'progress.js', 'translation-tasks.js', 'views.js', 'font-editor.js', 'sheet-batches.js', 'rom-patch.js', 'sheet-progress.js', 'ui-operations.js', 'app.js', 'patch-ui.js', 'font-cloud.js', 'workspace-schema.js', 'work-manager.js', 'ui-shell.js'):
     js = (root / name).read_text().replace('</script', '<\\/script')
     html = re.sub(r'<script src="' + re.escape(name) + r'(?:\?[^"]*)?"></script>', lambda _: '<script>' + js + '</script>', html)
 html = re.sub(r'<script type="module" src="emulator\.js(?:\?[^"]*)?"></script>', lambda _: '<script>'+ (root / 'scripts' / 'offline_emulator.js').read_text() +'</script>', html)

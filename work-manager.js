@@ -8,7 +8,7 @@ const WorkManager = (() => {
   function name() { const value = $('workspaceName').value.trim(); if (!value || value.length > 100) throw Error('ใส่ชื่อไฟล์งาน 1–100 ตัวอักษร'); return value; }
   function renderCurrent() {
     const p = bridge()?.project(), task = TranslationTasks.active(p);
-    $('workBanner').hidden = !task;
+    $('workBanner').hidden = !task || RomTranslateViews.current()!=='translation';
     $('workCreate').disabled = !p; $('workFileSave').disabled = !p; $('workCloudSave').disabled = !p || busy;
     $('workCloudRefresh').disabled = busy; $('workDrafts').disabled = !p?.entries.some(e => e.contextual && e.contextual !== e.translation);
     if (task) { const s = TranslationTasks.stats(p, task); $('workBannerText').textContent = task.name + ` · แปลแล้ว ${s.done}/${s.total} · เหลือ ${s.remaining}`; }
@@ -43,7 +43,7 @@ const WorkManager = (() => {
   }
   async function run(action) {
     if (busy) return; busy = true; renderCurrent();
-    try { await action(); } catch (e) { status(e.message); }
+    try { await action(); } catch (e) { status(e.message);if($('workDialog').open)window.UiShell?.notify(e.message,true); }
     finally { busy = false; renderCurrent(); if (queued) { queued = false; schedule(); } }
   }
   async function listCloud() {
@@ -105,7 +105,7 @@ const WorkManager = (() => {
   $('workDrafts').onclick = () => { const p=bridge().project();$('workDraftRows').replaceChildren();for(const e of p?.entries||[])if(e.contextual&&e.contextual!==e.translation){const row=document.createElement('p');row.textContent='#'+e.id+' · '+e.category+' · '+e.contextual+' ';row.append(button('ไปแก้ร่าง',()=>{$('workDraftDialog').close();$('workDialog').close();window.RomTranslateBridge.goToEntry(e.id);}));$('workDraftRows').append(row);}$('workDraftDialog').showModal(); };
   $('workDraftClose').onclick = () => $('workDraftDialog').close();
   window.addEventListener('romtranslate:project-changed', e => {renderCurrent();if(e.detail?.initial){const p=bridge().project();if(p){const snapshot=serialized(p);sent.set(p.workspaceId,snapshot.content);};}else schedule();});
-  window.addEventListener('online', schedule);
+  window.addEventListener('online', schedule);window.addEventListener('romtranslate:view',renderCurrent);
   window.addEventListener('romtranslate:cloud-connection', () => { if(!FontCloud.connected())clearTimeout(timer);renderCurrent(); });
   return {renderCurrent, open};
 })();

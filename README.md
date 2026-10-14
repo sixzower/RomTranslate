@@ -1,4 +1,4 @@
-# RomTranslate 0.20.0
+# RomTranslate 0.21.0
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
@@ -202,3 +202,14 @@ The uploaded 654-row ability workbook has 327 blank name translations and 327 tr
 Optional cloud storage reuses the font library's private-code or account connection. Run `cloud/workspace-library.sql` once in the same Supabase project (copy from the work dialog); it adds an owner-isolated table and RPCs without creating a new vault code or changing presets. The dialog lists cloud copies, restores them, saves updates and deletes a selected cloud copy. Autosync is opt-in. Revisions prevent stale devices overwriting newer work; a conflict stops autosync and retains local edits for JSON backup. Opening a cloud copy does not write another revision. Backend requests never contain ROM bytes; private connection codes stay outside the work payload.
 
 Validation: `node tests/gemini-workspace.cjs ORIGINAL_ROM UPLOADED_XLSX`, `node tests/workspace-cloud.cjs ORIGINAL_ROM` (mocked private RPC transport), and `PGLITE_MODULE=/path/to/@electric-sql/pglite node tests/workspace-sql.cjs` (actual PostgreSQL permissions, isolation, CAS and migration repeatability). Live Supabase configuration and GitHub Pages deployment must be checked separately.
+
+
+## Compact workspace (0.21.0)
+
+The main bar keeps ROM open/build and undo/redo visible. File/work/cloud/patch operations live in **ไฟล์งาน**, import/export in **Excel**, and checks/history/preferences in **เครื่องมือ**. Font JSON/PNG/BIN tools remain in the font room's file menu. Technical IDs, ROM offsets, speaker and control-code details are available on demand.
+
+**หมวดเกม** selects the game family; **ชนิดข้อความ** narrows it to names, descriptions or dialogue groups. Counts and export metadata still use the canonical categories. Normal all-category totals exclude unverified text; **ข้อความอื่น / ตรวจตำแหน่ง** exposes that read-only material. Progress targets remain independent of the current browsing filter.
+
+ROM loading, builds and patch work display a foreground operation popup. Builds and quality audits can be cancelled before releasing controls. Audits yield between 25-entry chunks, report actual checked counts, and preserve missing/reordered command, layout, capacity and glossary checks. Both audit actions support cancellation/retry; reports display the first 300 issues and downloadable reports retain all issues. Emulator initialization has a 45-second timeout with retryable controls.
+
+Validated with the supplied Imperium ROM: responsive Day/Dark layout, category/subcategory counts, ROM build cancellation/retry and error recovery, 1,500-entry quality audit cancellation/missing-command navigation, real mGBA pause/resume/Space speed, Gemini Excel draft import, portable work restoration, and mocked two-device cloud conflict protection. Live Supabase and GitHub Pages deployment require their respective external services.
