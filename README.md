@@ -1,4 +1,4 @@
-# RomTranslate 0.17.1
+# RomTranslate 0.18.0
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
@@ -168,3 +168,13 @@ Use **แพตช์ / ไฟล์พร้อมเล่น** to create a `.
 To apply, open the patch dialog, choose the exact original `.gba` and `.bps`, then click **ใช้แพตช์และดาวน์โหลด .gba พร้อมเล่น**. This works without loading a translation project, and in the standalone HTML. Files remain local. BPS supports 32 MB ROMs, unlike classic IPS's 24-bit offsets. The source length/CRC, patch CRC and final target CRC are checked. Web-created patches also embed and validate source/target SHA-256 metadata. The importer supports all four BPS action types; this release exports SourceRead/TargetRead to keep it straightforward and interoperable. Limit is 64 MB per source/target/patch. IPS/UPS are not accepted by this importer.
 
 `tests/rom-patch.cjs` verifies small fixtures, 32 MB actual-ROM roundtrip, exact recovery, wrong ROM and damaged/truncated patch rejection. `tests/patch-browser.cjs` verifies both export buttons and applying in a fresh browser with no loaded project. `tests/bps-compatibility.cjs` checks interoperability in both directions with an independently cloned marcrobledo/RomPatcher.js, including SourceCopy/overlapping TargetCopy; set BPS_REFERENCE_ROOT to that temporary checkout. No external patcher library is bundled.
+
+## Theme, import progress and unchanged text (0.18.0)
+
+The sun/moon toggle is initialized independently in `theme.js`, before the translation application. It keeps working if app startup or a preview renderer fails; theme events redraw canvases with guarded preview calls. Preference persists and syncs across tabs. Bundling versions local JS/CSS URLs from package.json to prevent old browser assets being mixed with new HTML; standalone assets remain fully embedded.
+
+Excel imports show a blocking progress dialog while reading the local file, checking duplicate IDs, validating rows and checking aggregate font capacity. FileReader reports actual bytes; validation reports actual visited rows in 200-row chunks that yield to the browser. XLSX decompression is indeterminate because ExcelJS provides no percentage API. Weighted stages advance from reading (0–20), duplicate scan (20–30), row validation (30–80), project font checks (80–100); only completed validation shows 100%. The normal summary/confirmation appears afterward, and malformed files close the progress dialog without altering existing translations. No ROM or worksheet is uploaded.
+
+**คงต้นฉบับ / แปลแล้ว** copies the exact source into translation and explicitly sets `translationChoice: "keep-source"`. It counts as completed work, appears green, and disappears from untranslated filters. Copying English into translation alone still does not claim completion. Editing/clearing that text resets the choice atomically with undo/redo. JSON, autosave, checkpoints and ROM recovery preserve the choice; Excel uses the optional appended `translation_choice` column, and AI instructions preserve kept rows. Older Excel files remain readable. Kept entries retain native game text and pointers rather than being rewritten; their intent is stored only in recovery metadata. The removed human-review workflow remains absent.
+
+Validation: `tests/theme-toggle.cjs`, `tests/sheet-import-progress.cjs` (500 actual rows), `tests/keep-source.cjs` (including unchanged game bytes and cross-browser JSON), plus history, progress, font studio and multi-batch Excel regressions.
