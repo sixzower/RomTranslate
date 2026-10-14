@@ -1,4 +1,4 @@
-# RomTranslate 0.16.0
+# RomTranslate 0.16.1
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
@@ -160,3 +160,5 @@ The default preset is now **Quetzal TH 1.0.3 — adapted 8×16**, extracted from
 The default uses compact spacing and a 1px down-right shadow. Existing custom presets and unsaved drafts are retained. If an existing device still displays an older font, choose ค่าเริ่มต้น · Quetzal TH in Tools → Font; to design it, click เริ่มจากฟอนต์ที่ใช้อยู่ in the studio (download any existing draft JSON first). Existing ROMs must be rebuilt to install the new font. Source PNG/BIN remain monochrome; JSON carries shadow settings.
 
 `python3 scripts/extract_quetzal_font.py /path/to/user-rom.gba` regenerates the extracted assets for the exact source SHA only; `python3 scripts/build_user_font.py` rebuilds the JS defaults from those assets. Runtime templates now match the current shadow-enabled runtime so regeneration retains shadow support. `tests/quetzal-font.cjs` verifies exact source base ink, palette bytes, 12/15px composition bounds and original Imperium patch/recovery. Character appearance and line wrapping must still be checked in each game screen; this extraction does not add translation support for Quetzal itself.
+
+Version 0.16.1 adds a copy-AI-prompt button to Excel export, with a batch selector and collapsible preview. It uses the exact Instructions prompt for the chosen snapshot/category/range; invalid ranges disable copying. Every workbook also opens with a Prompt sheet containing the complete prompt in A3, named AI_PROMPT for easy selection and Ctrl/Cmd+C. Plain XLSX cannot provide a portable clipboard button without macros, so the actual one-click button is in the web export dialog.
