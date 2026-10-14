@@ -1,4 +1,4 @@
-# RomTranslate 0.14.1
+# RomTranslate 0.15.0
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
@@ -134,3 +134,13 @@ Version 0.14.0 additionally plays a translated test ROM from a new game into the
 A full playthrough, every battle/summary caller and every long localized name are not verified. Screenshots of item/move/ability labels in diagnostic intro scenes check the native printer, not those original menu callers. Native headless tooling remains outside application dependencies. Never commit ROMs, saves or credentials.
 
 Version 0.14.1 adds optional 1px font shadows (down-right, down-left, down or right) in the font studio. Shadows are applied after composing Thai marks and encoded as native palette index 2; game screens choose the actual shadow color. Drafts, presets, JSON and ROM recovery preserve the direction. PNG/BIN exports remain the original monochrome 8×16 source shapes; keep JSON with them. Shadows are clipped at the native 12/15px vertical boundary and their horizontal bounds are included in character advance.
+
+## Private font cloud (0.15.0)
+
+Open Font studio → คลังฟอนต์คลาวด์. Supply your Supabase project URL and publishable/anon key; never use a service_role/secret key. Run [cloud/font-library.sql](cloud/font-library.sql) in that project's SQL Editor first. This creates only `romtranslate_font_library` and its owner-only RLS policies, separate from other apps' tables. Existing Supabase projects can be reused; Auth accounts are shared across apps in that project. Do not change existing Auth/site settings for this feature. Email/password signup uses the project's existing email confirmation rules; after confirming, return to RomTranslate and sign in. Existing users can sign in directly.
+
+Use the same URL, public key and account on each device. Sign-in downloads saved fonts without changing the active font; select a cloud font with ใช้ฟอนต์นี้. Successful local preset saves sync automatically while signed in. Focus/online events refresh the library, and a manual sync button retries failures. Unsaved pixel drafts and ROM/translation data stay local. Revisions have content-derived IDs; edits add a new font instead of overwriting an older version. Deleting a local preset does not delete its cloud copy. This release has no remote-delete UI.
+
+Public connection config is stored in localStorage; access/refresh tokens are in sessionStorage for this tab, with refresh support. Passwords are never stored. Signing out leaves downloaded presets available locally. Default bundled fonts are not uploaded. Offline failures retain local presets and surface a retryable status in the studio. HTTPS is required for Supabase. This setup is optional; the editor and downloadable HTML continue to work without cloud configuration.
+
+Validation uses mocked Auth/REST calls and two isolated browser contexts for cross-device retrieval, owner filtering, deduplication, local font preservation, automatic upload and failure/retry. No live Supabase project was configured or provisioned during implementation; run the SQL and verify access with two actual users in your project before relying on its RLS configuration.

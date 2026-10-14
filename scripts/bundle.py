@@ -8,7 +8,7 @@ css = (root / 'style.css').read_text()
 css = re.sub(r"@import url\([^;]+;\s*", '', css, count=1)
 js = (root / 'app.js').read_text().replace('</script', '<\\/script')
 html = html.replace('<link rel="stylesheet" href="style.css">', '<style>' + css + '</style>')
-for name in ('vendor/exceljs.min.js', 'imperium-profile.js', 'game-font.js', 'rom-core.js', 'legacy-glyph-map.js', 'pixel-font.js', 'history.js', 'quality.js', 'sheet.js', 'font-presets.js', 'progress.js', 'views.js', 'font-editor.js', 'sheet-batches.js', 'review.js', 'app.js'):
+for name in ('vendor/exceljs.min.js', 'imperium-profile.js', 'game-font.js', 'rom-core.js', 'legacy-glyph-map.js', 'pixel-font.js', 'history.js', 'quality.js', 'sheet.js', 'font-presets.js', 'progress.js', 'views.js', 'font-editor.js', 'sheet-batches.js', 'review.js', 'app.js', 'font-cloud.js'):
     js = (root / name).read_text().replace('</script', '<\\/script')
     html = html.replace(f'<script src="{name}"></script>', '<script>' + js + '</script>')
 html = html.replace('<script type="module" src="emulator.js"></script>', '<script>'+ (root / 'scripts' / 'offline_emulator.js').read_text() +'</script>')
