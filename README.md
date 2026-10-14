@@ -1,4 +1,4 @@
-# RomTranslate 0.12.0
+# RomTranslate 0.12.1
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
@@ -63,7 +63,7 @@ If filtering by **ยังไม่แปล**, reopening the dialog after impo
 
 Category tabs and the category/subcategory dropdown show completed final-translation counts, and the active category has a completed/total summary. Counts use canonical verified text entries rather than linguistic word segmentation; AI drafts, English copies and code-only entries do not increment them. The displayed category total remains its actual row count, so it can include a code-only entry excluded from the progress denominator.
 
-The list compares wrapped English source with an editable Thai column. Editing there selects that row, synchronizes the main editor/preview, updates counts/status/progress and uses the same autosave, history, XLSX/project and ROM paths as the main editor. Multiline typing keeps focus; filtering is refreshed after leaving the inline editor so a row does not disappear during typing. Unverified candidate cells are disabled. Tables scroll within the left pane on narrow layouts and the existing separator can widen the list.
+The list compares wrapped English source with an editable Thai column. Click the English text (or focus it and press Enter/Space) to copy the complete canonical source, including control codes and newlines, and select its row. Editing there selects that row, synchronizes the main editor/preview, updates counts/status/progress and uses the same autosave, history, XLSX/project and ROM paths as the main editor. Multiline typing keeps focus; filtering is refreshed after leaving the inline editor so a row does not disappear during typing. Unverified candidate cells are disabled. Tables scroll within the left pane on narrow layouts and the existing separator can widen the list.
 
 Status labels have red/green text with no colored badge background; selected rows and Day/Dark modes have readable variants. The bottom font preview/status panels can be dragged vertically or collapsed, with persisted local sizes. Drag the separator between the text list and editor horizontally to resize the left column; arrow keys also work. Narrow screens stack the columns.
 
