@@ -13,3 +13,11 @@ The `/workspace/...` paths in a Codex task are local workspace paths, not public
 For local development, serve the repository over localhost using npm run dev. Localhost from the cloud machine is not reachable from the user's computer. Browser tests use an internal server; do not manufacture a public preview link from that address.
 
 Vendored emulator/library assets and coi-serviceworker.js must be deployed with the source index.html. Public hosting does not include the user's ROM or translated ROM binaries.
+
+## Stuck deployment repair
+
+`.github/workflows/repair-pages.yml` runs a targeted repair when its files change on main, and can also be started manually in Actions. It uses the runner's scoped GITHUB_TOKEN (contents:read, pages:write, actions:write); no PAT or new secret is required. The supplied SHA must be the full build SHA named in the deployment conflict.
+
+The script queries Pages and the identified deployment, cancels only a pending deployment through the same POST Pages cancellation endpoint used by actions/deploy-pages, waits for cancellation to complete, then inspects the latest managed Pages workflow. It retries failed jobs only if that latest run is completed/failed; queued/running or successful jobs are left alone. Unrelated workflows and Pages settings are not changed, and the site is never unpublished. The Actions summary records the actual result. A successful repair run alone does not prove the later Pages publish completed.
+
+Direct GitHub API/Pages requests from the Codex environment returned HTTP 403 during this investigation, so live status must be checked on the GitHub runner. Local tests use mocked API states.

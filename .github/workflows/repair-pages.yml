@@ -1,0 +1,42 @@
+name: Repair stuck GitHub Pages deployment
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/repair-pages.yml'
+      - 'scripts/repair_pages.cjs'
+  workflow_dispatch:
+    inputs:
+      stuck_sha:
+        description: 'Full build SHA identified as in progress in the Pages error'
+        required: true
+        default: '27acae2716279d8d59142d59bc282b82a1817f85'
+        type: string
+
+concurrency:
+  group: romtranslate-pages-repair
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pages: write
+      actions: write
+    steps:
+      - name: Check out repair script
+        uses: actions/checkout@v4
+      - name: Inspect and clear the identified Pages deployment
+        uses: actions/github-script@v7
+        env:
+          STUCK_PAGES_SHA: ${{ inputs.stuck_sha || '27acae2716279d8d59142d59bc282b82a1817f85' }}
+        with:
+          script: |
+            const repair = require('./scripts/repair_pages.cjs');
+            await repair({github, context, core, sha: process.env.STUCK_PAGES_SHA});
