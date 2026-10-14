@@ -1,4 +1,4 @@
-# RomTranslate 0.10.0
+# RomTranslate 0.11.0
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
@@ -49,11 +49,17 @@ Pointer text relocates into a verified 3 MB blank region. The builder checks the
 
 ## Excel / AI workflow
 
-1. Choose a category and filters, then **ส่งออก Excel** for a range or all filtered verified rows.
+1. Choose a category and filters, then **ส่งออก Excel** for a single start/count, explicit inclusive ranges such as `1-200, 201-400`, automatic batches of 200 (editable), or all filtered verified rows in one file.
 2. The filename includes the selected category. The workbook includes a Thai category-summary tab, `Instructions`, `Glossary` and the import-compatible `Translations` sheet.
 3. Copy the complete Thai AI prompt from `Instructions`, attach the XLSX to an assistant that can edit Excel files, and ask it to fill only `translation`. The shared dialogue rules cover game setting and emotion, confirmed speaker age/gender/relationships, neutral pronouns when context is unknown, glossary consistency, intact tokens/IDs/source (including literal `\n` and placeholders), byte/pixel/line limits, real XLSX output and honest handling of ambiguous/oversized batches. Set the game context/genre in Settings; both the per-entry prompt and Excel Instructions use it.
 4. Import the returned XLSX. IDs + offsets + source + original SHA match rows even after reordering. Formulas, duplicates, identity/token errors and byte/pixel overflow are reported. Errors block application. Download the Issues workbook to request corrections.
 5. Build and play the translated ROM. AI output is not automatically proof of in-game correctness.
+
+Each explicit range is a separate workbook; multiple workbooks download as one UTF-8 ZIP with `batch-index.json`. Single-workbook exports download directly as XLSX. Filenames include category and padded start/end positions; each Instructions sheet and AI prompt identifies its batch, range and scope total. The manifest lists immutable entry IDs for each file. IDs are not replaced with batch positions, so translated files can be imported one at a time, even with reordered rows.
+
+Batch positions start at 1 within the filtered **verified** entry list, excluding the spreadsheet header. Overlapping/repeated ranges, invalid bounds and more than 200 files per request are rejected. Automatic splitting includes the final short batch. Export freezes the row list, source, translation and prompt metadata when its dialog opens, so batches from that request cannot shift or overlap while workbooks are generated. Cancel stops before download and produces no partial archive. A ZIP uses stored entries because XLSX workbooks are already compressed; no new runtime dependency is needed.
+
+If filtering by **ยังไม่แปล**, reopening the dialog after importing translations creates a new filtered list with new positions. Download all desired batches together from one snapshot when allocating separate AI jobs. Splitting makes each AI request smaller; it does not guarantee correct translation. Unclassified candidates remain excluded.
 
 Status labels have red/green text with no colored badge background; selected rows and Day/Dark modes have readable variants. The bottom font preview/status panels can be dragged vertically or collapsed, with persisted local sizes. Drag the separator between the text list and editor horizontally to resize the left column; arrow keys also work. Narrow screens stack the columns.
 
@@ -99,6 +105,7 @@ node tests/quality-history.cjs /path/to/original.gba
 node tests/presets-layout-prompt.cjs /path/to/original.gba
 node tests/progress-controls.cjs /path/to/original.gba
 node tests/font-editor.cjs /path/to/original.gba
+node tests/sheet-batches.cjs /path/to/original.gba
 ```
 
 Browser tests use cloud Playwright/Chromium and an internal server on port 5175. Run sheet tests first for workbook fixtures. `tests/browser.cjs` checks the standalone release; `tests/workflow.cjs` builds and plays Thai in mGBA; `tests/recovery-browser.cjs` exercises new ROM reopening, edits, category export naming, name tabs and legacy pairing. The recovery-browser legacy fixture is the earlier menu test output, so retain it outside the repository before generating a new menu-coverage output.
