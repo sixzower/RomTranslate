@@ -1,4 +1,4 @@
-# RomTranslate 0.18.1
+# RomTranslate 0.19.0
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
@@ -184,3 +184,11 @@ Validation: `tests/theme-toggle.cjs`, `tests/sheet-import-progress.cjs` (500 act
 ExcelJS rejects some valid default-namespace `docProps/core.xml` nodes produced by M365 Copilot (observed: `lastModifiedBy`). `xlsx-loader.js` retries only recognized optional-property XML parse failures, omitting that optional file from the in-memory ZIP central directory. All other compressed payloads and worksheet cells remain unchanged; ROM hash/ID/offset/source/token checks are still mandatory. Normal workbooks use the original loader path. The source file on disk is never changed, and the import summary reports the metadata fallback.
 
 The user's Imperium_Ability_001-100_TH.xlsx was verified: 100 populated work rows, 95 translated, 5 blank (Excel rows 97–101), 0 import-blocking errors, and a successful ROM build/recovery. The formatted worksheet extends to row 655 but empty formatted rows are ignored. Tests cover the actual user file without adding it or its translations to the repository, byte-for-byte preservation of every other ZIP entry, normal Excel imports, browser confirmation and progress cleanup.
+
+## Permanent extracted font presets (0.19.0)
+
+Sword & Shield TH v1.7 and Emerald Seaglass TH v1.1.3 are bundled in the site and standalone HTML. The existing Quetzal default remains available. The new fonts preserve source foreground, shadow and advance; mapped precomposed sprites retain their original pixels. Native rendering skips the old vertical-gap adjustment. The 12px bank is scaled and combinations without a verified original sprite are assembled from extracted components. Regional extraction and source hashes are recorded in `fonts/hack-font-provenance.json`; no ROM is distributed. Complete indexed source sheets are retained as `fonts/sword-shield-th-source.png` (512 sprites) and `fonts/seaglass-th-source.png` (1024 sprites), including sprites not yet mapped to Unicode; 16 sprites per row in ascending native glyph ID.
+
+Unmapped characters are visibly listed and block rendering, rather than copying shapes from another font: Sword & Shield currently has 84/85 editor characters (฿ unmapped); Seaglass has 68/85. Drawing an unmapped character enables it. These presets do not promise identical layout for every possible Thai cluster. Rename from the font dialog; built-in names persist locally, imported fonts rename without creating a duplicate locally, and cloud copies retain older immutable versions. Built-ins survive browser storage deletion; custom names and imported fonts require backups/cloud.
+
+Reproduce extraction from the matching locally owned ROMs: `python3 scripts/extract_hack_fonts.py /path/to/extracted-rom-directory`. Test against source files with `HACK_FONT_ROMS=/path/to/extracted-rom-directory IMPERIUM_ROM=/path/to/original-imperium.gba node tests/hack-fonts.cjs`. Without these environment variables, the test covers rendering, native overrides, presets and rename in Chromium.
