@@ -1,4 +1,4 @@
-# RomTranslate 0.13.0
+# RomTranslate 0.14.0
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
@@ -31,13 +31,13 @@ The current scan finds 25,719 entries:
 | Category | Entries |
 | --- | ---: |
 | Dialogue | 4,425 |
-| Menu | 202 |
+| Menu | 205 |
 | Items: names / descriptions / plural names | 1,843 |
 | Moves: names / descriptions | 1,763 |
 | Abilities: names / descriptions | 654 |
 | Pokémon names / Pokédex group labels / descriptions | 4,143 |
 | Trainer names / classes | 925 |
-| Unclassified candidates | 11,764 |
+| Unclassified candidates | 11,761 |
 
 Pokémon includes 1,434 names, 1,434 Pokédex group labels and 1,275 unique descriptions; shared description owners are retained. Additional verified menu labels include Money, HP, PP, Type and battle stats. **ตรวจหมวดหมู่** shows category totals and unclassified samples; those candidates are not all confirmed game strings and remain excluded from translation exports/builds.
 
@@ -75,9 +75,19 @@ A compact progress bar appears after loading a ROM. **เลือกส่ว�
 
 Progress is actual final translation entries divided by eligible canonical entries in selected categories. AI drafts, blank text, source-identical text, changes to control codes alone, code-only sources and unverified candidates do not count. Shared pointers and reimporting the same spreadsheet do not multiply completed work. It updates after typing, using an AI draft, Excel/project import, undo/redo, checkpoint restore and ROM recovery. Completion measures filled translations, not linguistic quality or passing build validation.
 
-The supplied ROM has 13,954 eligible work entries; the menu target has 201. Its displayed menu list still contains 202 entries because one is a player-name variable with no literal text to translate. The target persists in project JSON, browser autosave and newly built ROM recovery data; older exports default to all eligible categories.
+The supplied ROM has 13,957 eligible work entries; the menu target has 204. Its displayed menu list still contains 205 entries because one is a player-name variable with no literal text to translate. The target persists in project JSON, browser autosave and newly built ROM recovery data; older exports default to all eligible categories.
 
 Control-prefixed text is translated without changing its codes: `{CTRL:01 06}{CTRL:03 07}Auto Run` becomes `{CTRL:01 06}{CTRL:03 07}วิ่งอัตโนมัติ`. Keep separate rows when codes differ, even for the same visible words. Instructions and the shared web/Excel AI prompt include this example; imports reject lost/changed/reordered codes. Sources with codes alone stay unchanged or have blank translation.
+
+## Review workflow and navigation
+
+**ตรวจรูปแบบ** checks tokens, encoded bytes, pixel/line bounds, font capacity and glossary consistency; it does not certify meaning. **จุดที่ต้องแก้ถัดไป** refreshes the audit and cycles through unique error entries first (then warnings), selecting the correct category/page and clearing filters that would hide the target.
+
+**ตรวจแล้ว / ยืนยันชุด** confirms user review of inclusive ranges such as `1-200`, or all current filtered verified entries. Blank/code-only sources are skipped; rows with automatic errors are excluded and counted in the dialog. A single-entry confirmation is also available. Review is optional: it does not block ROM export or change the translation percentage. Tabs, dropdowns, list rows and the progress summary separately report translated and user-reviewed work. **ยังไม่ตรวจ** filters translated entries needing user review.
+
+Review stamps bind to source/translation/speaker plus font pixels/spacing, glossary and effective game genre using a content checksum (not a security signature). Changing final text or speaker clears only that entry's stamp through the same history transaction; undo/checkpoint restore can restore it. Changing font/terminology/context makes old stamps stale until their original context is restored or the user rechecks them. AI draft edits do not invalidate final-text review. JSON, IndexedDB and new ROM recovery data preserve stamps; old projects/ROMs start unreviewed. XLSX imports clear review only for actually changed final text/speaker and never let AI mark rows reviewed.
+
+The duplicate name shortcut buttons were removed; exact name/description subcategories remain in the category dropdown. **เครื่องมือ** groups font presets, glossary, category coverage and AI settings. AI literal/context panels collapse and persist their open state, leaving more room for source/Thai comparison. Existing quill/theme, font design room, emulator, history and Excel batch features remain available.
 
 ## Open a translated test ROM
 
@@ -112,10 +122,13 @@ node tests/font-editor.cjs /path/to/original.gba
 node tests/sheet-batches.cjs /path/to/original.gba
 node tests/inline-translation.cjs /path/to/original.gba
 node tests/font-spacing.cjs /path/to/original.gba
+node tests/review.cjs /path/to/original.gba
 ```
 
 Browser tests use cloud Playwright/Chromium and an internal server on port 5175. Run sheet tests first for workbook fixtures. `tests/browser.cjs` checks the standalone release; `tests/workflow.cjs` builds and plays Thai in mGBA; `tests/recovery-browser.cjs` exercises new ROM reopening, edits, category export naming, name tabs and legacy pairing. The recovery-browser legacy fixture is the earlier menu test output, so retain it outside the repository before generating a new menu-coverage output.
 
 The managed cloud Chromium blocks navigation to `file://` URLs with `ERR_BLOCKED_BY_ADMINISTRATOR`; the standalone font studio is functionally tested through the internal HTTP server. Direct local-file opening is not verified in that browser.
+
+Version 0.14.0 additionally plays a translated test ROM from a new game into the house, opens the actual field menu (Thai Bag/Save/Exit/Time) and the actual bag with empty inventory. Evidence and precise coverage are in `proofs/real-screen-checks.json`. Items and Close Bag were observed as unclassified labels and their three canonical pointer entries are now verified menu export targets. This does not certify every item name/description, battle, summary or Pokédex screen.
 
 A full playthrough, every battle/summary caller and every long localized name are not verified. Screenshots of item/move/ability labels in diagnostic intro scenes check the native printer, not those original menu callers. Native headless tooling remains outside application dependencies. Never commit ROMs, saves or credentials.

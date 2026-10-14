@@ -1,0 +1,36 @@
+{
+  "version": "0.14.0",
+  "original_rom_sha256": "79bfd6266f7980452c864a20ffe47783b8bb91ec9957174ed416b77d3facb3a0",
+  "scenes": [
+    {
+      "screen": "เมนูหลักในบ้าน",
+      "status": "played",
+      "observed": [
+        "กระเป๋า",
+        "บันทึก",
+        "ออก",
+        "เวลา"
+      ],
+      "proof": "menu-real-game.png"
+    },
+    {
+      "screen": "กระเป๋า",
+      "status": "played_empty_inventory",
+      "observed": [
+        "เปิดกระเป๋าจริงจากเมนูหลัก",
+        "พบ Items และ Close Bag ที่ยังไม่จัดหมวด จึงเพิ่ม 3 รายการเข้าหมวดเมนู"
+      ],
+      "proof": "bag-real-game-empty.png"
+    },
+    {
+      "screen": "ชื่อและคำอธิบายไอเท็ม/ท่า/ความสามารถ",
+      "status": "native_printer_diagnostic_only",
+      "note": "มีการตรวจไบต์ ฟอนต์ และ native printer แต่อย่านับเป็นผ่านหน้ากระเป๋าหรือต่อสู้จริงทั้งหมด"
+    },
+    {
+      "screen": "โปเกเด็กซ์และหน้าต่อสู้/สรุปโปเกมอน/เทรนเนอร์",
+      "status": "not_fully_played",
+      "note": "ต้องเล่นไปถึงแต่ละหน้าจอเพื่อตรวจกรอบจริงและข้อความแปรผัน"
+    }
+  ]
+}
