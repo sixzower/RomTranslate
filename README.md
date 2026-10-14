@@ -1,4 +1,4 @@
-# RomTranslate 0.6.0
+# RomTranslate 0.6.1
 
 Thai ROM translation workspace based on the user's desktop reference. Static, local processing: the game is not uploaded to a server.
 
@@ -90,7 +90,7 @@ These exercise every extracted codec round trip, bounded Thai writes, font-slot 
 
 Browser tests use the cloud-provided Playwright/Chromium. Serve the source on port 5175 (or set `ROMTRANSLATE_TEST_URL`); `tests/workflow.cjs` verifies the service-worker isolation path without special server headers, filtered workbook export, imported translations, building and playing that ROM in mGBA, visible translated menu/dialogue, input isolation, pause/resume, audio toggle and reset. `tests/browser.cjs` tests the single-file release on the same server under `/download/index.html`, including persistence, category filtering and project import/export. `tests/mgba_runner.c` is the native mGBA 0.10.5 harness used during font research; native tooling is outside the application dependency path.
 
-Additional 0.6.0 checks:
+Additional 0.6.1 checks:
 
 ```sh
 node tests/quality-history.cjs '/path/to/original.gba'
@@ -102,3 +102,7 @@ node tests/category-browser.cjs
 ```
 
 Run sheet tests first to produce XLSX fixtures, quality-history before quality-browser, font-bank before font-browser, and category-render before category-browser. Generated test ROMs remain outside the checkout under `/workspace/artifacts`; no game binaries are distributed.
+
+The bottom font preview and status footer can be resized vertically by dragging their handles, collapsed with the arrow button, and restored. Keyboard arrows resize a focused handle, Home collapses it, End expands it, Enter toggles it. Heights/collapse state persist locally. The preview defaults to a compact 180 px.
+
+Each XLSX export includes a copyable Thai AI prompt in Instructions and a Glossary sheet from the current project. The prompt requires only translation edits, intact IDs/source/control tokens, consistent terminology and real XLSX output. Byte/pixel limits still require validation in RomTranslate.
