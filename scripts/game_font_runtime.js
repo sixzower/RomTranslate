@@ -1,5 +1,5 @@
-const byChar=new Map(DATA.glyphs.map(g=>[g.char,g])),marks='ัิีึืฺุู็่้๊๋์ํ๎';
+let byChar=new Map(DATA.glyphs.map(g=>[g.char,g])),marks='ัิีึืฺุู็่้๊๋์ํ๎';
 function clusters(text){const out=[];for(const c of text.normalize('NFC').replace(/([่้๊๋]?)ำ/g,'ํ$1า')){if(marks.includes(c)){if(!out.length||!byChar.has(out.at(-1)[0])||marks.includes(out.at(-1)[0]))throw Error('สระ/วรรณยุกต์ไม่มีพยัญชนะรองรับ: '+c);out[out.length-1]+=c;}else out.push(c);}return out;}
 function glyph(cluster,height=15){const first=byChar.get(cluster[0]);if(!first||marks.includes(cluster[0]))throw Error('ฟอนต์ของคุณไม่รองรับ '+cluster);const pixels=Array.from({length:16},()=>Array(16).fill(0));for(const c of cluster){const g=byChar.get(c);if(!g)throw Error('ฟอนต์ของคุณไม่รองรับ '+c);for(let y=0;y<16;y++)for(let x=0;x<8;x++)if(g.rows[y][x]==='1'){let yy=y;if(c==='ํ')yy+=2;yy=yy<=4?yy:Math.max(5,yy-1);if(height===12)yy=yy<5?Math.floor(yy*3/5):yy<13?yy-2:11;if(yy>=height)throw Error('อักษรล้นกรอบ '+cluster);pixels[yy][x]=1;}}
 const bytes=[];for(let tile=0;tile<4;tile++)for(let y=0;y<8;y++){const row=pixels[(tile>>1)*8+y];for(const half of [4,0])bytes.push(Array.from({length:4},(_,i)=>row[(tile&1)*8+half+i]).reduce((n,p)=>n*4+p,0));}return {bytes:Uint8Array.from(bytes),pixels,width:8};}
-return {clusters,glyph,data:()=>DATA};
+function setData(data){DATA=JSON.parse(JSON.stringify(data));byChar=new Map(DATA.glyphs.map(g=>[g.char,g]));}return {clusters,glyph,data:()=>DATA,setData};
