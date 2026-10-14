@@ -1,4 +1,4 @@
-# RomTranslate 0.18.0
+# RomTranslate 0.18.1
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
@@ -178,3 +178,9 @@ Excel imports show a blocking progress dialog while reading the local file, chec
 **คงต้นฉบับ / แปลแล้ว** copies the exact source into translation and explicitly sets `translationChoice: "keep-source"`. It counts as completed work, appears green, and disappears from untranslated filters. Copying English into translation alone still does not claim completion. Editing/clearing that text resets the choice atomically with undo/redo. JSON, autosave, checkpoints and ROM recovery preserve the choice; Excel uses the optional appended `translation_choice` column, and AI instructions preserve kept rows. Older Excel files remain readable. Kept entries retain native game text and pointers rather than being rewritten; their intent is stored only in recovery metadata. The removed human-review workflow remains absent.
 
 Validation: `tests/theme-toggle.cjs`, `tests/sheet-import-progress.cjs` (500 actual rows), `tests/keep-source.cjs` (including unchanged game bytes and cross-browser JSON), plus history, progress, font studio and multi-batch Excel regressions.
+
+## M365 Copilot Excel compatibility (0.18.1)
+
+ExcelJS rejects some valid default-namespace `docProps/core.xml` nodes produced by M365 Copilot (observed: `lastModifiedBy`). `xlsx-loader.js` retries only recognized optional-property XML parse failures, omitting that optional file from the in-memory ZIP central directory. All other compressed payloads and worksheet cells remain unchanged; ROM hash/ID/offset/source/token checks are still mandatory. Normal workbooks use the original loader path. The source file on disk is never changed, and the import summary reports the metadata fallback.
+
+The user's Imperium_Ability_001-100_TH.xlsx was verified: 100 populated work rows, 95 translated, 5 blank (Excel rows 97–101), 0 import-blocking errors, and a successful ROM build/recovery. The formatted worksheet extends to row 655 but empty formatted rows are ignored. Tests cover the actual user file without adding it or its translations to the repository, byte-for-byte preservation of every other ZIP entry, normal Excel imports, browser confirmation and progress cleanup.
