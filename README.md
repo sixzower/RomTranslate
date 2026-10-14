@@ -1,4 +1,4 @@
-# RomTranslate 0.6.2
+# RomTranslate 0.6.3
 
 Thai ROM translation workspace based on the user's desktop reference. Static, local processing: the game is not uploaded to a server.
 
@@ -32,16 +32,16 @@ The tester uses vendored `@thenick775/mgba-wasm` 2.5.1 (MPL-2.0). Its threads re
 
 The adapter validates the exact original ROM before Thai installation. Native font-table addresses, inline name fields, description pointers and move-table pointers were examined against this ROM. The source layout of item names was checked carefully: the 20-byte singular and 22-byte plural fields are separate, and the description pointer is 8 bytes before the singular name. Item effects and prices are not used as writable name padding.
 
-The latest decoder handles additional glyph/control tokens, finding 21,894 unique entries:
+The latest decoder handles additional glyph/control tokens, finding 21,916 unique entries:
 
 | Category | Unique entries |
 | --- | ---: |
 | Dialogue including introduction | 4,425 |
-| Recognized menu labels | 62 |
+| Recognized menu labels | 128 |
 | Item names / descriptions / plural names | 1,843 |
 | Move names / descriptions | 1,763 |
 | Ability names / descriptions | 654 |
-| Unclassified scan candidates | 13,147 |
+| Unclassified scan candidates | 13,103 |
 
 Unclassified candidates are not exported for translation or accepted for patching. This is not a claim that every text system or menu label in the hack has been identified. Known names, descriptions and pointers are added by verified table structure; shared descriptions are one entry with multiple owners/pointers.
 
@@ -90,7 +90,7 @@ These exercise every extracted codec round trip, bounded Thai writes, font-slot 
 
 Browser tests use the cloud-provided Playwright/Chromium. Serve the source on port 5175 (or set `ROMTRANSLATE_TEST_URL`); `tests/workflow.cjs` verifies the service-worker isolation path without special server headers, filtered workbook export, imported translations, building and playing that ROM in mGBA, visible translated menu/dialogue, input isolation, pause/resume, audio toggle and reset. `tests/browser.cjs` tests the single-file release on the same server under `/download/index.html`, including persistence, category filtering and project import/export. `tests/mgba_runner.c` is the native mGBA 0.10.5 harness used during font research; native tooling is outside the application dependency path.
 
-Additional 0.6.2 checks:
+Additional 0.6.3 checks:
 
 ```sh
 node tests/quality-history.cjs '/path/to/original.gba'
@@ -106,3 +106,7 @@ Run sheet tests first to produce XLSX fixtures, quality-history before quality-b
 The bottom font preview and status footer can be resized vertically by dragging their handles, collapsed with the arrow button, and restored. Keyboard arrows resize a focused handle, Home collapses it, End expands it, Enter toggles it. Heights/collapse state persist locally. The preview defaults to a compact 180 px.
 
 Each XLSX export includes a copyable Thai AI prompt in Instructions and a Glossary sheet from the current project. The prompt requires only translation edits, intact IDs/source/control tokens, consistent terminology and real XLSX output. Byte/pixel limits still require validation in RomTranslate.
+
+Menu coverage 0.6.3 reads known menu labels from pointer targets even when they have fewer than four letters, matches uppercase variants, and reads the original and expanded start-menu pointer tables. The main-menu Bag at `$DF17EC` and Time at `$DF1844` are now under **เมนู / เมนูหลัก**. Old project/XLSX IDs and source strings stay compatible; load the original ROM in the new version and import the existing project to preserve prior translations. The 128 entries include separate copies of labels used on different screens.
+
+Regression check: `node tests/menu-coverage.cjs /path/to/original.gba` verifies Bag/Time table pointers, short/uppercase labels, callback preservation and XLSX roundtrip. Supply a legacy JSON project as an optional third argument to also check its existing menu IDs/source strings; that legacy check is explicitly skipped when no fixture is supplied.
