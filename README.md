@@ -1,4 +1,4 @@
-# RomTranslate 0.15.0
+# RomTranslate 0.15.1
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
@@ -144,3 +144,11 @@ Use the same URL, public key and account on each device. Sign-in downloads saved
 Public connection config is stored in localStorage; access/refresh tokens are in sessionStorage for this tab, with refresh support. Passwords are never stored. Signing out leaves downloaded presets available locally. Default bundled fonts are not uploaded. Offline failures retain local presets and surface a retryable status in the studio. HTTPS is required for Supabase. This setup is optional; the editor and downloadable HTML continue to work without cloud configuration.
 
 Validation uses mocked Auth/REST calls and two isolated browser contexts for cross-device retrieval, owner filtering, deduplication, local font preservation, automatic upload and failure/retry. No live Supabase project was configured or provisioned during implementation; run the SQL and verify access with two actual users in your project before relying on its RLS configuration.
+
+## Single-user cloud without email (0.15.1)
+
+Use [cloud/font-code-library.sql](cloud/font-code-library.sql) instead of email signup. Run this SQL in your existing project's SQL Editor and copy the returned `private_library_code` (64 hex characters). Enter it under คลังฟอนต์คลาวด์ → ใช้คนเดียว — ไม่ต้องสมัครอีเมล after configuring the same project URL/public key. The browser remembers the code across restarts. Copy this code privately to each device; possessing it gives access to the vault. Keep a backup: there is no email recovery. Never publish it in source/config or send it in chat. Disconnect forgets the local code and leaves downloaded fonts intact.
+
+Only admin SQL can create a vault. The server stores its SHA-256 hash; anonymous clients can only call fixed SECURITY DEFINER RPCs with a valid code. Direct table privileges are revoked and RLS is enabled with no public policies. Writes are bound to the matching existing vault, at most 25 entries per call and 1000 fonts per vault, retaining previous versions. Supabase's public key alone cannot read/write these fonts. Re-running the SQL creates a new independent vault and returns a NEW code; previous vaults remain. Email libraries remain separate; local presets sync into the new vault when connected. ROMs and translation data remain local.
+
+`tests/font-code-cloud.cjs` covers no-email flow with mocked RPC, separate browser contexts, reload persistence, unknown code rejection, duplicate sync and disconnect. `tests/font-code-sql.cjs` executes the SQL in actual PostgreSQL via temporary PGlite and checks denied direct table access, RPC grants, wrong code rejection, vault isolation and safe repeat setup. To run the SQL test, install @electric-sql/pglite outside the repo and set PGLITE_MODULE to its module path. No live Supabase service was configured here.
