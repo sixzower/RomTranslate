@@ -1,71 +1,61 @@
-# RomTranslate 0.6.3
+# RomTranslate 0.7.0
 
-Thai ROM translation workspace based on the user's desktop reference. Static, local processing: the game is not uploaded to a server.
+Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
-## Use the website
+## Default font
 
-Open https://sixzower.github.io/RomTranslate/ and select the original Pokémon Imperium v1.3.1 ROM. A first automatic reload prepares the browser game tester. The workspace starts empty; its title is the uploaded filename.
+The default Thai font is the user's **Thai font 8x16 (Arabic digits)** from `files.zip`. Its original JSON, PNG atlas/preview and 4bpp bytes are in `fonts/`. `scripts/build_user_font.py` validates JSON against the supplied 4bpp and bundles browser modules. It needs only Python 3. No Noto/Siam Retro font assets, rendering code or generation dependencies remain.
 
-Choose **บทสนทนา / เมนู / ไอเท็ม / ท่า / ความสามารถ**. Each category can be narrowed to names, descriptions or plural item names. Search/status filters and pagination are available. The count shows filtered results / all scanned results so different filters are not confused with different ROM contents.
+Thai marks compose with the supplied base pixels. The game variant removes one vertical gap to fit its 15-pixel renderer; a 12-pixel variant fits the native small-font bank. Existing Latin game glyphs remain intact. Native Thai glyphs have an 8-pixel advance. The original 8x16 atlas/data/4bpp exports are retained unchanged. No license was declared in the user archive; do not invent one.
 
-### Translate a category using Excel and an external AI
+`legacy-glyph-map.js` contains read-only fingerprints and Unicode candidates for decoding previous web exports. It contains no old bitmap pixels and is never used to render the default font. Ambiguous legacy glyphs are reported for manual review.
 
-1. Choose a category and optional search/status filter.
-2. Click **ส่งออก Excel**. Choose a starting row and batch size, or export all filtered rows. Nearby-context expansion and unverified scan candidates are excluded.
-3. Give the `.xlsx` to your assistant. Ask it to change only `translation`, retaining `rom_sha256`, `entry_id`, `rom_offset`, `source` and all special tokens. Instructions are also inside the workbook. Smaller batches help with the external AI's context/output limits.
-4. Import the returned `.xlsx` with **นำเข้าคำแปล Excel**. Review the changes, then apply them. Reordered rows are matched by ID + offset + source + original ROM SHA-256, not row position. Source/hash/token changes, formulas and duplicate IDs/headers are rejected before any changes are applied. Blank translations preserve existing work.
-5. Names have byte limits shown in `max_bytes`, and each exported row includes `max_width_px`, `max_lines`, and `layout`. Oversized rows must be corrected before applying the workbook. The import preview lists row-level identity, token, font, byte, pixel, line and glossary diagnostics. Errors block applying the workbook; warnings can be reviewed. Download the Issues workbook to send corrections back to the external AI.
+## Categories and limits
 
-IndexedDB autosave and version-2 JSON project export/import retain translations. Reopen the original ROM to resume. Game data and API keys are not included in project JSON or Excel exports.
-
-### Build and test the ROM
-
-**สร้าง ROM ทดสอบ** writes an independent 32 MB copy. **ทดสอบเล่น GBA → สร้างและเล่น ROM ที่แปล** builds and opens it directly. An existing translated `.gba` can also be opened in the tester. Pause/resume, reset, speed selection, mute/unmute, touch controls, fullscreen, and `.sav` export/import are provided. Keyboard arrows move; Z=A, X=B, Enter=Start, Shift=Select, A/S=L/R. Emulator arrows do not move the translation editor's selection.
-
-The tester uses vendored `@thenick775/mgba-wasm` 2.5.1 (MPL-2.0). Its threads require cross-origin isolation. `coi-serviceworker.js` (MIT) provides the necessary same-origin headers on GitHub Pages; it does not cache or upload the ROM. The live website and a current browser are required for this tester. The downloadable single HTML retains offline editing/Excel features and opens the live website for GBA play.
-
-## ROM scope and bounds
-
-`imperium-profile.js` pins the original user file's SHA-256:
+The original Pokémon Imperium v1.3.1 must have SHA-256:
 
 `79bfd6266f7980452c864a20ffe47783b8bb91ec9957174ed416b77d3facb3a0`
 
-The adapter validates the exact original ROM before Thai installation. Native font-table addresses, inline name fields, description pointers and move-table pointers were examined against this ROM. The source layout of item names was checked carefully: the 20-byte singular and 22-byte plural fields are separate, and the description pointer is 8 bytes before the singular name. Item effects and prices are not used as writable name padding.
+The current scan finds 24,266 entries:
 
-The latest decoder handles additional glyph/control tokens, finding 21,916 unique entries:
-
-| Category | Unique entries |
+| Category | Entries |
 | --- | ---: |
-| Dialogue including introduction | 4,425 |
-| Recognized menu labels | 128 |
-| Item names / descriptions / plural names | 1,843 |
-| Move names / descriptions | 1,763 |
-| Ability names / descriptions | 654 |
-| Unclassified scan candidates | 13,103 |
+| Dialogue | 4,425 |
+| Menu | 128 |
+| Items: names / descriptions / plural names | 1,843 |
+| Moves: names / descriptions | 1,763 |
+| Abilities: names / descriptions | 654 |
+| Pokémon names including forms | 1,434 |
+| Trainer names / classes | 925 |
+| Unclassified candidates | 13,094 |
 
-Unclassified candidates are not exported for translation or accepted for patching. This is not a claim that every text system or menu label in the hack has been identified. Known names, descriptions and pointers are added by verified table structure; shared descriptions are one entry with multiple owners/pointers.
+Trainer names include 859 populated records and 66 class labels. One empty record is skipped. Item names are already present: **ไอเท็ม / ชื่อ**, with a dedicated shortcut for its 858 names. Family tabs and subcategory dropdowns allow precise exports. Main-menu Bag is `$DF17EC`; Time is `$DF1844`.
 
-Thai is rendered using licensed, compact **Siam Retro GBA** cluster glyphs in existing empty Latin font slots. Vowels and tones are composed before encoding; no UTF-8 is written into the game. Occupied font glyphs and all extra-symbol codes found in scanned text are preserved. The current original ROM has 724 usable cluster slots over normal/narrow/short/small font banks. The extra native small-font bank uses a compact 12-pixel variant preserving a 7-pixel letter body. Identical glyph images share a slot. The builder reports an error if this capacity is exceeded; 724 is a finite limit, not a promise that every Thai translation of the whole game fits. It never truncates translations or replaces used glyphs to make them fit.
+Names are inline fields, not unlimited text: Pokémon names use a 13-byte field, trainer names a conservative 12-byte writable range, trainer classes 16 bytes, item singular names 20 and plural names 22, ability names 19. Font controls and the terminating byte count toward those limits. Some Thai names must be shortened. Adjacent stats, party data, item effects and prices are preserved. NPC dialogue names are also present in dialogue text; not every separate name system in the hack has been identified.
 
-Pointer strings relocate into a verified unused 3 MB `0xFF` area. Original strings are retained, including shared substrings. Inline names must fit their field. The builder checks ordered control-token preservation, known pointer values, original source, capacity, and free-space bytes before producing output. Dialogue wraps at 208 pixels and adds scroll controls for long text. Additional conservative text limits protect menu/name/description buffers; names and dense menu layouts still require in-game review. Names/menus must fit one line; conservative limits are 112 px for items, 88 px for moves, 104 px for abilities and 128 px for menu labels. Descriptions wrap within 128 px / 3 lines (items/moves) or 160 px / 2 lines (abilities). These are conservative working bounds, not a verified inventory of every caller in this ROM. Variables and special glyphs trigger warnings because their runtime width depends on the game.
+Pointer text relocates into a verified 3 MB blank region. The builder checks the original SHA, source, ordered special tokens, pointer values, bytes and conservative screen bounds. 724 native empty glyph slots are available across four font banks, with image deduplication; this is a finite capacity. Occupied glyphs and reserved extra-symbol codes are preserved. Dialogue wraps at 208 px with scrolling; descriptions have conservative pixel/line limits. Text variables and original callers still need game review.
 
-Actual emulator validation demonstrated a translated **เริ่มเกม** main menu and **สวัสดี! ขอโทษที่ให้รอนะ** introduction, with continuation to the next page. Five-category edits and their allowed byte ranges were checked, but an entire playthrough and every item/move/ability screen have not been exhaustively tested. Do not describe all ROM text as translated or all gameplay as verified.
+## Excel / AI workflow
 
-## Quality checks and recovery
+1. Choose a category and filters, then **ส่งออก Excel** for a range or all filtered verified rows.
+2. The filename includes the selected category. The workbook includes a Thai category-summary tab, `Instructions`, `Glossary` and the import-compatible `Translations` sheet.
+3. Copy the complete Thai AI prompt from `Instructions`, attach the XLSX to an assistant that can edit Excel files, and ask it to fill only `translation`. The prompt covers consistent terms, intact tokens/IDs/source, brevity, real XLSX output and honest handling of ambiguous/oversized batches.
+4. Import the returned XLSX. IDs + offsets + source + original SHA match rows even after reordering. Formulas, duplicates, identity/token errors and byte/pixel overflow are reported. Errors block application. Download the Issues workbook to request corrections.
+5. Build and play the translated ROM. AI output is not automatically proof of in-game correctness.
 
-**ตรวจคำแปล** audits translated entries and shows byte/pixel/line errors, ordered control-token problems, unsupported glyphs, glossary warnings and font usage. Select a reported entry to edit it, or export all issues to Excel. The default preview uses native GBA glyph pixels; toggle it off to see the larger atlas font. It is a preview, not a substitute for checking the original game screen.
+Status labels have red/green text with no colored badge background; selected rows and Day/Dark modes have readable variants. The bottom font preview/status panels can be dragged vertically or collapsed, with persisted local sizes.
 
-**ย้อนคืน / ทำซ้ำ** applies to manual translation/speaker/AI draft edits, using an AI draft and importing Excel/project translations. Excel imports are one transaction. **ประวัติ / จุดสำรอง** stores up to 60 recent transactions and 8 checkpoints, with a total history budget of 4 MB; older records are removed first. Checkpoints are created before Excel/project imports. Restore a checkpoint, then undo that restore if needed. History is included in IndexedDB autosave and exported JSON projects; it is restored when reopening the saved original ROM. To recover on another device from JSON, open the project file before loading the matching original ROM; importing into an already-open ROM preserves the current history and adds an undoable import transaction. These are local backups; exporting a project file remains useful if browser storage is cleared.
+## Open a translated test ROM
 
-Native emulator checks rendered installed item/move/ability names and descriptions and a menu label in a diagnostic introduction scene. Screenshots in `proofs/category-*.png` deliberately show the diagnostic headings. They are not claims of testing the bag, battle and Pokémon summary callers. A separate >543-glyph ROM demonstrated the small-font-bank Thai introduction (`proofs/compact-bank-thai.png`).
+Version 0.7.0 outputs include compressed recovery data in verified free ROM space: translations, speaker labels, glossary and original bytes overwritten outside the free pool. Opening that `.gba` directly restores the exact original buffer, verifies its SHA, and shows canonical English source with Thai translations. Build again from the restored original, so editing does not stack patches. The output remains 32 MB and contains no API keys. Recovery data uses spare pool space and can fail with a clear error if space is exhausted. It is not an emulator savestate.
 
-## AI API
+Legacy 0.5/0.6 test files lack this recovery data. If the original is already open, the website can pair it with the test ROM. Otherwise it asks for the exact original `.gba`. Glyph fingerprints read Thai back from changed inline fields/relocated pointers; a saved project helps resolve ambiguous shapes. Unknown/ambiguous glyphs and token mismatches are reported under **ข้อมูล ROM**. Review these drafts before rebuilding. Keep the original and JSON project as backups; an old binary alone cannot always recover the intended spelling from identical glyph images.
 
-Settings supports a browser-CORS-capable HTTPS OpenAI Chat Completions API, model and session-only key. Requests send selected/context text and glossary, not the ROM. Without a key, generation buttons provide copyable prompts for an external assistant. Live API credentials are not provided by this project; API success/error paths use mock responses in tests. Bulk XLSX translation needs no API key in the app.
+**ย้อนคืน / ทำซ้ำ / ประวัติ / จุดสำรอง** retain up to 60 transactions and 8 checkpoints within 4 MB. Excel/project imports create checkpoints. JSON and IndexedDB preserve history; import JSON before opening the matching original on another device to recover it. Browser API settings support HTTPS OpenAI-compatible Chat Completions with CORS; keys stay in memory and are not exported. Live credentials are not supplied; API paths use mocks in tests.
 
-## Develop / release
+## Development and tests
 
-Node.js and Python 3 are enough to run the app. Runtime libraries are vendored with their licenses and registry integrity records in `vendor/SOURCES.json`.
+Runtime libraries are vendored, with license/integrity records in `vendor/`. Node.js and Python 3 suffice; no npm install is needed.
 
 ```sh
 npm run check
@@ -73,40 +63,17 @@ npm run bundle
 npm run dev
 ```
 
-The bundle writes `/workspace/artifacts/index.html` and `download/index.html`. Refresh and publish the latter with every update as requested. In Codex Web, `/workspace` paths are not download attachments; use the GitHub file's **Download raw file** action. See PUBLISHING.md.
+Bundle refreshes both `/workspace/artifacts/index.html` and `download/index.html` on every update. For Codex Web, deliver the GitHub Download raw file link; workspace paths and cloud localhost are not user-accessible downloads. See PUBLISHING.md.
 
-`pixel-font.js` provides the larger preview/atlas variant of Siam Retro, an OFL-1.1 bitmap derivative of Noto Looped Thai Bold with embedded Latin/symbol glyphs. The actual ROM uses `game-font.js`'s compact 15-pixel variant. Full source licenses are embedded in data and included in `fonts/OFL.txt`. Regeneration scripts use system Noto fonts, Pillow and fontTools; browsers do not need those tools.
-
-## Validation
-
-The ROM is intentionally absent from this repository. Pass the original file's path:
+The ROM is not distributed. Pass the original file path:
 
 ```sh
-node tests/imperium.test.cjs '/path/to/original.gba'
-node tests/sheet.test.cjs '/path/to/original.gba'
+node tests/imperium.test.cjs /path/to/original.gba
+node tests/sheet.test.cjs /path/to/original.gba
+node tests/recovery-names-font.cjs /path/to/original.gba
+node tests/quality-history.cjs /path/to/original.gba
 ```
 
-These exercise every extracted codec round trip, bounded Thai writes, font-slot preservation, pointer relocation, adjacent-field protection and real XLSX import/export with reordered rows and malformed inputs.
+Browser tests use cloud Playwright/Chromium and an internal server on port 5175. Run sheet tests first for workbook fixtures. `tests/browser.cjs` checks the standalone release; `tests/workflow.cjs` builds and plays Thai in mGBA; `tests/recovery-browser.cjs` exercises new ROM reopening, edits, category export naming, name tabs and legacy pairing. The recovery-browser legacy fixture is the earlier menu test output, so retain it outside the repository before generating a new menu-coverage output.
 
-Browser tests use the cloud-provided Playwright/Chromium. Serve the source on port 5175 (or set `ROMTRANSLATE_TEST_URL`); `tests/workflow.cjs` verifies the service-worker isolation path without special server headers, filtered workbook export, imported translations, building and playing that ROM in mGBA, visible translated menu/dialogue, input isolation, pause/resume, audio toggle and reset. `tests/browser.cjs` tests the single-file release on the same server under `/download/index.html`, including persistence, category filtering and project import/export. `tests/mgba_runner.c` is the native mGBA 0.10.5 harness used during font research; native tooling is outside the application dependency path.
-
-Additional 0.6.3 checks:
-
-```sh
-node tests/quality-history.cjs '/path/to/original.gba'
-node tests/quality-browser.cjs '/path/to/original.gba'
-node tests/font-bank.cjs '/path/to/original.gba'
-node tests/font-browser.cjs
-node tests/category-render.cjs '/path/to/original.gba'
-node tests/category-browser.cjs
-```
-
-Run sheet tests first to produce XLSX fixtures, quality-history before quality-browser, font-bank before font-browser, and category-render before category-browser. Generated test ROMs remain outside the checkout under `/workspace/artifacts`; no game binaries are distributed.
-
-The bottom font preview and status footer can be resized vertically by dragging their handles, collapsed with the arrow button, and restored. Keyboard arrows resize a focused handle, Home collapses it, End expands it, Enter toggles it. Heights/collapse state persist locally. The preview defaults to a compact 180 px.
-
-Each XLSX export includes a copyable Thai AI prompt in Instructions and a Glossary sheet from the current project. The prompt requires only translation edits, intact IDs/source/control tokens, consistent terminology and real XLSX output. Byte/pixel limits still require validation in RomTranslate.
-
-Menu coverage 0.6.3 reads known menu labels from pointer targets even when they have fewer than four letters, matches uppercase variants, and reads the original and expanded start-menu pointer tables. The main-menu Bag at `$DF17EC` and Time at `$DF1844` are now under **เมนู / เมนูหลัก**. Old project/XLSX IDs and source strings stay compatible; load the original ROM in the new version and import the existing project to preserve prior translations. The 128 entries include separate copies of labels used on different screens.
-
-Regression check: `node tests/menu-coverage.cjs /path/to/original.gba` verifies Bag/Time table pointers, short/uppercase labels, callback preservation and XLSX roundtrip. Supply a legacy JSON project as an optional third argument to also check its existing menu IDs/source strings; that legacy check is explicitly skipped when no fixture is supplied.
+A full playthrough, every battle/summary caller and every long localized name are not verified. Screenshots of item/move/ability labels in diagnostic intro scenes check the native printer, not those original menu callers. Native headless tooling remains outside application dependencies. Never commit ROMs, saves or credentials.

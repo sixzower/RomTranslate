@@ -25,4 +25,6 @@ body{color-scheme:light;background:var(--page);color:var(--text)}body[data-theme
 
 .status-grip::after{content:"";display:block;width:28px;height:2px;background:var(--border);margin:0 auto}
 
-.translation-status{display:inline-block;padding:2px 6px;border-radius:3px;font-weight:bold;line-height:1.35}.translation-status.is-untranslated{color:#a51d2d;background:#fde8eb}.translation-status.is-translated{color:#176332;background:#e3f4e8}body[data-theme=dark] .translation-status.is-untranslated{color:#ffb4ba;background:#4a2028}body[data-theme=dark] .translation-status.is-translated{color:#9ee0b5;background:#173b25}
+.translation-status{display:inline-block;font-weight:bold;line-height:1.35}
+
+.translation-status{padding:0;border-radius:0;background:transparent!important}.translation-status.is-untranslated{color:#b0192a}.translation-status.is-translated{color:#16703a}tr.selected .translation-status.is-untranslated{color:#ffd1d6}tr.selected .translation-status.is-translated{color:#b8ffd0}body[data-theme=dark] .translation-status.is-untranslated{color:#ff939f}body[data-theme=dark] .translation-status.is-translated{color:#90dfac}body[data-theme=dark] tr.selected .translation-status.is-untranslated{color:#ffd1d6}body[data-theme=dark] tr.selected .translation-status.is-translated{color:#b8ffd0}
