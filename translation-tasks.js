@@ -75,10 +75,10 @@ const TranslationTasks = (() => {
       history: structuredClone(p.history)};
   }
   function splitImport(report) {
-    if (report.issues.some(i => i.severity === 'error' && i.code === 'identity')) throw Error('ต้องแก้รหัส / ต้นฉบับ / โค้ดในตารางก่อนนำเข้า');
+    if (report.issues.some(i => i.severity === 'error' && i.code === 'identity' && (!report.allowPartial || i.fatal || i.row===0))) throw Error('ต้องแก้รหัส / ต้นฉบับ / โค้ดในตารางก่อนนำเข้า');
     const blocked = new Set(report.issues.filter(i => i.severity === 'error').map(i => Number(i.id)));
     const allBlocked = report.issues.some(i => i.severity === 'error' && i.row === 0);
-    return {changes: report.changes.filter(c => !allBlocked && !blocked.has(c.id)),
+    return {rejected:report.issues.filter(i=>i.severity==='error'&&i.code==='identity').length,changes: report.changes.filter(c => !allBlocked && !blocked.has(c.id)),
       drafts: report.changes.filter(c => allBlocked || blocked.has(c.id)).map(c => ({id: c.id, contextual: c.translation}))};
   }
   return {valid, uuid, validOptions, active, ensure, hydrate, create, resume, finish, rows, stats, portable, splitImport};

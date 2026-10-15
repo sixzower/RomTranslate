@@ -3,7 +3,7 @@ const SheetImportBatch=(()=>{
  async function review(files,project,rom,progress){
   if(files.length>100)throw Error('เลือกได้ครั้งละไม่เกิน 100 ไฟล์');
   if(files.reduce((n,f)=>n+f.size,0)>128*1024*1024)throw Error('ขนาดไฟล์รวมต้องไม่เกิน 128 MB');
-  const result={changes:[],issues:[],warnings:[],fileWarnings:[],entryIds:[],rows:0,blanks:0,unchanged:0,duplicates:0,files:files.length,filename:files.length===1?files[0].name:`Excel ${files.length} ไฟล์`,scope:''},changes=new Map(),ids=new Set(),origins=new Map();
+  const result={allowPartial:true,changes:[],issues:[],warnings:[],fileWarnings:[],entryIds:[],rows:0,blanks:0,unchanged:0,duplicates:0,files:files.length,filename:files.length===1?files[0].name:`Excel ${files.length} ไฟล์`,scope:''},changes=new Map(),ids=new Set(),origins=new Map();
   for(let i=0;i<files.length;i++){
    const file=files[i];progress.file(i,file.name);progress.check();
    try{
@@ -25,13 +25,13 @@ const SheetImportBatch=(()=>{
   progress.check();result.changes=[...changes.values()];result.entryIds=[...ids];
   // Font allocation is shared across every file and existing translation.
   if(rom){
-   result.issues=result.issues.filter(i=>i.code==='identity');
+   result.issues=result.issues.filter(i=>['identity','input'].includes(i.code));
    const allocator=RomCore.fontAllocator(rom,project.entries);
    for(let i=0;i<project.entries.length;i++){
     if(i%200===0){progress.combined(i,project.entries.length);await new Promise(resolve=>setTimeout(resolve,0));}
     const entry=project.entries[i],change=changes.get(entry.id),text=change?.translation||entry.translation;if(!text?.trim())continue;
     const checked=TranslationQuality.entry(change?{...entry,translationChoice:change.translationChoice}:entry,text,rom,project.glossary,allocator);
-    if(change)for(const issue of checked.issues)result.issues.push({file:origins.get(entry.id),row:change.row,id:entry.id,offset:entry.offset,category:entry.category,source:entry.source,translation:text,...issue});
+    if(change)for(const issue of checked.issues)result.issues.push({file:origins.get(entry.id),row:change.row,id:entry.id,offset:entry.offset,category:entry.category,source:entry.source,translation:text,sheet:change.sheet,...issue});
     else if(checked.issues.some(x=>x.code==='font'&&x.message.includes('ฟอนต์เต็ม')))result.issues.push({row:0,id:entry.id,severity:'error',code:'font',message:'คำแปลรวมทั้งโปรเจกต์ใช้ฟอนต์เกินความจุ'});
    }
   }
