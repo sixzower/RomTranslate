@@ -14,6 +14,7 @@ const WorkManager = (() => {
     const p = bridge()?.project(), task = TranslationTasks.active(p);backupStatus(p);for(const button of document.querySelectorAll('#workCloudRows button,#workLocalRows button'))button.disabled=busy;
     $('workBanner').hidden = !task || RomTranslateViews.current()!=='translation';
     $('workCreate').disabled = !p; $('workFileSave').disabled = !p; $('workCloudSave').disabled = !p || busy || !FontCloud.connected();
+    $('romCloudUpload').disabled=busy||!p||!FontCloud.connected();for(const id of ['romCloudRemove','romCloudCheck'])$(id).disabled=busy||!(p||bridge()?.pendingWorkspace())||!FontCloud.connected();
     $('workCloudRefresh').disabled = busy||!FontCloud.connected(); $('workDrafts').disabled = !p?.entries.some(e => e.contextual && e.contextual !== e.translation);
     if (task) { const s = TranslationTasks.stats(p, task); $('workBannerText').textContent = 'กำลังดูชุด: '+task.name + ` · แปลแล้ว ${s.done}/${s.total} · เหลือ ${s.remaining}`; }
   }
@@ -49,7 +50,7 @@ const WorkManager = (() => {
     const p = bridge().project(); $('workspaceName').value = p?.workspaceName || p?.title.replace(/\.gba$/i, '') || '';
     $('workTaskName').value = TranslationTasks.active(p)?.name || 'งาน ' + ($('categoryFilter').selectedOptions[0]?.textContent || 'แปลเกม');
 
-    $('workDialog').showModal();renderCurrent();renderTasks();await run(async()=>{status('กำลังโหลดโปรเจกต์…');await localList();if(FontCloud.connected())await listCloud();else status('บันทึกในเครื่องอัตโนมัติ · เชื่อมคลังส่วนตัวเพื่อสำรองข้ามเครื่อง');});
+    $('workDialog').showModal();renderCurrent();renderTasks();await run(async()=>{status('กำลังโหลดโปรเจกต์…');await localList();if(FontCloud.connected()){const rows=await listCloud();await window.RomCloud?.checkSetup(rows[0]?.workspace_id);}else status('บันทึกในเครื่องอัตโนมัติ · เชื่อมคลังส่วนตัวเพื่อสำรองข้ามเครื่อง');});
   }
   async function run(action) {
     if (busy){status('กำลังจัดการโปรเจกต์ กรุณารอสักครู่');return;} busy = true; renderCurrent();
@@ -127,7 +128,7 @@ const WorkManager = (() => {
   $('workDrafts').onclick = () => { const p=bridge().project();$('workDraftRows').replaceChildren();for(const e of p?.entries||[])if(e.contextual&&e.contextual!==e.translation){const row=document.createElement('p');row.textContent='#'+e.id+' · '+e.category+' · '+e.contextual+' ';row.append(button('ไปแก้ร่าง',()=>{$('workDraftDialog').close();$('workDialog').close();window.RomTranslateBridge.goToEntry(e.id);$('importDraftPanel').open=true;}));$('workDraftRows').append(row);}$('workDraftDialog').showModal(); };
   $('workDraftClose').onclick = () => $('workDraftDialog').close();
   async function syncConnected(onProgress=()=>{}){
-    if(busy){queued=true;throw Error('กำลังบันทึกงาน กรุณารอสักครู่แล้วซิงก์อีกครั้ง');}
+    if(busy){const since=Date.now();while(busy&&Date.now()-since<20000){onProgress(0,'รอบันทึกงานปัจจุบันก่อนซิงก์');await new Promise(resolve=>setTimeout(resolve,100));}if(busy)throw Error('กำลังบันทึกงาน กรุณารอสักครู่แล้วซิงก์อีกครั้ง');}
     busy=true;renderCurrent();
     try{onProgress(0,'กำลังคืนงานในเครื่องก่อนอ่านคลาวด์');if(typeof bridge()?.startupReady!=='function')throw Error('ไฟล์เว็บที่โหลดเป็นคนละรุ่น กรุณาปิดแท็บนี้แล้วเปิด https://sixzower.github.io/RomTranslate/ ใหม่ หรือใช้ index.html รุ่นล่าสุด');await bridge().startupReady();onProgress(0,'กำลังอ่านรายการโปรเจกต์');const scope=await FontCloud.workspaceScope();const cloudRows=await listCloud(),resumeWarnings=[];const waitingSince=Date.now();while(bridge().isLoading()&&Date.now()-waitingSince<60000){onProgress(5,'รอเปิด ROM ในเครื่องก่อนคืนงานคลาวด์');await new Promise(resolve=>setTimeout(resolve,100));}if(bridge().isLoading())throw Error('ROM ยังเปิดไม่เสร็จ กรุณาซิงก์คลังอีกครั้งหลังเปิด ROM');try{await autoResume(cloudRows,scope);}catch(e){const current=bridge().project(),item=current?cloudRows.find(r=>r.workspace_id===current.workspaceId):cloudRows.slice().sort((a,b)=>(Date.parse(b.updated_at)||0)-(Date.parse(a.updated_at)||0))[0];resumeWarnings.push({id:item?.workspace_id,name:item?.name||'โปรเจกต์ล่าสุด',kind:'resume',message:'ดึงงานอัตโนมัติยังไม่สำเร็จ: '+e.message+' · เปิด โปรเจกต์ Cloud เพื่อเลือกงานอีกครั้ง'});}onProgress(10,'อ่านรายการโปรเจกต์บนคลาวด์แล้ว');const current=bridge().project(),{rows:locals,issues:localIssues}=localRecords(await bridge().localWorkspaces());const rows=new Map(locals.map(p=>[p.workspaceId,p]));if(current){TranslationTasks.ensure(current);current.font=FontPresets.data();rows.set(current.workspaceId,current);}
       const warnings=[...resumeWarnings,...localIssues];let completed=0;const planned=[...rows.values()].filter(p=>!resumeWarnings.some(w=>w.id===p.workspaceId)&&p.workspaceId!==bridge().pendingWorkspace()?.workspaceId&&!p.cloudSyncPaused&&(!p.cloudScope||p.cloudScope===scope));onProgress(20,'กำลังสำรอง '+planned.length+' โปรเจกต์');
