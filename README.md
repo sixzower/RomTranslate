@@ -283,3 +283,11 @@ Excel export defaults to **ข้ามข้อความที่แปล�
 Canonical message IDs and ROM offsets are visible again before the category column by default, and prefix the editor heading. The advanced แสดง ID / ตำแหน่ง ROM toggle can still hide them. IDs/offsets were never removed from project or Excel data.
 
 Excel export always intersects the current filter or saved work set with the selected translation target categories. Categories marked “ไม่แปลส่วนนี้” are excluded even when exporting a parent category or disabling the untranslated-only option. The export dialog shows the excluded count.
+
+### Extract fonts from another GBA ROM
+
+Open the font picker or studio and choose **ดึงฟอนต์จาก ROM**. The ROM is read locally and is never uploaded. Exact SHA-256 matches for Sword & Shield TH v1.7 and Seaglass TH v1.1.3 use the verified Unicode mappings in `fonts/hack-font-provenance.json`; pixels, shadows, widths, and mapped composite glyphs are decoded directly from the selected ROM. Missing characters remain explicitly unavailable. This does not claim universal automatic extraction or identical composition across different game engines.
+
+For other ROMs, supply the graphics offset and encoding (Pokémon 2bpp or GBA 4bpp; linear or Pokémon JP block layout). Raw graphics and bounded GBA LZ77 type 0x10 are supported. The atlas lets you assign actual glyph images to Thai characters, choose a row region for separated marks, and specify advance widths. Without a width table, advance is an estimate from image bounds. Do not assign a precomposed syllable to a plain consonant. Unknown/compressed formats other than these require a dedicated decoder. There is no guessed Thai mapping or silent substitution with the default font.
+
+Review the preview and confirm before saving a preset. Partial presets clearly identify missing characters. The mapping JSON download records the ROM hash and decoding settings and can only be loaded for the same ROM; it is distinct from a font preset JSON. Presets persist locally and use the existing cloud sync when connected. Font placement still needs in-game verification, especially 12px scaling and stacked marks.
