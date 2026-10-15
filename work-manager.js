@@ -104,13 +104,13 @@ const WorkManager = (() => {
   $('workCancelCurrent').onclick = () => { const p=bridge().project(),t=TranslationTasks.active(p);if(t){TranslationTasks.finish(p,t.id,'cancelled');bridge().workChanged();} };
   $('workDrafts').onclick = () => { const p=bridge().project();$('workDraftRows').replaceChildren();for(const e of p?.entries||[])if(e.contextual&&e.contextual!==e.translation){const row=document.createElement('p');row.textContent='#'+e.id+' · '+e.category+' · '+e.contextual+' ';row.append(button('ไปแก้ร่าง',()=>{$('workDraftDialog').close();$('workDialog').close();window.RomTranslateBridge.goToEntry(e.id);$('importDraftPanel').open=true;}));$('workDraftRows').append(row);}$('workDraftDialog').showModal(); };
   $('workDraftClose').onclick = () => $('workDraftDialog').close();
-  async function syncConnected(){
+  async function syncConnected(onProgress=()=>{}){
     if(busy){queued=true;throw Error('กำลังบันทึกงาน กรุณารอสักครู่แล้วซิงก์อีกครั้ง');}
     busy=true;renderCurrent();
-    try{const scope=await FontCloud.workspaceScope();await listCloud();const current=bridge().project(),locals=await bridge().localWorkspaces();const rows=new Map(locals.map(p=>[p.workspaceId,p]));if(current){TranslationTasks.ensure(current);current.font=FontPresets.data();rows.set(current.workspaceId,current);}
-      const warnings=[];
-      for(const p of rows.values()){if(p.cloudSyncPaused||p.cloudScope&&p.cloudScope!==scope)continue;p.cloudAutosave=true;try{await upload(false,p);}catch(e){if(/รุ่นใหม่กว่า/.test(e.message)){warnings.push(e.message);continue;}throw e;}}
-      await listCloud();if(warnings.length)status(warnings[0]);
+    try{onProgress(0,'กำลังอ่านรายการโปรเจกต์');const scope=await FontCloud.workspaceScope();await listCloud();onProgress(10,'อ่านรายการโปรเจกต์บนคลาวด์แล้ว');const current=bridge().project(),locals=await bridge().localWorkspaces();const rows=new Map(locals.map(p=>[p.workspaceId,p]));if(current){TranslationTasks.ensure(current);current.font=FontPresets.data();rows.set(current.workspaceId,current);}
+      const warnings=[];let completed=0;const planned=[...rows.values()].filter(p=>!p.cloudSyncPaused&&(!p.cloudScope||p.cloudScope===scope));onProgress(20,'กำลังสำรอง '+planned.length+' โปรเจกต์');
+      for(const p of planned){if(p.cloudSyncPaused||p.cloudScope&&p.cloudScope!==scope)continue;p.cloudAutosave=true;try{await upload(false,p);}catch(e){if(/รุ่นใหม่กว่า/.test(e.message)){warnings.push(e.message);}else throw e;}onProgress(20+70*(++completed)/planned.length,'ตรวจการสำรอง '+completed+'/'+planned.length+' โปรเจกต์แล้ว');}
+      onProgress(95,'กำลังตรวจรายการโปรเจกต์ล่าสุด');await listCloud();onProgress(100,'ตรวจรายการโปรเจกต์ครบแล้ว');if(warnings.length)status(warnings[0]);
     }finally{busy=false;renderCurrent();if(queued){queued=false;schedule();}}
   }
   window.addEventListener('romtranslate:project-changed',e=>{renderCurrent();const p=bridge().project();if(!p)return;if(e.detail?.initial&&p.cloudRevision>0)sent.set(p.workspaceId,serialized(p).content);if(FontCloud.connected()&&!p.cloudSyncPaused){p.cloudAutosave=true;schedule();}});
