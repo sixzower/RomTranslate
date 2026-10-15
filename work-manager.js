@@ -65,7 +65,7 @@ const WorkManager = (() => {
       actions.append(button('เปิดไฟล์งานนี้', () => run(async () => {
         const result = await FontCloud.workspaceRequest('get', {p_id: item.workspace_id}); const saved = result?.[0];
         if (!saved?.payload) throw Error('ไม่พบไฟล์งานบนคลาวด์');
-        await bridge().loadWorkspace({...saved.payload, cloudRevision: Number(saved.revision),cloudScope:await FontCloud.workspaceScope(),cloudSyncPaused:false,lastCloudSavedAt:Date.parse(item.updated_at)||Date.now()}); $('workDialog').close();$('fontCloudDialog').close();$('cloudManageDialog').close();
+        const loaded=await bridge().loadWorkspace({...saved.payload, cloudRevision: Number(saved.revision),cloudScope:await FontCloud.workspaceScope(),cloudSyncPaused:false,lastCloudSavedAt:Date.parse(item.updated_at)||Date.now()});if(loaded===false)return; $('workDialog').close();$('fontCloudDialog').close();$('cloudManageDialog').close();
         status('เปิดไฟล์งานคลาวด์แล้ว ถ้ายังไม่ได้เปิด ROM ให้เลือก ROM ต้นฉบับเดียวกัน');
       })));
       const more=document.createElement('details'),moreTitle=document.createElement('summary');moreTitle.textContent='เพิ่มเติม';more.append(moreTitle);actions.append(more);more.append(button('ลบสำเนาคลาวด์', () => {
