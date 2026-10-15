@@ -1,4 +1,4 @@
-# RomTranslate 0.21.1
+# RomTranslate 0.21.2
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
@@ -218,3 +218,8 @@ Validated with the supplied Imperium ROM: responsive Day/Dark layout, category/s
 ### Interface polish (0.21.1)
 
 Rooms are named งานแปลเกม, สตูดิโอฟอนต์ and ทดลองเล่นเกม. Contextual AI generation and automatic contextual requests are removed; imported/persisted contextual drafts remain editable under ร่างคำแปลที่รอแก้ไข. Direct literal translation and the Excel AI instructions still work. Built-in labels describe the font appearance: ไทยคลาสสิก · Quetzal 8×16, ไทยเส้นคม · Sword 14px and ไทยเงานุ่ม · Seaglass 15px. Stable preset IDs and glyph pixels are preserved; custom preset names remain user-controlled. Progress bars use green in Day/Dark.
+
+
+### Font shadow discovery (0.21.2)
+
+API settings and browser API requests are removed. Literal translation prepares a copyable prompt; Excel instructions remain available. Game genre metadata lives with Excel export and is saved with the work file. Font shadows now have their own visible control row in สตูดิโอฟอนต์; เลือกฟอนต์ไทย → ปรับเงาฟอนต์ opens it directly. Changing shadows updates previews; save as a preset to apply to game builds.
