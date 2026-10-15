@@ -12,6 +12,7 @@ const WorkManager = (() => {
   function renderCurrent() {
     const p = bridge()?.project(), task = TranslationTasks.active(p);backupStatus(p);for(const button of document.querySelectorAll('#workCloudRows button'))button.disabled=busy;
     $('workBanner').hidden = !task || RomTranslateViews.current()!=='translation';
+    $('romWorkDownload').disabled=busy||!(p||bridge()?.pendingWorkspace());
     $('romCloudUpload').disabled=busy||!p||!FontCloud.connected();for(const id of ['romCloudRemove','romCloudCheck'])$(id).disabled=busy||!(p||bridge()?.pendingWorkspace())||!FontCloud.connected();
     $('workCloudRefresh').disabled = busy||!FontCloud.connected();
     if (task) { const s = TranslationTasks.stats(p, task); $('workBannerText').textContent = 'กำลังดูชุด: '+task.name + ` · แปลแล้ว ${s.done}/${s.total} · เหลือ ${s.remaining}`; }
@@ -40,6 +41,11 @@ const WorkManager = (() => {
         if (!saved?.payload||saved.payload.workspaceId!==item.workspace_id) throw Error('ไม่พบไฟล์งานคลาวด์ที่ตรงกับรายการ');
         const loaded=await bridge().loadWorkspace({...saved.payload, cloudRevision: Number(saved.revision),cloudScope:await FontCloud.workspaceScope(),cloudSyncPaused:false,lastCloudSavedAt:Date.parse(item.updated_at)||Date.now()});if(loaded===false)return; $('workDialog').close();$('fontCloudDialog').close();$('cloudManageDialog').close();
         status(bridge().pendingWorkspace()?'ยังไม่มี ROM ที่พร้อมใช้ · เลือก ROM ต้นฉบับเพื่อทำต่อ':'เปิดโปรเจกต์พร้อม ROM และคำแปลแล้ว');
+      })));
+      actions.append(button('ดาวน์โหลดชุดทำงานต่อ',()=>run(async()=>{
+        const result=await FontCloud.workspaceRequest('get',{p_id:item.workspace_id}),payload=result?.[0]?.payload;
+        if(!payload||payload.workspaceId!==item.workspace_id||payload.romHash!==item.rom_sha256)throw Error('ข้อมูล ROM ไม่ตรงกับโปรเจกต์ที่เลือก กรุณารีเฟรชรายการ');
+        status('กำลังจัดชุด ROM และไฟล์งานล่าสุด…');await RomCloud.saveWork(payload);status('ส่งชุดทำงานต่อให้เบราว์เซอร์แล้ว · แตก ZIP แล้วเปิด ROM และไฟล์สำรอง JSON');
       })));
       const more=document.createElement('details'),moreTitle=document.createElement('summary');moreTitle.textContent='เพิ่มเติม';more.append(moreTitle);actions.append(more);more.append(button('ลบสำเนาคลาวด์', () => {
         if (!confirm('ลบสำเนาคลาวด์ “' + item.name + '”? คำแปลในเครื่องและไฟล์ JSON ยังอยู่')) return;

@@ -397,3 +397,9 @@ Validation: real-ROM export/import and tolerant import tests, compact workbook/p
 Manual project opening now checks the local ROM cache and then the private cloud ROM copy before asking for an original ROM. ROM size and SHA-256 must match the workspace; cloud project responses must match the selected workspace ID. Current work is saved before switching. If no complete ROM exists, translations remain pending and the original-ROM banner explains what is required. The unused “จัดการงานและสำรองเพิ่มเติม” section and its controls are removed; automatic saving and backup status remain. Completion sounds retain their saved preference without requiring the removed checkbox.
 
 The browser/PostgreSQL test covers the actual 32 MB sample ROM: interrupted upload/resume, SHA validation, automatic resume, manual cloud opening on a fresh device, manual reopening from local cache without another download, and deletion of the cloud ROM while retaining translations.
+
+### Download a portable working set (0.32.2)
+
+“ดาวน์โหลดชุดทำงานต่อ” creates one ZIP containing the verified original GBA ROM, a workspace JSON, and short Thai reopening instructions. For the active workspace the snapshot includes current unsynced translations, selected font and target categories; other cloud cards use their saved workspace. ROM bytes come from the active ROM, a matching local cache, or the complete private cloud copy, with SHA-256 verification before packaging. Downloading does not switch projects or overwrite saved work. Reopen by extracting the ZIP, opening its GBA, then File → Open backup and selecting its JSON. A playable translated ROM remains available through File → Build game. The current-work button also works without a cloud connection.
+
+Browser tests check the actual ZIP, ROM hash, cloud workspace, unsynced local translation/font/targets, and restoring the downloaded pair in a fresh browser without login.
