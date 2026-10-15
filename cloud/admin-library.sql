@@ -30,7 +30,7 @@ $$;
 revoke all on function public.romtranslate_admin_password_matches(text,text) from public,anon,authenticated;
 create or replace function public.romtranslate_admin_login(p_password text,p_existing_code text default null)
 returns jsonb language plpgsql security definer set search_path=pg_catalog as $$
-declare settings public.romtranslate_admin_library%rowtype; a public.romtranslate_admin_attempts%rowtype; client_key text; headers jsonb; next_code text;
+declare settings public.romtranslate_admin_library%rowtype; a public.romtranslate_admin_attempts%rowtype; client_key text; headers jsonb; next_code text; source_hash text; vault_count integer; choices jsonb;
 begin
  headers:=coalesce(nullif(current_setting('request.headers',true),''),'{}')::jsonb;
  client_key:=encode(sha256(convert_to(coalesce(headers->>'cf-connecting-ip',headers->>'x-real-ip',split_part(headers->>'x-forwarded-for',',',1),'unknown'),'UTF8')),'hex');
@@ -54,7 +54,26 @@ begin
      next_code:=encode(sha256(convert_to(gen_random_uuid()::text||gen_random_uuid()::text,'UTF8')),'hex');
      insert into public.romtranslate_font_vaults(code_hash) values(encode(sha256(convert_to(next_code,'UTF8')),'hex'));
    else
-     return jsonb_build_object('error','link_required','message','ยืนยันรหัสนี้ที่เครื่องเดิมซึ่งเคยเชื่อมคลัง เพื่อผูกฟอนต์และไฟล์งานเดิมครั้งเดียว');
+     -- A valid admin can adopt an old code vault without needing its original browser.
+     -- Copy into a new shared vault; keep the original code and all rows working.
+     select count(*) into vault_count from public.romtranslate_font_vaults;
+     if p_existing_code ~ '^vault:[a-f0-9]{64}$' then
+       source_hash:=substring(p_existing_code from 7);
+       if not exists(select 1 from public.romtranslate_font_vaults where code_hash=source_hash) then
+         return jsonb_build_object('error','invalid_library','message','ไม่พบคลังที่เลือก กรุณาเข้าใช้อีกครั้ง');
+       end if;
+     elsif vault_count=1 then
+       select code_hash into source_hash from public.romtranslate_font_vaults;
+     else
+       select jsonb_agg(jsonb_build_object('id',v.code_hash,'fonts',(select count(*) from public.romtranslate_font_vault_entries f where f.code_hash=v.code_hash),'workspaces',(select count(*) from public.romtranslate_workspaces w where w.owner_key='code:'||v.code_hash),'created_at',v.created_at) order by v.created_at) into choices from public.romtranslate_font_vaults v;
+       return jsonb_build_object('error','choose_library','message','พบคลังเดิมหลายคลัง เลือกคลังที่จะใช้ครั้งเดียว ข้อมูลคลังอื่นยังอยู่','libraries',choices);
+     end if;
+     next_code:=encode(sha256(convert_to(gen_random_uuid()::text||gen_random_uuid()::text,'UTF8')),'hex');
+     insert into public.romtranslate_font_vaults(code_hash) values(encode(sha256(convert_to(next_code,'UTF8')),'hex'));
+     insert into public.romtranslate_font_vault_entries(code_hash,font_id,font)
+       select encode(sha256(convert_to(next_code,'UTF8')),'hex'),font_id,font from public.romtranslate_font_vault_entries where code_hash=source_hash;
+     insert into public.romtranslate_workspaces(owner_key,workspace_id,name,rom_sha256,payload,revision,updated_at)
+       select 'code:'||encode(sha256(convert_to(next_code,'UTF8')),'hex'),workspace_id,name,rom_sha256,payload,nextval('public.romtranslate_work_revision_seq'),updated_at from public.romtranslate_workspaces where owner_key='code:'||source_hash;
    end if;
    if auth.uid() is not null and p_existing_code is null then
      if to_regclass('public.romtranslate_font_library') is not null then

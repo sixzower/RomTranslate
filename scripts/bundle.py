@@ -7,8 +7,12 @@ font_sql = (root / 'cloud/font-code-library.sql').read_text().split('-- Only SQL
 admin_sql = '-- One-time shared admin setup. Preserves existing vaults, fonts and workspaces.\n' + font_sql + '\n' + (root / 'cloud/workspace-library.sql').read_text() + '\n' + (root / 'cloud/admin-library.sql').read_text()
 (root / 'cloud/admin-setup.sql').write_text(admin_sql)
 (root / 'admin-schema.js').write_text('/* One-time admin setup SQL; no plaintext password or private vault code. */\nconst AdminSchema=' + json.dumps(admin_sql, ensure_ascii=False) + ';\n')
+(root / 'cloud/admin-link-upgrade.sql').write_text('-- Upgrade old-vault adoption; run once in the same Supabase SQL Editor. Preserves all existing data and the admin password.\n' + (root / 'cloud/admin-library.sql').read_text())
 # Include only verified mappings, never the source ROM.
-(root / 'rom-font-profiles.js').write_text('/* Verified source mappings only; no ROM bytes. */\nconst RomFontProfiles=' + json.dumps(json.loads((root / 'fonts/hack-font-provenance.json').read_text()), ensure_ascii=False, separators=(',', ':')) + ';\nif(typeof module!=="undefined")module.exports=RomFontProfiles;\n')
+font_profiles = json.loads((root / 'fonts/hack-font-provenance.json').read_text())
+quetzal = json.loads((root / 'fonts/quetzal-font-provenance.json').read_text())
+font_profiles.append({'id':'quetzal-th-native','name':'Quetzal TH 1.0.3 — รูปต้นฉบับ','romSHA256':quetzal['sha256'],'graphicsBank':quetzal['bank'],'widthBank':'0x1daf600','count':1280,'nativeHeight':15,'mapping':{char:{'glyph':int(spec['glyph'],16),'region':spec.get('region'),'bank':quetzal['bank']} for char,spec in quetzal['extracted'].items()},'compositeMapping':{},'notes':'Native pixels, shadows and widths, without the adaptations or vertical shifts of the default font. Unmapped characters are not invented.'})
+(root / 'rom-font-profiles.js').write_text('/* Verified source mappings only; no ROM bytes. */\nconst RomFontProfiles=' + json.dumps(font_profiles, ensure_ascii=False, separators=(',', ':')) + ';\nif(typeof module!=="undefined")module.exports=RomFontProfiles;\n')
 html = (root / 'index.html').read_text()
 version = json.loads((root / 'package.json').read_text())['version']
 # Version local assets so deployed HTML cannot silently reuse an old app module.
