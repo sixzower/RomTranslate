@@ -7,7 +7,7 @@ const WorkManager = (() => {
   function button(label, action) { const b = document.createElement('button'); b.textContent = label; b.onclick = action; return b; }
   function time(value){return new Date(value).toLocaleString('th-TH',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:'Asia/Bangkok'});}
   function backupStatus(p){const local=$('localSaveStatus'),cloud=$('cloudSaveStatus'),badge=$('autosaveBadge');if(!p){local.textContent='ยังไม่ได้เปิดโปรเจกต์';cloud.textContent='ยังไม่ได้เปิดโปรเจกต์';badge.textContent='บันทึกงานอัตโนมัติ';return;}const pending=(p.lastLocalSavedChange||0)<(p.lastChangedAt||0);local.textContent=pending?'กำลังบันทึก…':p.lastLocalSavedAt?'บันทึกแล้ว · '+time(p.lastLocalSavedAt):'รอบันทึกครั้งแรก';badge.textContent=pending?'กำลังบันทึก…':p.lastLocalSavedAt?'บันทึกแล้ว '+new Date(p.lastLocalSavedAt).toLocaleTimeString('th-TH',{timeZone:'Asia/Bangkok'}):'บันทึกงานอัตโนมัติ';badge.title=local.textContent;
-    const suffix=p.lastCloudSavedAt?' · ล่าสุด '+time(p.lastCloudSavedAt):'';cloud.textContent=p.cloudSyncPaused?'หยุดสำรองงานนี้'+suffix:!FontCloud.connected()?'รอเชื่อมคลังส่วนตัว'+suffix:(p.cloudSavedChange||0)<(p.lastChangedAt||0)?'มีการแก้ไข รอสำรอง'+suffix:p.lastCloudSavedAt?'สำรองแล้ว'+suffix:'ยังไม่ได้สำรอง';
+    const suffix=p.lastCloudSavedAt?' · ล่าสุด '+time(p.lastCloudSavedAt):'';cloud.textContent=p.cloudDeletePending?'รอตรวจผลลบสำเนา · หยุดสำรองชั่วคราว':p.cloudSyncPaused?'หยุดสำรองงานนี้'+suffix:!FontCloud.connected()?'รอเชื่อมคลังส่วนตัว'+suffix:(p.cloudSavedChange||0)<(p.lastChangedAt||0)?'มีการแก้ไข รอสำรอง'+suffix:p.lastCloudSavedAt?'สำรองแล้ว'+suffix:'ยังไม่ได้สำรอง';
   }
   function renderCurrent() {
     const p = bridge()?.project(), task = TranslationTasks.active(p);backupStatus(p);for(const button of document.querySelectorAll('#workCloudRows button'))button.disabled=busy;
@@ -28,7 +28,7 @@ const WorkManager = (() => {
   }
   async function run(action) {
     if (busy){status('กำลังจัดการโปรเจกต์ กรุณารอสักครู่');return;} busy = true; renderCurrent();
-    try { await action(); } catch (e) { status(e.message);if(!/รุ่นใหม่กว่า/.test(e.message))FontCloud.reportError(e.message);if($('workDialog').open)window.UiShell?.notify(e.message,true); }
+    try { await action(); } catch (e) { status(e.message);if(e.networkFailure)FontCloud.reportError(e.message);if($('workDialog').open)window.UiShell?.notify(e.message,true); }
     finally { busy = false; renderCurrent(); if (queued) { queued = false; schedule(); } }
   }
   async function listCloud() {
@@ -39,7 +39,7 @@ const WorkManager = (() => {
       actions.append(button('เปิดไฟล์งานนี้', () => run(async () => {
         const result = await FontCloud.workspaceRequest('get', {p_id: item.workspace_id}); const saved = result?.[0];
         if (!saved?.payload||saved.payload.workspaceId!==item.workspace_id) throw Error('ไม่พบไฟล์งานคลาวด์ที่ตรงกับรายการ');
-        const loaded=await bridge().loadWorkspace({...saved.payload, cloudRevision: Number(saved.revision),cloudScope:await FontCloud.workspaceScope(),cloudSyncPaused:false,lastCloudSavedAt:Date.parse(item.updated_at)||Date.now()});if(loaded===false)return; $('workDialog').close();$('fontCloudDialog').close();$('cloudManageDialog').close();
+        const loaded=await bridge().loadWorkspace({...saved.payload, cloudRevision: Number(saved.revision),cloudScope:await FontCloud.workspaceScope(),cloudSyncPaused:false,cloudDeletePending:false,lastCloudSavedAt:Date.parse(item.updated_at)||Date.now()});if(loaded===false)return; $('workDialog').close();$('fontCloudDialog').close();$('cloudManageDialog').close();
         status(bridge().pendingWorkspace()?'ยังไม่มี ROM ที่พร้อมใช้ · เลือก ROM ต้นฉบับเพื่อทำต่อ':'เปิดโปรเจกต์พร้อม ROM และคำแปลแล้ว');
       })));
       actions.append(button('ดาวน์โหลดชุดทำงานต่อ',()=>run(async()=>{
@@ -49,7 +49,19 @@ const WorkManager = (() => {
       })));
       const more=document.createElement('details'),moreTitle=document.createElement('summary');moreTitle.textContent='เพิ่มเติม';more.append(moreTitle);actions.append(more);more.append(button('ลบสำเนาคลาวด์', () => {
         if (!confirm('ลบสำเนาคลาวด์ “' + item.name + '”? คำแปลในเครื่องและไฟล์ JSON ยังอยู่')) return;
-        run(async () => { const p = bridge().project();try{await FontCloud.workspaceRequest('delete', {p_id:item.workspace_id,p_expected:Number(item.revision)});}catch(e){if(/Workspace version conflict/.test(e.message)){await listCloud();throw Error('ไฟล์งานนี้มีรุ่นใหม่กว่า รีเฟรชรายการแล้ว ตรวจรายการล่าสุดก่อนกดลบอีกครั้ง');}throw e;}if (p?.workspaceId === item.workspace_id) {p.cloudAutosave=false;p.cloudSyncPaused=true;bridge().workChanged();}await bridge().storeCloudState(item.workspace_id,{cloudRevision:0,cloudSyncPaused:true,cloudAutosave:false,lastCloudSavedAt:0,cloudSavedChange:0});sent.delete(item.workspace_id);await listCloud(); status('ลบสำเนาคลาวด์แล้ว งานในเครื่องยังอยู่'); });
+        run(async()=>{
+          status('กำลังลบสำเนาโปรเจกต์…');
+          const scope=await FontCloud.workspaceScope(),p=bridge().project();
+          if(p?.workspaceId===item.workspace_id)clearTimeout(timer);
+          await bridge().storeCloudState(item.workspace_id,{cloudAutosave:false,cloudSyncPaused:true,cloudDeletePending:true});
+          const request=async(action,args)=>{if(await FontCloud.workspaceScope()!==scope)throw Error('คลังเปลี่ยนระหว่างลบ กรุณาเปิดรายการใหม่');return FontCloud.workspaceRequest(action,args);};
+          try{await WorkspaceDelete.remove(item,request,status);}catch(e){if(/Workspace version conflict/.test(e.message)){try{await listCloud();}catch{}throw Error('โปรเจกต์มีรุ่นใหม่กว่า รีเฟรชก่อนลบอีกครั้ง · หยุดสำรองเพื่อไม่ทับงาน');}throw e;}
+          sent.delete(item.workspace_id);
+          await bridge().storeCloudState(item.workspace_id,{cloudRevision:0,cloudSyncPaused:true,cloudAutosave:false,cloudDeletePending:false,lastCloudSavedAt:0,cloudSavedChange:0});
+          for(const card of $('workCloudRows').children)if(card.dataset.workspaceId===item.workspace_id)card.remove();
+          try{await listCloud();}catch(e){if(e.networkFailure)FontCloud.reportError(e.message);status('ลบสำเนาคลาวด์แล้ว แต่รีเฟรชรายการไม่ได้ · งานในเครื่องยังอยู่');return;}
+          status('ลบสำเนาคลาวด์แล้ว งานในเครื่องยังอยู่');
+        });
       }));
       $('workCloudRows').append(row);
     }
@@ -68,7 +80,7 @@ const WorkManager = (() => {
     const result=await FontCloud.workspaceRequest('get',{p_id:item.workspace_id}),saved=result?.[0];
     if(!guard())return;
     if(!saved?.payload||saved.payload.workspaceId!==item.workspace_id)throw Error('ไม่พบไฟล์งานคลาวด์ที่ตรงกับรายการ');
-    const payload={...saved.payload,cloudRevision:Number(saved.revision),cloudScope:scope,cloudAutosave:true,cloudSyncPaused:false,lastCloudSavedAt:Date.parse(item.updated_at)||Date.now(),cloudSavedChange:saved.payload.lastChangedAt||0};
+    const payload={...saved.payload,cloudRevision:Number(saved.revision),cloudScope:scope,cloudAutosave:true,cloudSyncPaused:false,cloudDeletePending:false,lastCloudSavedAt:Date.parse(item.updated_at)||Date.now(),cloudSavedChange:saved.payload.lastChangedAt||0};
     let cloudBytes=null;if(window.RomCloud&&!current){const cached=await bridge().cachedRom(payload.romHash).catch(()=>null);if(!cached?.bytes)cloudBytes=await RomCloud.forResume(payload);if(!guard())return;}if(await bridge().autoResumeWorkspace(payload,guard,cloudBytes)){resumedScopes.add(scope);status('ดึงโปรเจกต์ล่าสุดแล้ว · '+(payload.workspaceName||payload.title));}
   }
   function serialized(p) { const payload = TranslationTasks.portable(p); delete payload.cloudRevision; return {payload, content:JSON.stringify(payload)}; }
@@ -88,7 +100,7 @@ const WorkManager = (() => {
     try { revision = Number(await FontCloud.workspaceRequest('put', {p_id:p.workspaceId,p_expected:p.cloudRevision || 0,p_payload:payload})); }
     catch (e) { if (/Workspace version conflict/.test(e.message)) { p.cloudAutosave = false;p.cloudSyncPaused=true;await bridge().storeCloudState(p.workspaceId,{cloudAutosave:false,cloudSyncPaused:true}); throw Error('อีกเครื่องมีไฟล์งานรุ่นใหม่กว่า หยุดซิงก์เพื่อไม่ทับข้อมูล ดาวน์โหลด JSON ของเครื่องนี้ไว้ แล้วรีเฟรชรายการและเปิดฉบับคลาวด์ก่อน'); } throw e; }
     if (!Number.isSafeInteger(revision) || revision < 1) throw Error('เวอร์ชันไฟล์งานตอบกลับไม่ถูกต้อง');
-    sent.set(p.workspaceId, content);p.cloudRevision=revision;await bridge().storeCloudState(p.workspaceId,{cloudScope:scope,cloudRevision:revision,cloudAutosave:true,cloudSyncPaused:false,lastCloudSavedAt:Date.now(),cloudSavedChange:changedAt});
+    sent.set(p.workspaceId, content);p.cloudRevision=revision;await bridge().storeCloudState(p.workspaceId,{cloudScope:scope,cloudRevision:revision,cloudAutosave:true,cloudSyncPaused:false,cloudDeletePending:false,lastCloudSavedAt:Date.now(),cloudSavedChange:changedAt});
     status('บันทึกคลาวด์แล้ว · รุ่น ' + revision + ' · ' + new Date().toLocaleTimeString('th-TH',{timeZone:'Asia/Bangkok'}));
     if ($('workDialog').open)await listCloud();
   }
