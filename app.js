@@ -119,7 +119,7 @@ function bottomDock({box,grip,toggle,content,key,initial,min,max,collapsedHeight
  handle.onkeydown=e=>{if(['ArrowUp','ArrowDown','Home','End','Enter',' '].includes(e.key)){e.preventDefault();e.stopPropagation();if(e.key==='Enter'||e.key===' ')toggleDock();else{const shown=collapsed?collapsedHeight:height;const target=e.key==='Home'?collapsedHeight:e.key==='End'?ceiling():shown+(e.key==='ArrowUp'?20:-20);collapsed=target<min;height=Math.max(min,target);renderDock(true);}}};window.addEventListener('resize',()=>renderDock());renderDock();
 }
 bottomDock({box:'previewDock',grip:'previewResize',toggle:'previewToggle',content:'previewContent',key:'romtranslate.previewDock',initial:180,min:100,max:500,collapsedHeight:32});
-bottomDock({box:'statusDock',grip:'statusResize',toggle:'statusToggle',key:'romtranslate.statusDock',initial:23,min:20,max:60,collapsedHeight:12});
+bottomDock({box:'statusDock',grip:'statusResize',toggle:'statusToggle',key:'romtranslate.statusDock',initial:24,min:24,max:28,collapsedHeight:12});
 
 for(const button of document.querySelectorAll("[data-category]"))button.onclick=()=>{$("categoryFilter").value=button.dataset.category;progressOnly=false;pageIndex=0;renderList();rememberWorkView();};
 
