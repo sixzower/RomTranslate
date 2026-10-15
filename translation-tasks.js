@@ -15,11 +15,14 @@ const TranslationTasks = (() => {
   function validOptions(o) {
     return o && ['single', 'ranges', 'batches'].includes(o.mode) && ['start', 'count', 'size'].every(k => Number.isSafeInteger(Number(o[k])) && Number(o[k]) >= 1 && Number(o[k]) <= 100000) && text(o.ranges, 4000) && typeof o.all === 'boolean';
   }
+  function validView(v){return v&&text(v.category,200)&&text(v.search,10000)&&['all','source','translation'].includes(v.searchField)&&typeof v.untranslated==='boolean'&&Number.isSafeInteger(v.position)&&v.position>=192&&Number.isSafeInteger(v.page)&&v.page>=0&&v.page<=100000;}
   function active(p) { return p?.workTasks?.find(t => t.id === p.activeWorkTask && t.status === 'active') || null; }
   function hydrate(p, saved) {
     if (!valid(saved.workTasks) || saved.workspaceId !== undefined && !uuid(saved.workspaceId) || saved.workspaceName !== undefined && !text(saved.workspaceName, 100)) throw Error('ข้อมูลไฟล์งาน / งานค้างไม่ถูกต้อง');
     const ids = new Set(p.entries.filter(e => e.verified).map(e => e.id));
     if (saved.workTasks?.some(t => t.entryIds.some(id => !ids.has(id)))) throw Error('งานค้างมีรหัสข้อความที่ไม่ตรงกับ ROM');
+    for(const key of ['lastChangedAt','lastLocalSavedAt','lastLocalSavedChange','lastCloudSavedAt','cloudSavedChange','lastExportedAt'])p[key]=Number.isFinite(saved[key])&&saved[key]>=0?saved[key]:undefined;
+    p.viewState=validView(saved.viewState)?structuredClone(saved.viewState):undefined;
     p.workTasks = structuredClone(saved.workTasks || []);
     p.workspaceId = saved.workspaceId || crypto.randomUUID();
     p.workspaceName = saved.workspaceName?.trim() || p.title.replace(/\.gba$/i, '').slice(0,100);
@@ -66,7 +69,7 @@ const TranslationTasks = (() => {
     if (!edited.length) edited.push(p.entries.find(e => e.verified) || p.entries[0]);
     return {workspaceFormat: 'RomTranslate workspace v1', version: 2, title: p.title, romHash: p.romHash,
       workspaceId: p.workspaceId, workspaceName: p.workspaceName, cloudScope:p.cloudScope, cloudRevision:p.cloudRevision||0, cloudAutosave: p.cloudAutosave === true,cloudSyncPaused:p.cloudSyncPaused===true,
-      glossary: p.glossary || '', genre: p.genre || '', font: structuredClone(p.font),
+      viewState:validView(p.viewState)?structuredClone(p.viewState):undefined,glossary: p.glossary || '', genre: p.genre || '', font: structuredClone(p.font),
       progressCategories: p.progressCategories?.slice(), workTasks: structuredClone(p.workTasks), activeWorkTask: p.activeWorkTask || null,
       entries: edited.map(e => ({id: e.id, romOffset: e.romOffset, source: e.source, translation: e.translation || '', speaker: e.speaker || '', literal: e.literal || '', contextual: e.contextual || '', translationChoice: e.translationChoice || ''})),
       history: structuredClone(p.history)};

@@ -1,4 +1,4 @@
-# RomTranslate 0.22.0
+# RomTranslate 0.23.0
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
@@ -236,3 +236,48 @@ Automatic writes retain optimistic revisions. A stale local copy pauses on confl
 All dialogs include an X. Existing close/cleanup actions are reused; audit and Excel import support cancellation, while non-cancellable stages acknowledge that they must finish first. Every progress bar has a numeric 0–100% label. Excel decompression holds its last known milestone rather than inventing progress.
 
 Validated with mocked private-code and email backends: shared login, archived/current autosave, two-device listing/open/edit, fonts, conflicts, deletion/reload, outage/retry, neon states and logout. Browser integration checks cover safe X cancellation and no partial Excel import. Live Supabase credentials are not available in this workspace.
+
+
+### Multi-row keep-source (0.22.1)
+
+English table cells support Ctrl/Cmd-click to toggle individual rows, Shift-click to select a contiguous range in the full filtered order (including across pages), and pointer drag to select a range. Ctrl/Cmd adds a dragged range to the existing selection. Plain clicks still copy the English source; modified clicks and drags do not copy. Switching filters drops hidden selections, and project changes clear them. Escape from an English cell clears selection. Thai editing selects its own row.
+
+A compact **คงต้นฉบับ / แปลแล้ว** button sits at the right of the category translation count, with an explicit selected-row count. It applies original text and keep-source flags to eligible selected canonical entries only, as one undo/redo operation. Control tokens remain unchanged. Replacing an existing non-source translation requires confirmation; read-only/unverified rows cannot be marked. Progress, saved work and automatic cloud synchronization use the existing change path.
+
+Browser validation: `node tests/row-selection.cjs ORIGINAL_ROM` (test server port 5176; optional `TEST_URL` exercises the standalone release). Checks normal clipboard behavior, Ctrl/Shift and cross-page ordering, real pointer dragging, filter pruning, batch status/progress, atomic undo/redo, overwrite cancellation, exact control-code preservation and responsive layout.
+
+
+## Admin login and translation targets (0.23.0)
+
+The tabs are งานแปล, ทดสอบระบบ and สตูดิโอฟอนต์. Shadows return to a normal toolbar selector. Direct AI translation helpers and API settings are removed; old literal/contextual drafts remain editable, and Excel AI instructions are preserved. Multi-row keep-source selection is described above.
+
+The shared library now asks only for an admin password. The owner's supplied Supabase Project URL and publishable key are in `cloud-config.js`; these are public client settings. No admin password is embedded in browser code or saved in browser storage. `cloud/admin-setup.sql` installs both existing library backends and the admin login endpoint, retaining all existing vaults and workspaces. The chosen password is seeded as a bcrypt hash; rerunning setup does not reset it or relink a vault. The title-bar library dialog has ติดตั้งระบบครั้งแรก → คัดลอก SQL ติดตั้งระบบ and a SQL Editor link. Run it once with Supabase administrator access. A public/publishable key cannot install SQL.
+
+After SQL installation, enter the admin password once on the original browser/device: its existing private code links the same library without deleting fonts/work. Subsequent devices need only the admin password. If there are no existing vaults, the first successful login creates one. Existing account sessions can migrate their own library using the verified JWT. Wrong passwords never disclose a vault code; private tables deny anonymous direct access, and failed attempts are rate-limited. A returned private code acts as the existing remembered session; sign-out removes it.
+
+A category omitted from เลือกเป้าหมาย displays **ไม่แปลส่วนนี้** in its table rows and editor heading. Existing translations are preserved; reselecting the category restores its actual translated/untranslated status. The ยังไม่แปล filter and progress totals consider target categories only. This does not delete or rewrite translations outside the plan.
+
+Tests: `tests/admin-sql.cjs` uses actual PostgreSQL/pgcrypto via PGlite for permissions, bcrypt, linking, rate limits, migration repeatability and extension-schema compatibility. `tests/admin-login-ui.cjs` tests the one-field login, error/install instructions and existing-code upgrade with mocked transport. `tests/unified-cloud.cjs` now uses admin login while retaining two-device cloud checks. `tests/translation-scope.cjs` tests excluded statuses and preserved text; `tests/row-selection.cjs` tests bulk actions. Both online and bundled HTML were exercised. Live Supabase API access from this worker is blocked by its outbound proxy; the owner must run the one-time SQL in the real project's SQL Editor.
+
+
+### Simple autosave, reopening and remaining overview
+
+Saving is always automatic. The toolbar shows whether a local write is pending or complete. **โปรเจกต์ของฉัน** separates local-save, cloud-backup and JSON-export timestamps; a successful local save never claims a cloud backup succeeded. Cloud timestamps advance after an acknowledged write, and pending/conflicted/disconnected states remain distinct. JSON exports are optional backups, with their initiation time recorded separately. They are not required to continue ordinary editing.
+
+On the same browser/device the verified original ROM is cached in IndexedDB under a separate ROM key; closing/reopening resumes the latest work, selected category, search and editing position without choosing a ROM again. ROM cache bytes never enter portable JSON, cloud payloads or the shipped HTML. If browser storage is unavailable/full, translation saving still works when possible and the UI requests the original ROM on reopening. A new device uses the cloud work file plus its original ROM. Local project deletion removes its resume marker.
+
+Advanced frozen work sets live under **แบ่งงานเป็นชุด (ไม่จำเป็น)**. **สำรอง / ย้ายเครื่องด้วยไฟล์** contains the optional JSON download. Existing task filters can be paused to return to the whole project, without deleting any translations.
+
+**ภาพรวมที่ยังไม่แปล** shows category/family totals and per-category percentages exclusively from selected translation targets. It omits completed categories by default and can reveal them on request. Its detail buttons open target-only untranslated rows and pause any narrower frozen work-set filter so the counts match. Navigation labels are หน้าแรก (jumps to page 1) and หน้าถัดไป.
+
+Browser tests in `tests/work-resume-overview.cjs` cover a real-ROM reload and a new tab, restored text/filter/position, backup timestamps and optional download, target-only overview and first/next behavior on both web and standalone.
+
+
+### Excel remaining-only export and build help
+
+Excel export defaults to **ข้ามข้อความที่แปลแล้ว** and omits both final translations and explicit keep-source entries. The dialog shows the remaining count and how many rows were skipped. Uncheck it to export the original filtered snapshot. With remaining-only export, ordinal 1 refers to the first remaining entry at dialog-open time; starting at 1 again after an import avoids skipped work. All ranges in a single export use one frozen snapshot, and import identities remain canonical.
+
+สร้างไฟล์เกม is in **ไฟล์ → ไฟล์เกม**. Validation errors that identify a ROM offset include a short fix explanation and **ไปแก้ข้อความนี้**, which navigates to the exact canonical entry and pauses a narrower work-set filter when needed. A 4/3-line error means shortening the translation/removing empty lines until it fits three lines; adding line breaks alone does not fix it. Byte, width, control-token and font errors have their own guidance. ROM validation remains mandatory. `tests/export-build-help.cjs` verifies real XLSX exclusion and reproduces/fixes the user's item-description error at $6C4C90 before successfully building a ROM.
+
+
+Canonical message IDs and ROM offsets are visible again before the category column by default, and prefix the editor heading. The advanced แสดง ID / ตำแหน่ง ROM toggle can still hide them. IDs/offsets were never removed from project or Excel data.

@@ -4,7 +4,7 @@ Source updates go to sixzower/RomTranslate main. The user has enabled Pages with
 
 Site: https://sixzower.github.io/RomTranslate/
 
-After pushing, let the Pages build finish. The footer should show version 0.22.0. Refresh without cache if old assets are visible. The browser game tester's first visit can reload once to enable its worker runtime.
+After pushing, let the Pages build finish. The footer should show version 0.23.0. Refresh without cache if old assets are visible. The browser game tester's first visit can reload once to enable its worker runtime.
 
 `download/index.html` is the self-contained editing/Excel release, containing no ROM and no API credentials. On GitHub, open it and use Download raw file to save index.html. Its game-test tab opens the live site because the threaded emulator requires browser headers/service workers unavailable on file URLs.
 
@@ -21,3 +21,6 @@ Vendored emulator/library assets and coi-serviceworker.js must be deployed with 
 The script queries Pages and the identified deployment, cancels only a pending deployment through the same POST Pages cancellation endpoint used by actions/deploy-pages, waits for cancellation to complete, then inspects the latest managed Pages workflow. It retries failed jobs only if that latest run is completed/failed; queued/running or successful jobs are left alone. Unrelated workflows and Pages settings are not changed, and the site is never unpublished. The Actions summary records the actual result. A successful repair run alone does not prove the later Pages publish completed.
 
 Direct GitHub API/Pages requests from the Codex environment returned HTTP 403 during this investigation, so live status must be checked on the GitHub runner. Local tests use mocked API states.
+
+
+Admin-only library login uses the public client configuration in cloud-config.js. Before the first real admin login, run cloud/admin-setup.sql once in the supplied Supabase project. Enter the password on the original browser to retain its existing vault. Public API keys cannot perform this SQL installation; no live database migration was executed by the worker.
