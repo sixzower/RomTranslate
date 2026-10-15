@@ -281,3 +281,5 @@ Excel export defaults to **ข้ามข้อความที่แปล�
 
 
 Canonical message IDs and ROM offsets are visible again before the category column by default, and prefix the editor heading. The advanced แสดง ID / ตำแหน่ง ROM toggle can still hide them. IDs/offsets were never removed from project or Excel data.
+
+Excel export always intersects the current filter or saved work set with the selected translation target categories. Categories marked “ไม่แปลส่วนนี้” are excluded even when exporting a parent category or disabling the untranslated-only option. The export dialog shows the excluded count.
