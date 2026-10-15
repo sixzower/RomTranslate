@@ -376,7 +376,7 @@ The viewport overflow lock introduced in 0.29.1 is removed so content can remain
 
 ### Concise Excel prompt and explicit import outcomes (0.31)
 
-The export prompt is about 1,800 characters before optional ROM/scope/batch context. It keeps original-file/row IDs, existing/keep-source values, glossary consistency, dialogue context/pronouns, exact control codes, screen limits, plain-text cells, and real XLSX delivery. Prompt sheet, Instructions and the copy button share the same text.
+The export prompt is about 1,800 characters before optional ROM/scope/batch context. It keeps original-file/row IDs, existing/keep-source values, glossary consistency, dialogue context/pronouns, exact control codes, screen limits, plain-text cells, and real XLSX delivery. Prompt sheet and the copy button share the same text; Instructions links to Prompt!A3.
 
 Import recognizes explicitly named English/Thai column aliases, header rows within the first 30 rows, renamed or multiple data sheets, comma-grouped numeric entry IDs, numeric/hex ROM offsets, uppercase hashes, rich text and hyperlink display labels. An additional “คำแปลไทย” column is read if the original translation column is empty; differing nonempty translation columns are reported as ambiguous rather than guessed. Matching duplicate rows/sheets are consolidated, including an empty original table plus a translated copy. Missing row hash columns may use the explicit SHA-256 in Instructions; foreign hashes still block the selection. Entry ID + ROM offset + unchanged source must all match the loaded ROM. No fuzzy source/row-order matching is used.
 
@@ -385,3 +385,9 @@ Review can apply exact valid rows while explicitly excluding unmatched rows. A m
 ### Remove dedicated translation recovery (0.31.1)
 
 The recently added recovery button/dialog, workspace-recovery module and automatic recovery archive creation are removed. Existing local data and previously created recovery records are left untouched; they are not uploaded or enumerated as workspaces. Ordinary autosave, undo/history, Excel import and the protection against automatic blank cloud replacement remain available. Manual replacement confirmation no longer claims a recovery archive will be created.
+
+### Streamlined Excel export (0.32.0)
+
+The full AI prompt exists only at Prompt!A3 and the category counts are in Instructions; the redundant category worksheet is removed. Glossary is included only when supplied and splits real newlines. All 13 data columns, ROM hash metadata and batch ranges remain compatible. Translation cells for empty, non-keep-source rows are yellow and unlocked; identity/source fields and existing translations are locked with password-free sheet protection to reduce accidental edits. This is an editing aid, not a security boundary; import identity/control validation remains authoritative. The prompt requires unchanged row counts and exact control codes, preserves existing work, and distinguishes real newlines from literal backslash-n codes.
+
+Validation: real-ROM export/import and tolerant import tests, compact workbook/protection/glossary roundtrip, and browser clipboard/download/batch selection checks.
