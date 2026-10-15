@@ -5,10 +5,11 @@ from html import escape
 root = Path(__file__).resolve().parent.parent
 # Keep one-time admin SQL and its copyable browser version synchronized.
 font_sql = (root / 'cloud/font-code-library.sql').read_text().split('-- Only SQL Editor/admin can create a vault;')[0]
-admin_sql = '-- One-time shared admin setup. Preserves existing vaults, fonts and workspaces.\n' + font_sql + '\n' + (root / 'cloud/workspace-library.sql').read_text() + '\n' + (root / 'cloud/admin-library.sql').read_text()
+admin_sql = '-- One-time shared admin setup. Preserves existing vaults, fonts and workspaces.\n' + font_sql + '\n' + (root / 'cloud/workspace-library.sql').read_text() + '\n' + (root / 'cloud/admin-library.sql').read_text() + '\n' + (root / 'cloud/rom-library.sql').read_text()
 (root / 'cloud/admin-setup.sql').write_text(admin_sql)
 (root / 'admin-schema.js').write_text('/* One-time admin setup SQL; no plaintext password or private vault code. */\nconst AdminSchema=' + json.dumps(admin_sql, ensure_ascii=False) + ';\n')
 (root / 'cloud/admin-link-upgrade.sql').write_text('-- Upgrade old-vault adoption; run once in the same Supabase SQL Editor. Preserves all existing data and the admin password.\n' + (root / 'cloud/admin-library.sql').read_text())
+(root / 'rom-cloud-schema.js').write_text('const RomCloudSchema=' + json.dumps((root / 'cloud/rom-library.sql').read_text(), ensure_ascii=False) + ';\n')
 # Include only verified mappings, never the source ROM.
 font_profiles = json.loads((root / 'fonts/hack-font-provenance.json').read_text())
 quetzal = json.loads((root / 'fonts/quetzal-font-provenance.json').read_text())
@@ -28,7 +29,7 @@ css = css.replace("url('fonts/Prompt-Regular.ttf')", "url('data:font/ttf;base64,
 css = re.sub(r"@import url\([^;]+;\s*", '', css, count=1)
 js = (root / 'app.js').read_text().replace('</script', '<\\/script')
 html = re.sub(r'<link rel="stylesheet" href="style\.css(?:\?[^"]*)?">', lambda _: '<style>' + css + '</style>', html)
-for name in ('theme.js', 'vendor/exceljs.min.js', 'imperium-profile.js', 'game-font.js', 'rom-core.js', 'legacy-glyph-map.js', 'pixel-font.js', 'history.js', 'quality.js', 'xlsx-loader.js', 'sheet.js', 'bundled-fonts.js', 'font-presets.js', 'progress.js', 'translation-tasks.js', 'views.js', 'font-editor.js', 'sheet-batches.js', 'rom-patch.js', 'sheet-import-batch.js', 'sheet-progress.js', 'ui-operations.js', 'app.js', 'patch-ui.js', 'cloud-config.js', 'admin-schema.js', 'font-cloud.js', 'workspace-schema.js', 'work-manager.js', 'rom-font-profiles.js', 'rom-font.js', 'rom-font-ui.js', 'ui-shell.js', 'row-selection.js', 'remaining-overview.js'):
+for name in ('theme.js', 'vendor/exceljs.min.js', 'imperium-profile.js', 'game-font.js', 'rom-core.js', 'legacy-glyph-map.js', 'pixel-font.js', 'history.js', 'quality.js', 'xlsx-loader.js', 'sheet.js', 'bundled-fonts.js', 'font-presets.js', 'progress.js', 'translation-tasks.js', 'views.js', 'font-editor.js', 'sheet-batches.js', 'rom-patch.js', 'sheet-import-batch.js', 'sheet-progress.js', 'ui-operations.js', 'app.js', 'patch-ui.js', 'cloud-config.js', 'admin-schema.js', 'font-cloud.js', 'workspace-schema.js', 'work-manager.js', 'rom-cloud-schema.js', 'rom-cloud.js', 'rom-font-profiles.js', 'rom-font.js', 'rom-font-ui.js', 'ui-shell.js', 'row-selection.js', 'remaining-overview.js'):
     js = (root / name).read_text().replace('</script', '<\\/script')
     html = re.sub(r'<script src="' + re.escape(name) + r'(?:\?[^"]*)?"></script>', lambda _: '<script>' + js + '</script>', html)
 html = html.replace('</body>', '<template id="prompt-font-license"><pre>' + escape('\n'.join(line.rstrip() for line in (root / 'fonts/Prompt-OFL.txt').read_text().splitlines())) + '</pre></template></body>')
