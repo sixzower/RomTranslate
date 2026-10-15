@@ -53,21 +53,21 @@ const WorkManager = (() => {
     const rows = await FontCloud.workspaceRequest('list'); if (!Array.isArray(rows)) throw Error('อ่านรายการไฟล์งานไม่สำเร็จ');
     $('workCloudRows').replaceChildren();
     for (const item of rows) {
-      const row = document.createElement('p');row.dataset.workspaceId=item.workspace_id; row.textContent = `${item.name} · งานค้าง ${item.pending_tasks} · ${new Date(item.updated_at).toLocaleString('th-TH',{timeZone:'Asia/Bangkok'})} `;
-      row.append(button('เปิดไฟล์งานนี้', () => run(async () => {
+      const row = document.createElement('article');row.className='project-card';row.dataset.workspaceId=item.workspace_id;const info=document.createElement('div'),title=document.createElement('strong'),meta=document.createElement('small');title.textContent=item.name;meta.textContent='อัปเดต '+time(item.updated_at)+(Number(item.pending_tasks)>0?' · '+Number(item.pending_tasks)+' ชุดงานค้าง':'');info.className='project-card-info';info.append(title,meta);row.append(info);const actions=document.createElement('div');actions.className='project-card-actions';row.append(actions);
+      actions.append(button('เปิดไฟล์งานนี้', () => run(async () => {
         const result = await FontCloud.workspaceRequest('get', {p_id: item.workspace_id}); const saved = result?.[0];
         if (!saved?.payload) throw Error('ไม่พบไฟล์งานบนคลาวด์');
         await bridge().loadWorkspace({...saved.payload, cloudRevision: Number(saved.revision),cloudScope:await FontCloud.workspaceScope(),cloudSyncPaused:false,lastCloudSavedAt:Date.parse(item.updated_at)||Date.now()}); $('workDialog').close();$('fontCloudDialog').close();$('cloudManageDialog').close();
         status('เปิดไฟล์งานคลาวด์แล้ว ถ้ายังไม่ได้เปิด ROM ให้เลือก ROM ต้นฉบับเดียวกัน');
       })));
-      row.append(button('ลบสำเนาคลาวด์', () => {
+      const more=document.createElement('details'),moreTitle=document.createElement('summary');moreTitle.textContent='เพิ่มเติม';more.append(moreTitle);actions.append(more);more.append(button('ลบสำเนาคลาวด์', () => {
         if (!confirm('ลบสำเนาคลาวด์ “' + item.name + '”? คำแปลในเครื่องและไฟล์ JSON ยังอยู่')) return;
         run(async () => { const p = bridge().project();try{await FontCloud.workspaceRequest('delete', {p_id:item.workspace_id,p_expected:Number(item.revision)});}catch(e){if(/Workspace version conflict/.test(e.message)){await listCloud();throw Error('ไฟล์งานนี้มีรุ่นใหม่กว่า รีเฟรชรายการแล้ว ตรวจรายการล่าสุดก่อนกดลบอีกครั้ง');}throw e;}if (p?.workspaceId === item.workspace_id) {p.cloudAutosave=false;p.cloudSyncPaused=true;bridge().workChanged();}await bridge().storeCloudState(item.workspace_id,{cloudRevision:0,cloudSyncPaused:true,cloudAutosave:false,lastCloudSavedAt:0,cloudSavedChange:0});sent.delete(item.workspace_id);await listCloud(); status('ลบสำเนาคลาวด์แล้ว งานในเครื่องยังอยู่'); });
       }));
       $('workCloudRows').append(row);
     }
-    if (!rows.length) $('workCloudRows').textContent = 'คลังนี้ยังไม่มีไฟล์งาน';renderCurrent();
-    status('อ่านคลาวด์แล้ว · ' + rows.length + ' ไฟล์งาน');return rows;
+    if (!rows.length) $('workCloudRows').textContent = 'ยังไม่มีโปรเจกต์บนคลาวด์ · เปิด ROM แล้วเชื่อมคลังเพื่อเริ่มบันทึก';renderCurrent();
+    status(rows.length+' โปรเจกต์');return rows;
   }
   async function autoResume(rows,scope){
     if(resumedScopes.has(scope)||bridge().isLoading()||bridge().pendingWorkspace())return;
