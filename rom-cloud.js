@@ -46,8 +46,13 @@ const RomCloud=(()=>{
  $('romCloudUpload').onclick=()=>action(async()=>{
   const p=bridge().project(),snapshot=bridge().romSnapshot();if(!p)throw Error('เปิดโปรเจกต์ก่อน');start('เก็บ ROM ชั่วคราวบนคลาวด์');
   try{progress(0,'กำลังบันทึกโปรเจกต์ก่อนส่ง ROM');await WorkManager.saveForRom();check();if(bridge().project()!==p)throw Error('โปรเจกต์เปลี่ยนแล้ว กรุณาลองใหม่');if(await RomCore.fingerprint(snapshot.bytes)!==snapshot.hash)throw Error('ROM ไม่ตรงกับโปรเจกต์');const m=await request('begin',{p_id:p.workspaceId,p_size:snapshot.bytes.length,p_hash:snapshot.hash},true),present=new Set(m?.present||[]);if(m?.sha256!==snapshot.hash||m.size!==snapshot.bytes.length)throw Error('ข้อมูลตอบรับ ROM ไม่ตรงกับไฟล์');
-   if(!m.ready)for(let i=0;i<Math.ceil(snapshot.bytes.length/CHUNK);i++){check();if(!present.has(i))await request('put',{p_id:p.workspaceId,p_index:i,p_data:base64(snapshot.bytes.subarray(i*CHUNK,(i+1)*CHUNK))},true);progress((i+1)/Math.ceil(snapshot.bytes.length/CHUNK)*95,'ส่ง ROM '+(i+1)+' / '+Math.ceil(snapshot.bytes.length/CHUNK)+' ส่วน');await new Promise(resolve=>setTimeout(resolve,0));}
-   progress(95,'กำลังตรวจ SHA-256 บนเซิร์ฟเวอร์');const result=await request('finish',{p_id:p.workspaceId},true);if(!result?.ready)throw Error('เซิร์ฟเวอร์ยังไม่ยืนยัน ROM');$('romCloudSetup').hidden=true;progress(100,'เก็บ ROM ครบแล้ว');window.CompletionSounds?.play('upload');$('romCloudStatus').textContent='เก็บ ROM แล้ว · '+(snapshot.bytes.length/1048576).toFixed(2)+' MB · ลบออกได้เมื่อทำงานเสร็จ';bridge().toast('เก็บ ROM ชั่วคราวแล้ว เปิดงานต่อข้ามเครื่องได้');
+   const total=snapshot.bytes.length,chunks=Math.ceil(total/CHUNK),chunkBytes=i=>Math.min(CHUNK,total-i*CHUNK);
+   if([...present].some(i=>!Number.isInteger(i)||i<0||i>=chunks))throw Error('รายการชิ้นส่วน ROM จากเซิร์ฟเวอร์ไม่ถูกต้อง');
+   let confirmed=m.ready?total:[...present].reduce((sum,i)=>sum+chunkBytes(i),0);
+   const showUpload=()=>progress(Math.min(99,confirmed/total*100),'เซิร์ฟเวอร์รับแล้ว '+confirmed.toLocaleString()+' / '+total.toLocaleString()+' ไบต์'+(confirmed===total?' · กำลังตรวจ SHA-256 บนเซิร์ฟเวอร์':''));
+   showUpload();
+   if(!m.ready)for(let i=0;i<chunks;i++){check();if(!present.has(i)){await request('put',{p_id:p.workspaceId,p_index:i,p_data:base64(snapshot.bytes.subarray(i*CHUNK,(i+1)*CHUNK))},true);confirmed+=chunkBytes(i);showUpload();}await new Promise(resolve=>setTimeout(resolve,0));}
+   showUpload();const result=await request('finish',{p_id:p.workspaceId},true);if(!result?.ready)throw Error('เซิร์ฟเวอร์ยังไม่ยืนยัน ROM');$('romCloudSetup').hidden=true;progress(100,'เก็บ ROM ครบแล้ว');window.CompletionSounds?.play('upload');$('romCloudStatus').textContent='เก็บ ROM แล้ว · '+(snapshot.bytes.length/1048576).toFixed(2)+' MB · ลบออกได้เมื่อทำงานเสร็จ';bridge().toast('เก็บ ROM ชั่วคราวแล้ว เปิดงานต่อข้ามเครื่องได้');
   }finally{end();}
  });
  $('romWorkDownload').onclick=async()=>{try{await saveWork(target());}catch(e){$('romCloudStatus').textContent=e.message;bridge().toast(e.message,e.name==='AbortError'?'info':'error');}};

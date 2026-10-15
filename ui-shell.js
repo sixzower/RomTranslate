@@ -26,8 +26,9 @@ const UiShell = (() => {
     const action=$(closeActions[dialog.id]);if(action){dialog.dataset.closeRequested='yes';if(!action.disabled)action.click();else{const text=dialog.querySelector('[role=status]');if(text)text.textContent='กำลังทำงาน กรุณารอให้เสร็จก่อนปิด';}return;}
     const event=new Event('cancel',{cancelable:true});if(dialog.dispatchEvent(event))dialog.close();
   };dialog.prepend(button);}
-  for(const bar of document.querySelectorAll('progress')){let label=bar.id==='progressBar'?$('progressPercent'):bar.id==='sheetImportProgressBar'?$('sheetImportPercent'):null;
+  for(const bar of document.querySelectorAll('progress')){let label=bar.id==='progressBar'?$('progressPercent'):bar.id==='sheetImportProgressBar'?$('sheetImportPercent'):bar.id==='romCloudBar'?$('romCloudPercent'):null;
     if(!label){label=document.createElement('output');label.className='load-percent';label.setAttribute('aria-live','polite');bar.after(label);}
+    if(bar.id!=='progressBar'){const row=document.createElement('div');row.className='load-progress-row';bar.before(row);row.append(bar,label);label.classList.add('load-percent');}
     const update=()=>{const raw=bar.hasAttribute('value')?Math.min(100,Math.max(0,bar.value/(bar.max||100)*100)):0,percent=bar.id==='progressBar'?(raw>=100?100:Math.min(99.99,Math.round(raw*100)/100)):Math.round(raw);label.textContent=percent+'%';bar.setAttribute('aria-valuetext',percent+'%');};new MutationObserver(update).observe(bar,{attributes:true,attributeFilter:['value','max']});update();
   }
   syncCategories();return {syncCategories,notify};
