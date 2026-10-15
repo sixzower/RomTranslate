@@ -1,6 +1,7 @@
 """Create the downloadable single-file application on every update."""
 from pathlib import Path
-import re, json
+import re, json, base64, hashlib
+from html import escape
 root = Path(__file__).resolve().parent.parent
 # Keep one-time admin SQL and its copyable browser version synchronized.
 font_sql = (root / 'cloud/font-code-library.sql').read_text().split('-- Only SQL Editor/admin can create a vault;')[0]
@@ -20,13 +21,17 @@ html = re.sub(r'(src="(?!vendor/|coi-serviceworker)[^"?]+\.js)(?:\?[^"]*)?"', la
 html = re.sub(r'href="style\.css(?:\?[^"]*)?"', 'href="style.css?v=' + version + '"', html)
 (root / 'index.html').write_text(html)
 css = (root / 'style.css').read_text()
+prompt_font = (root / 'fonts/Prompt-Regular.ttf').read_bytes()
+assert hashlib.sha256(prompt_font).hexdigest() == 'dbd497803cec3caffbc6b7f599ca6fed8beea0ed7e0ad1e098130c5ebbc4fd42', 'Prompt font checksum mismatch'
+css = css.replace("url('fonts/Prompt-Regular.ttf')", "url('data:font/ttf;base64," + base64.b64encode(prompt_font).decode() + "')")
 # Standalone downloads use local system fonts and do not require network access.
 css = re.sub(r"@import url\([^;]+;\s*", '', css, count=1)
 js = (root / 'app.js').read_text().replace('</script', '<\\/script')
 html = re.sub(r'<link rel="stylesheet" href="style\.css(?:\?[^"]*)?">', lambda _: '<style>' + css + '</style>', html)
-for name in ('theme.js', 'vendor/exceljs.min.js', 'imperium-profile.js', 'game-font.js', 'rom-core.js', 'legacy-glyph-map.js', 'pixel-font.js', 'history.js', 'quality.js', 'xlsx-loader.js', 'sheet.js', 'bundled-fonts.js', 'font-presets.js', 'progress.js', 'translation-tasks.js', 'views.js', 'font-editor.js', 'sheet-batches.js', 'rom-patch.js', 'sheet-progress.js', 'ui-operations.js', 'app.js', 'patch-ui.js', 'cloud-config.js', 'admin-schema.js', 'font-cloud.js', 'workspace-schema.js', 'work-manager.js', 'rom-font-profiles.js', 'rom-font.js', 'rom-font-ui.js', 'ui-shell.js', 'row-selection.js', 'remaining-overview.js'):
+for name in ('theme.js', 'vendor/exceljs.min.js', 'imperium-profile.js', 'game-font.js', 'rom-core.js', 'legacy-glyph-map.js', 'pixel-font.js', 'history.js', 'quality.js', 'xlsx-loader.js', 'sheet.js', 'bundled-fonts.js', 'font-presets.js', 'progress.js', 'translation-tasks.js', 'views.js', 'font-editor.js', 'sheet-batches.js', 'rom-patch.js', 'sheet-import-batch.js', 'sheet-progress.js', 'ui-operations.js', 'app.js', 'patch-ui.js', 'cloud-config.js', 'admin-schema.js', 'font-cloud.js', 'workspace-schema.js', 'work-manager.js', 'rom-font-profiles.js', 'rom-font.js', 'rom-font-ui.js', 'ui-shell.js', 'row-selection.js', 'remaining-overview.js'):
     js = (root / name).read_text().replace('</script', '<\\/script')
     html = re.sub(r'<script src="' + re.escape(name) + r'(?:\?[^"]*)?"></script>', lambda _: '<script>' + js + '</script>', html)
+html = html.replace('</body>', '<template id="prompt-font-license"><pre>' + escape('\n'.join(line.rstrip() for line in (root / 'fonts/Prompt-OFL.txt').read_text().splitlines())) + '</pre></template></body>')
 html = re.sub(r'<script type="module" src="emulator\.js(?:\?[^"]*)?"></script>', lambda _: '<script>'+ (root / 'scripts' / 'offline_emulator.js').read_text() +'</script>', html)
 html = html.replace('<script>window.coi={quiet:true};</script><script src="coi-serviceworker.js"></script>', '')
 out = Path('/workspace/artifacts/index.html')
