@@ -7,9 +7,9 @@ const UiOperations = (() => {
     const ranges = {audit:[0,99],scan:[0,40],validate:[40,75],write:[75,90],finish:[90,99],done:[100,100]};
     $('operationDetail').textContent = event.message || labels[event.phase] || 'กำลังทำงาน…';
     if (ranges[event.phase] && event.total) { const [a,b]=ranges[event.phase];bar.value=a+Math.min(1,event.completed/event.total)*(b-a); }
-    else bar.removeAttribute('value');
+    else bar.value=0;
   }
-  function cancel() { if (!active?.cancellable) return;active.controller.abort();$('operationCancel').disabled=true;$('operationDetail').textContent='กำลังยกเลิก…'; }
+  function cancel() { if (!active?.cancellable){$('operationDetail').textContent='กำลังทำงาน กรุณารอให้เสร็จก่อนปิด';return;}active.controller.abort();$('operationCancel').disabled=true;$('operationDetail').textContent='กำลังยกเลิก…'; }
   $('operationCancel').onclick=cancel;
   $('operationDialog').addEventListener('cancel',e=>{e.preventDefault();cancel();});
   async function run(title,work,{cancellable=false}={}) {

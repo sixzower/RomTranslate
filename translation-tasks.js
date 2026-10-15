@@ -25,7 +25,7 @@ const TranslationTasks = (() => {
     p.workspaceName = saved.workspaceName?.trim() || p.title.replace(/\.gba$/i, '').slice(0,100);
     p.activeWorkTask = saved.activeWorkTask;
     if (!active(p)) p.activeWorkTask = null;
-    p.cloudAutosave = saved.cloudAutosave === true;p.cloudScope=typeof saved.cloudScope==='string'&&/^[a-f0-9]{64}$/.test(saved.cloudScope)?saved.cloudScope:undefined;
+    p.cloudSyncPaused=saved.cloudSyncPaused===true;p.cloudAutosave = saved.cloudAutosave === true;p.cloudScope=typeof saved.cloudScope==='string'&&/^[a-f0-9]{64}$/.test(saved.cloudScope)?saved.cloudScope:undefined;
     p.cloudRevision = Number.isSafeInteger(saved.cloudRevision) && saved.cloudRevision >= 0 ? saved.cloudRevision : 0;
   }
   function ensure(p) {
@@ -65,7 +65,7 @@ const TranslationTasks = (() => {
     const edited = p.entries.filter(e => fields.some(k => e[k]));
     if (!edited.length) edited.push(p.entries.find(e => e.verified) || p.entries[0]);
     return {workspaceFormat: 'RomTranslate workspace v1', version: 2, title: p.title, romHash: p.romHash,
-      workspaceId: p.workspaceId, workspaceName: p.workspaceName, cloudScope:p.cloudScope, cloudRevision:p.cloudRevision||0, cloudAutosave: p.cloudAutosave === true,
+      workspaceId: p.workspaceId, workspaceName: p.workspaceName, cloudScope:p.cloudScope, cloudRevision:p.cloudRevision||0, cloudAutosave: p.cloudAutosave === true,cloudSyncPaused:p.cloudSyncPaused===true,
       glossary: p.glossary || '', genre: p.genre || '', font: structuredClone(p.font),
       progressCategories: p.progressCategories?.slice(), workTasks: structuredClone(p.workTasks), activeWorkTask: p.activeWorkTask || null,
       entries: edited.map(e => ({id: e.id, romOffset: e.romOffset, source: e.source, translation: e.translation || '', speaker: e.speaker || '', literal: e.literal || '', contextual: e.contextual || '', translationChoice: e.translationChoice || ''})),

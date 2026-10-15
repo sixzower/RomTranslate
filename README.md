@@ -1,4 +1,4 @@
-# RomTranslate 0.21.2
+# RomTranslate 0.22.0
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
@@ -199,7 +199,7 @@ The uploaded 654-row ability workbook has 327 blank name translations and 327 tr
 
 “งานค้าง / เปิดต่อข้ามเครื่อง” captures canonical entry IDs, category/search, editing position and Excel range settings. Active export scopes use the frozen ID order, even if the untranslated filter changes. Work files include translations, drafts, font, history and progress categories; they contain no ROM bytes or API keys. Download JSON and use “เปิดโปรเจกต์” with the matching original ROM on another device. Pause/close/cancel leaves translation data intact; closed/cancelled task records can be removed. Choosing an unrelated category pauses the active work scope.
 
-Optional cloud storage reuses the font library's private-code or account connection. Run `cloud/workspace-library.sql` once in the same Supabase project (copy from the work dialog); it adds an owner-isolated table and RPCs without creating a new vault code or changing presets. The dialog lists cloud copies, restores them, saves updates and deletes a selected cloud copy. Autosync is opt-in. Revisions prevent stale devices overwriting newer work; a conflict stops autosync and retains local edits for JSON backup. Opening a cloud copy does not write another revision. Backend requests never contain ROM bytes; private connection codes stay outside the work payload.
+Optional cloud storage reuses the font library's private-code or account connection. Run `cloud/workspace-library.sql` once in the same Supabase project (copy from the shared library setup); it adds an owner-isolated table and RPCs without creating a new vault code or changing presets. The dialog lists cloud copies, restores them, saves updates and deletes a selected cloud copy. Since 0.22.0, connecting the shared library enables automatic saving. Revisions prevent stale devices overwriting newer work; a conflict stops autosync and retains local edits for JSON backup. Opening a cloud copy does not write another revision. Backend requests never contain ROM bytes; private connection codes stay outside the work payload.
 
 Validation: `node tests/gemini-workspace.cjs ORIGINAL_ROM UPLOADED_XLSX`, `node tests/workspace-cloud.cjs ORIGINAL_ROM` (mocked private RPC transport), and `PGLITE_MODULE=/path/to/@electric-sql/pglite node tests/workspace-sql.cjs` (actual PostgreSQL permissions, isolation, CAS and migration repeatability). Live Supabase configuration and GitHub Pages deployment must be checked separately.
 
@@ -223,3 +223,16 @@ Rooms are named งานแปลเกม, สตูดิโอฟอนต�
 ### Font shadow discovery (0.21.2)
 
 API settings and browser API requests are removed. Literal translation prepares a copyable prompt; Excel instructions remain available. Game genre metadata lives with Excel export and is saved with the work file. Font shadows now have their own visible control row in สตูดิโอฟอนต์; เลือกฟอนต์ไทย → ปรับเงาฟอนต์ opens it directly. Changing shadows updates previews; save as a preset to apply to game builds.
+
+
+## Shared private library (0.22.0)
+
+The title-bar **เชื่อมคลังส่วนตัว** button is the single connection entry. It reuses the existing vault code/account, Supabase URL/public key and tables, and displays both font presets and pending work files. Separate font/work login buttons and the per-file autosync opt-in are removed. Connecting verifies both services, imports cloud presets without changing the active font, lists cloud workspaces, and automatically uploads existing local workspaces and current edits (no ROM bytes). Saved presets upload automatically. Local work can be opened or deleted from the library; cloud copies can be opened or deleted independently. Opening a cloud work file still needs the matching original ROM for translation/building.
+
+The neon indicator is red when disconnected, offline or a request fails, blinking yellow while checking/syncing, and green only after both services succeed. Saved credentials are revalidated on startup, focus/reconnection and a 60-second heartbeat. Network availability alone never turns it green. A missing workspace schema is reported as an incomplete connection; the existing one-time workspace SQL is available in the shared setup disclosure. No database migration was run against a live user service by this update.
+
+Automatic writes retain optimistic revisions. A stale local copy pauses on conflict; sync does not silently re-enable it. Deleting a cloud copy pauses its matching local file, including after reload, to avoid recreating it. Files already linked to another vault do not move automatically. Local persistence updates cloud metadata without overwriting other active work. Cancelled/completed translation tasks remain in their file until the user removes them.
+
+All dialogs include an X. Existing close/cleanup actions are reused; audit and Excel import support cancellation, while non-cancellable stages acknowledge that they must finish first. Every progress bar has a numeric 0–100% label. Excel decompression holds its last known milestone rather than inventing progress.
+
+Validated with mocked private-code and email backends: shared login, archived/current autosave, two-device listing/open/edit, fonts, conflicts, deletion/reload, outage/retry, neon states and logout. Browser integration checks cover safe X cancellation and no partial Excel import. Live Supabase credentials are not available in this workspace.

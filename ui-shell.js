@@ -20,6 +20,16 @@ const UiShell = (() => {
   // Menus close after selecting an action, but stay open for preference checkboxes.
   for(const menu of document.querySelectorAll('.tools-menu'))menu.addEventListener('click',e=>{if(e.target.closest('button'))menu.open=false;});
   document.addEventListener('pointerdown',e=>{for(const menu of document.querySelectorAll('.tools-menu[open]'))if(!menu.contains(e.target))menu.open=false;});
+  const closeActions={progressDialog:'progressClose',sheetExportDialog:'sheetExportClose',sheetImportDialog:'sheetImportCancel',coverageDialog:'coverageClose',qualityDialog:'qualityClose',historyDialog:'historyClose',originalDialog:'cancelOriginal',romDialog:'closeRom',workDialog:'workClose',workDraftDialog:'workDraftClose',fontDialog:'closeFont',fontRenameDialog:'fontRenameCancel',fontCloudDialog:'fontCloudClose',fontHelpDialog:'fontHelpClose',promptDialog:'closePrompt',patchDialog:'patchClose',buildDialog:'closeBuild',noticeDialog:'noticeDismiss'};
+  for(const dialog of document.querySelectorAll('dialog')){const button=document.createElement('button');button.type='button';button.className='dialog-x';button.textContent='×';button.setAttribute('aria-label','ปิดหน้าต่าง');button.title='ปิด';button.onclick=()=>{
+    if(dialog.id==='operationDialog'||dialog.id==='sheetProgressDialog'){dialog.dispatchEvent(new Event('cancel',{cancelable:true}));return;}
+    const action=$(closeActions[dialog.id]);if(action){dialog.dataset.closeRequested='yes';if(!action.disabled)action.click();else{const text=dialog.querySelector('[role=status]');if(text)text.textContent='กำลังทำงาน กรุณารอให้เสร็จก่อนปิด';}return;}
+    const event=new Event('cancel',{cancelable:true});if(dialog.dispatchEvent(event))dialog.close();
+  };dialog.prepend(button);}
+  for(const bar of document.querySelectorAll('progress')){let label=bar.id==='progressBar'?$('progressPercent'):bar.id==='sheetImportProgressBar'?$('sheetImportPercent'):null;
+    if(!label){label=document.createElement('output');label.className='load-percent';label.setAttribute('aria-live','polite');bar.after(label);}
+    const update=()=>{const raw=bar.hasAttribute('value')?Math.min(100,Math.max(0,bar.value/(bar.max||100)*100)):0,percent=bar.id==='progressBar'?(raw>=100?100:Math.min(99.99,Math.round(raw*100)/100)):Math.round(raw);label.textContent=percent+'%';bar.setAttribute('aria-valuetext',percent+'%');};new MutationObserver(update).observe(bar,{attributes:true,attributeFilter:['value','max']});update();
+  }
   syncCategories();return {syncCategories,notify};
 })();
 window.UiShell=UiShell;
