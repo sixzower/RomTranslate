@@ -106,3 +106,5 @@ body[data-theme=dark] #fontCloudStatus[data-kind=error]{color:#ff8b94}
 #romFontStatus[data-kind=error]{color:#b42318}body[data-theme=dark] #romFontStatus[data-kind=error]{color:#ff938a}
 
 .translation-status.is-readonly{color:var(--muted);font-size:10px}tr.selected .translation-status.is-readonly{color:var(--selection-text)}
+
+.progress-categories section>h3{margin:12px 0 4px;font-size:14px}.progress-categories section>p{font-size:12px;margin:0 0 8px}.progress-categories [data-translation-policy=keep]{border-top:2px solid var(--border);padding-top:4px}#progressRecommended{font-weight:bold}
