@@ -262,7 +262,7 @@ Tests: `tests/admin-sql.cjs` uses actual PostgreSQL/pgcrypto via PGlite for perm
 
 ### Simple autosave, reopening and remaining overview
 
-Saving is always automatic. The toolbar shows whether a local write is pending or complete. **โปรเจกต์ของฉัน** separates local-save, cloud-backup and JSON-export timestamps; a successful local save never claims a cloud backup succeeded. Cloud timestamps advance after an acknowledged write, and pending/conflicted/disconnected states remain distinct. JSON exports are optional backups, with their initiation time recorded separately. They are not required to continue ordinary editing.
+Saving is always automatic. The toolbar shows whether a local write is pending or complete. **โปรเจกต์** separates local-save, cloud-backup and JSON-export timestamps; a successful local save never claims a cloud backup succeeded. Cloud timestamps advance after an acknowledged write, and pending/conflicted/disconnected states remain distinct. JSON exports are optional backups, with their initiation time recorded separately. They are not required to continue ordinary editing.
 
 On the same browser/device the verified original ROM is cached in IndexedDB under a separate ROM key; closing/reopening resumes the latest work, selected category, search and editing position without choosing a ROM again. ROM cache bytes never enter portable JSON, cloud payloads or the shipped HTML. If browser storage is unavailable/full, translation saving still works when possible and the UI requests the original ROM on reopening. A new device uses the cloud work file plus its original ROM. Local project deletion removes its resume marker.
 
@@ -291,3 +291,9 @@ Open the font picker or studio and choose **ดึงฟอนต์จาก RO
 For other ROMs, supply the graphics offset and encoding (Pokémon 2bpp or GBA 4bpp; linear or Pokémon JP block layout). Raw graphics and bounded GBA LZ77 type 0x10 are supported. The atlas lets you assign actual glyph images to Thai characters, choose a row region for separated marks, and specify advance widths. Without a width table, advance is an estimate from image bounds. Do not assign a precomposed syllable to a plain consonant. Unknown/compressed formats other than these require a dedicated decoder. There is no guessed Thai mapping or silent substitution with the default font.
 
 Review the preview and confirm before saving a preset. Partial presets clearly identify missing characters. The mapping JSON download records the ROM hash and decoding settings and can only be loaded for the same ROM; it is distinct from a font preset JSON. Presets persist locally and use the existing cloud sync when connected. Font placement still needs in-game verification, especially 12px scaling and stacked marks.
+
+### Compact private library sign-in
+
+The status light opens a small password-only dialog. Submission immediately shows a pending state; wrong passwords, missing RPCs, network errors, and timeouts display an explicit error. Successful login closes the dialog and shows “เข้าสู่คลังสำเร็จ”. If password verification succeeds but font/work sync fails, the message distinguishes the two phases. An expired legacy email session no longer prevents trying the admin password. No SQL migration is required for these client changes.
+
+Cloud and local work lists are in **ไฟล์ → โปรเจกต์**. Font cloud management, sign-out, and the optional SQL installer are under **เครื่องมือ → จัดการคลังส่วนตัว**. Plain close buttons are hidden across dialogs; the upper-right X invokes the original cleanup/save/cancel action. Save/confirmation and active-operation cancellation actions remain available. Menus size their common item width to the longest label.
