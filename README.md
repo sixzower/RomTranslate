@@ -391,3 +391,9 @@ The recently added recovery button/dialog, workspace-recovery module and automat
 The full AI prompt exists only at Prompt!A3 and the category counts are in Instructions; the redundant category worksheet is removed. Glossary is included only when supplied and splits real newlines. All 13 data columns, ROM hash metadata and batch ranges remain compatible. Translation cells for empty, non-keep-source rows are yellow and unlocked; identity/source fields and existing translations are locked with password-free sheet protection to reduce accidental edits. This is an editing aid, not a security boundary; import identity/control validation remains authoritative. The prompt requires unchanged row counts and exact control codes, preserves existing work, and distinguishes real newlines from literal backslash-n codes.
 
 Validation: real-ROM export/import and tolerant import tests, compact workbook/protection/glossary roundtrip, and browser clipboard/download/batch selection checks.
+
+### Open saved projects with their ROM (0.32.1)
+
+Manual project opening now checks the local ROM cache and then the private cloud ROM copy before asking for an original ROM. ROM size and SHA-256 must match the workspace; cloud project responses must match the selected workspace ID. Current work is saved before switching. If no complete ROM exists, translations remain pending and the original-ROM banner explains what is required. The unused “จัดการงานและสำรองเพิ่มเติม” section and its controls are removed; automatic saving and backup status remain. Completion sounds retain their saved preference without requiring the removed checkbox.
+
+The browser/PostgreSQL test covers the actual 32 MB sample ROM: interrupted upload/resume, SHA validation, automatic resume, manual cloud opening on a fresh device, manual reopening from local cache without another download, and deletion of the cloud ROM while retaining translations.

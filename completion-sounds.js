@@ -2,8 +2,8 @@
 const CompletionSounds=(()=>{
  let context=null,enabled=true;const waiting=new Set(),key='romtranslate.completionSounds.v1';
  try{enabled=localStorage.getItem(key)!=='off';}catch{}
- const control=document.getElementById('completionSound');control.checked=enabled;
- control.onchange=()=>{enabled=control.checked;waiting.clear();try{localStorage.setItem(key,enabled?'on':'off');}catch{}};
+ const control=document.getElementById('completionSound');if(control)control.checked=enabled;
+ if(control)control.onchange=()=>{enabled=control.checked;waiting.clear();try{localStorage.setItem(key,enabled?'on':'off');}catch{}};
  function emit(kind){
   if(!enabled||!context||context.state!=='running')return false;
   try{const notes=kind==='upload'?[660,880,1100]:[587,784],start=context.currentTime;
