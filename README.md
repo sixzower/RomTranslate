@@ -425,3 +425,9 @@ A failed full sync keeps the saved library credentials and shows a retry button 
 ### Compact upload progress (0.32.6)
 
 Operation bars use a single 11px percentage at the trailing edge, reusing the Excel/ROM labels instead of generating a duplicate ROM percentage. ROM upload progress counts bytes in server-confirmed chunks, including previously stored chunks in any order and the actual size of the last chunk. Waiting requests do not advance the bar. The display caps at 99% until the server confirms the final SHA-256; the detail shows the exact acknowledged byte count while verification runs. `tests/upload-progress.cjs` checks delayed acknowledgments, resumed chunks, final verification and compact desktop/mobile/dark layouts with mocked server responses.
+
+### ROM font file diagnostics (0.32.7)
+
+The font reader now distinguishes unsupported extension/archive, empty/truncated files, oversized files and disk read errors. Rejections include the actual filename and byte count instead of the same generic size message. The existing 192-byte–32 MiB input bound is unchanged. FileReader events report actual local read progress, followed by SHA/profile detection; this feature does not upload the ROM. Selecting the same file again retries the read. Closing/reopening invalidates a previous read so stale errors cannot replace the current result. The original 16 MiB Seaglass TH source was verified to extract and save unchanged glyph pixels, advance and composites; the user's screenshot alone does not establish the rejected file's size or identity.
+
+`tests/rom-font-file-input.cjs` covers the actual Seaglass source, preset pixel fidelity, retry, zero-byte/wrong-type/oversize diagnostics and read errors. `tests/rom-font-ui.cjs` covers known/manual extraction, persistence and mapping controls.

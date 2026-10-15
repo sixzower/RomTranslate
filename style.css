@@ -102,3 +102,5 @@ body[data-theme=dark] #fontCloudStatus[data-kind=error]{color:#ff8b94}
 
 /* Compact upload/read percentages at the trailing edge of each bar. */
 .load-progress-row{display:flex;align-items:center;gap:8px;width:100%;margin:10px 0;min-width:0}.load-progress-row>progress{flex:1;min-width:0;width:auto!important;height:10px;margin:0!important}.load-progress-row>.load-percent,#sheetImportPercent,#romCloudPercent{flex:none;width:42px;margin:0;font-size:11px;font-weight:400;line-height:1.3;text-align:right;color:var(--text);font-variant-numeric:tabular-nums}
+
+#romFontStatus[data-kind=error]{color:#b42318}body[data-theme=dark] #romFontStatus[data-kind=error]{color:#ff938a}
