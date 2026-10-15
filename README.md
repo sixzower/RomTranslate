@@ -369,3 +369,7 @@ The ROM SQL setup panel is hidden by default. A successful ROM info RPC hides it
 ### Compact status bar (0.29.1)
 
 The status bar defaults to 24px, is limited to 28px when expanded, and still collapses to 12px. Previously saved large heights are clamped automatically. Desktop layout stays inside the viewport so the translation editor receives the remaining space; mobile scrolling remains available. Browser checks covered source/standalone layouts, three desktop sizes, an old 220px preference, collapse/expand and mobile width.
+
+### Restore normal page scrolling (0.29.2)
+
+The viewport overflow lock introduced in 0.29.1 is removed so content can remain reachable through normal scrolling on constrained displays. The status bar stays compact at 24–28px. This change does not modify workspace/translation records. The sample ROM still renders its text list and editor; the exact user symptom (hidden UI versus missing saved translations) requires clarification rather than assuming data was deleted.

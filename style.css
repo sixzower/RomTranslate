@@ -99,4 +99,3 @@ body[data-theme=dark] #fontCloudStatus[data-kind=error]{color:#ff8b94}
 
 /* A status line should never take working space away from the editor. */
 #statusDock{flex:0 0 auto;min-height:12px;max-height:28px;align-items:center;padding:3px 6px 1px;line-height:16px}#statusDock[data-collapsed=true]{max-height:12px;padding:0}#statusDock>span{align-self:center}#statusDock #statusToggle{align-self:center}
-@media(min-width:701px){html,body{height:100%;min-height:0;overflow:hidden}.toolbar,.view-tabs,.translation-progress,.work-banner{flex-shrink:0}#translationView{flex:1 1 0;min-height:0;overflow:hidden}}
