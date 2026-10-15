@@ -31,6 +31,7 @@ jobs:
       contents: read
       pages: write
       actions: write
+      checks: read
     steps:
       - name: Check out repair script
         uses: actions/checkout@v4
