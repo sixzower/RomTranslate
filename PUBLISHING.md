@@ -24,3 +24,7 @@ Direct GitHub API/Pages requests from the Codex environment returned HTTP 403 du
 
 
 Admin-only library login uses the public client configuration in cloud-config.js. Before the first real admin login, run cloud/admin-setup.sql once in the supplied Supabase project. Enter the password on the original browser to retain its existing vault. Public API keys cannot perform this SQL installation; no live database migration was executed by the worker.
+
+## Release 0.32.6 deploy timeout
+
+GitHub Pages run #60 (`38769156460`, build `bbfb4fb4fa35143529f3d78eb8d4ed6953d1307e`) completed with deploy annotations `Timeout reached, aborting!`. The code was already present on main. The repair workflow default now targets this exact build, rather than the older conflict SHA. Its push trigger checks/cancels only a nonterminal deployment for this build before letting the latest Pages run continue or retrying the latest failed run. Application version stays 0.32.6. Confirm the repair and subsequent Pages run separately; neither a push nor a successful repair proves the site has published.
