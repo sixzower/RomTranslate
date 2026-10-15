@@ -1,7 +1,7 @@
 [
   {
     "id": "sword-shield-th",
-    "name": "Sword & Shield TH v1.7",
+    "name": "ไทยเส้นคม · Sword 14px",
     "romSHA256": "9f6cd04a499a56a5fbb453b4f66ff45fa2b15fa5ef440983b4c093b2fe77327c",
     "graphicsBank": "0xb34000",
     "widthBank": "0xb3c000",
@@ -719,7 +719,7 @@
   },
   {
     "id": "seaglass-th",
-    "name": "Emerald Seaglass TH v1.1.3",
+    "name": "ไทยเงานุ่ม · Seaglass 15px",
     "romSHA256": "ff82e88ad4d8511587ab39efdcc4e701955dce193231df4fcffc5f3f4a57257d",
     "graphicsBank": "0xf20000",
     "widthBank": "0xf30000",
@@ -896,7 +896,10 @@
       },
       "ร": {
         "glyph": 107,
-        "region": null,
+        "region": [
+          7,
+          12
+        ],
         "bank": "0xf20000"
       },
       "ล": {
@@ -965,11 +968,6 @@
         "bank": "0xf20000"
       },
       "า": {
-        "glyph": 70,
-        "region": null,
-        "bank": "0xf20000"
-      },
-      "ำ": {
         "glyph": 70,
         "region": null,
         "bank": "0xf20000"
@@ -1173,12 +1171,13 @@
       "ฦ",
       "ฬ",
       "ฯ",
+      "ำ",
       "ฺ",
       "฿",
       "ๅ",
       "๎"
     ],
-    "verifiedComposites": 262,
+    "verifiedComposites": 270,
     "compositeMapping": {
       "กั": 280,
       "กิ": 282,
@@ -1373,8 +1372,16 @@
       "ยึ": 636,
       "ยี": 777,
       "ยู": 857,
-      "ร้": 362,
-      "ร่": 584,
+      "รู": 107,
+      "ริ": 138,
+      "รั": 355,
+      "รี": 358,
+      "รึ": 359,
+      "รื": 360,
+      "ร่": 363,
+      "ร้": 364,
+      "ร์": 365,
+      "รุ": 583,
       "ล่": 97,
       "ลิ": 113,
       "ลั": 120,

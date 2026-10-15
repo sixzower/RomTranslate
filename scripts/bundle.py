@@ -1,6 +1,6 @@
 """Create the downloadable single-file application on every update."""
 from pathlib import Path
-import re, json, base64, hashlib
+import re, json, base64, hashlib, runpy
 from html import escape
 root = Path(__file__).resolve().parent.parent
 # Keep one-time admin SQL and its copyable browser version synchronized.
@@ -10,11 +10,17 @@ admin_sql = '-- One-time shared admin setup. Preserves existing vaults, fonts an
 (root / 'admin-schema.js').write_text('/* One-time admin setup SQL; no plaintext password or private vault code. */\nconst AdminSchema=' + json.dumps(admin_sql, ensure_ascii=False) + ';\n')
 (root / 'cloud/admin-link-upgrade.sql').write_text('-- Upgrade old-vault adoption; run once in the same Supabase SQL Editor. Preserves all existing data and the admin password.\n' + (root / 'cloud/admin-library.sql').read_text())
 (root / 'rom-cloud-schema.js').write_text('const RomCloudSchema=' + json.dumps((root / 'cloud/rom-library.sql').read_text(), ensure_ascii=False) + ';\n')
-# Include only verified mappings, never the source ROM.
+runpy.run_path(str(root / 'scripts/build_seaglass_complete.py'), run_name='__main__')
+# Verified source mappings and explicitly labelled supplemental designs; no source ROM.
 font_profiles = json.loads((root / 'fonts/hack-font-provenance.json').read_text())
+supplements = json.loads((root / 'fonts/seaglass-th-supplements.json').read_text())
+for profile in font_profiles:
+    if profile['id'] == 'seaglass-th':
+        profile['supplementalGlyphs'] = supplements['glyphs']
+        profile['supplementNote'] = supplements['note']
 quetzal = json.loads((root / 'fonts/quetzal-font-provenance.json').read_text())
 font_profiles.append({'id':'quetzal-th-native','name':'Quetzal TH 1.0.3 — รูปต้นฉบับ','romSHA256':quetzal['sha256'],'graphicsBank':quetzal['bank'],'widthBank':'0x1daf600','count':1280,'nativeHeight':15,'mapping':{char:{'glyph':int(spec['glyph'],16),'region':spec.get('region'),'bank':quetzal['bank']} for char,spec in quetzal['extracted'].items()},'compositeMapping':{},'notes':'Native pixels, shadows and widths, without the adaptations or vertical shifts of the default font. Unmapped characters are not invented.'})
-(root / 'rom-font-profiles.js').write_text('/* Verified source mappings only; no ROM bytes. */\nconst RomFontProfiles=' + json.dumps(font_profiles, ensure_ascii=False, separators=(',', ':')) + ';\nif(typeof module!=="undefined")module.exports=RomFontProfiles;\n')
+(root / 'rom-font-profiles.js').write_text('/* Verified source mappings and explicitly labelled supplements; no ROM bytes. */\nconst RomFontProfiles=' + json.dumps(font_profiles, ensure_ascii=False, separators=(',', ':')) + ';\nif(typeof module!=="undefined")module.exports=RomFontProfiles;\n')
 html = (root / 'index.html').read_text()
 version = json.loads((root / 'package.json').read_text())['version']
 # Version local assets so deployed HTML cannot silently reuse an old app module.

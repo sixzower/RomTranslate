@@ -5,11 +5,13 @@ Requires Pillow for the complete indexed source atlas PNGs.
 from pathlib import Path
 from PIL import Image
 import json,hashlib,sys
+from functools import lru_cache
 if len(sys.argv)!=2:raise SystemExit(__doc__)
 root=Path(__file__).resolve().parent.parent; src=Path(sys.argv[1]); template=json.loads((root/'fonts/thai_font_data.json').read_text()); presets=[]; provenance=[]
 configs=[('sword-shield-th','ไทยเส้นคม · Sword 14px',src/'Sword_and_Shield_Ultimate_Plus_-_TH_v1.7_Nonplae.gba',0xb34000,0xb3c000,14,True),('seaglass-th','ไทยเงานุ่ม · Seaglass 15px',src/'Pokemon-Emerald-Seaglass-v1.1.3_-TH.gba',0xf20000,0xf30000,15,False)]
 for ident,name,path,bank,widthbank,height,jp in configs:
  rom=path.read_bytes(); expected={'sword-shield-th':'9f6cd04a499a56a5fbb453b4f66ff45fa2b15fa5ef440983b4c093b2fe77327c','seaglass-th':'ff82e88ad4d8511587ab39efdcc4e701955dce193231df4fcffc5f3f4a57257d'}; assert hashlib.sha256(rom).hexdigest()==expected[ident], 'Unsupported ROM version'; mapping={}; glyphs=[]
+ @lru_cache(maxsize=None)
  def pixels(code,latin=False):
   base=0x1f3100 if latin and jp else bank
   pos=base+((code//8)*512+(code%8)*32 if jp and not latin else code*64)
@@ -44,9 +46,11 @@ for ident,name,path,bank,widthbank,height,jp in configs:
   mapping['ำ']=(0x32,None,False)
  else:
   # Only visually verified characters/regions; do not substitute other fonts for unmapped glyphs.
-  bases={'ก':0x4f,'ข':0x11d,'ค':0x64,'ง':0x44,'จ':0x4a,'ฉ':0x126,'ช':0x127,'ซ':0x128,'ญ':0x186,'ณ':0x12a,'ด':0x12b,'ต':0x12f,'ถ':0x133,'ท':0x136,'ธ':0x48,'น':0x4e,'บ':0x4c,'ป':0x6c,'ผ':0x14e,'ฝ':0x151,'พ':0x154,'ฟ':0x157,'ภ':0x18e,'ม':0x5e,'ย':0x4d,'ร':0x6b,'ล':0x173,'ว':0x66,'ศ':0x1b1,'ษ':0x178,'ส':0x40,'ห':0x43,'อ':0x49,'ฮ':0x1bb,'า':0x46,'ำ':0x46,'ะ':0x4b,'เ':0x47,'แ':0x6d,'โ':0x88,'ไ':0x5f,'ใ':0x17e,'ๆ':0x17f}
+  bases={'ก':0x4f,'ข':0x11d,'ค':0x64,'ง':0x44,'จ':0x4a,'ฉ':0x126,'ช':0x127,'ซ':0x128,'ญ':0x186,'ณ':0x12a,'ด':0x12b,'ต':0x12f,'ถ':0x133,'ท':0x136,'ธ':0x48,'น':0x4e,'บ':0x4c,'ป':0x6c,'ผ':0x14e,'ฝ':0x151,'พ':0x154,'ฟ':0x157,'ภ':0x18e,'ม':0x5e,'ย':0x4d,'ร':0x6b,'ล':0x173,'ว':0x66,'ศ':0x1b1,'ษ':0x178,'ส':0x40,'ห':0x43,'อ':0x49,'ฮ':0x1bb,'า':0x46,'ะ':0x4b,'เ':0x47,'แ':0x6d,'โ':0x88,'ไ':0x5f,'ใ':0x17e,'ๆ':0x17f}
   plain={'ก','ข','ง','จ','ญ','ณ','ธ','น','บ','ป','ผ','พ','ฟ','ม','ย','ร','ว','ห','อ','า','ำ','ะ','เ','แ','โ','ไ','ใ','ๆ','ศ'}
   mapping={c:(code,None if c in plain else (7,15),False) for c,code in bases.items()}
+  # 0x6B is รุ: keep the native ร body/shadow, exclude the lower vowel.
+  mapping['ร']=(0x6b,(7,12),False)
   # Upper/lower shapes taken from verified ก combinations, at native coordinates.
   for c,code in {'ั':0x118,'ิ':0x11a,'ี':0x2e3,'ึ':0x335,'ื':0x201,'่':0x11c,'้':0x182,'๋':0x28d,'์':0x1c3,'ํ':0x119}.items():mapping[c]=(code,(0,6),False)
   mapping['็']=(0x11b,(0,6),False)
