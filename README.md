@@ -2,6 +2,16 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Minimal font cards and renderer compatibility checks (0.32.45)
+
+Padlocks use small stroke SVGs with transparent backgrounds and no border, including disabled states. The three main tabs include matching minimal translation, controller and typography icons while preserving their labels. Font previews now use three shared lines, larger cards and full-width mobile cards for clearer shape comparison; the inspector also uses a larger sample. Unrenderable sample clusters show a labelled □ placeholder while retaining the rest of the example, rather than blanking the whole canvas.
+
+Every unlocked card is a drag surface, including its title, preview and empty space; the lock button is excluded. Mouse dragging swaps after a movement threshold; mobile swiping scrolls and holding for 200ms before dragging swaps. Both document scrolling and an internally scrolling font workspace are supported. Locked sources/targets remain protected. Ordinary clicks only select a card, dragging never applies a font, and the up/down alternative remains available.
+
+Small green/red labels report **ผ่านการตรวจฟอนต์เกม** / **ไม่ผ่านการตรวจฟอนต์เกม** using actual JSON validation and the same `GameFont` rasterizer used for ROM font allocation at 15px and 12px. Checks cover Thai glyph inventory, missing/blank shapes and representative stacked vowel/tone clusters; malformed output and overflow fail. Selected-font details explain failures and explicitly distinguish renderer checks from playing a completed ROM. They do not certify every game, every possible character combination or ROM font-bank capacity. Results are cached by font contents and checks/previews restore the active project font. No server traffic is added.
+
+Validation: `tests/font-card-ui.cjs` checks SVG styling/tab labels, dragging from title/canvas/padding, lock protection, swipe versus touch hold/drag, larger examples, green/red states from missing/native-overflow glyphs, repair to green, active-font isolation and desktop/mobile layouts in both themes. Existing font lock and workspace regression tests continue to cover persistence, native editing/exports, deletion and project font behavior. Tested source and downloadable standalone HTML.
+
 ## Visible deletion for bundled fonts (0.32.44)
 
 The selected font's **ลบฟอนต์** action is now visible next to Use/Edit/Primary, outside collapsed management controls. Built-in sources follow the same unlock-and-confirm flow as imported presets. The hint explains unlocking, local removal scope and the last-font safeguard; the last remaining font's delete action is disabled. Removal records both preset ID and content fingerprint, so subsequent cloud font downloads cannot recreate a removed bundled font under its hash ID. Hidden bundled source matching also covers removals made before this update. Explicit imports and project-embedded fonts retain their existing restoration behaviour.
