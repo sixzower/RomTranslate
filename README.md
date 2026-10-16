@@ -2,6 +2,12 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Pokémon translation prompt (0.32.22)
+
+The eight-rule Excel prompt adapts language QA guidance from [game-localization-qa](https://github.com/memolyviza2012-max/game-localization-qa), revision `1b35f87`, by Danaiwit (memolyviza2012-max), under [MIT](vendor/GAME-LOCALIZATION-QA-LICENSE.txt). Attribution and the full license are also embedded in the downloadable HTML's script.
+
+The prompt adds natural idiom translation, neutral pronouns when identity is unknown, category-specific style, preservation of mechanical facts, and consistent terminology within the same context. Kept English names are exempt from “untranslated” checks. It preserves the existing workbook identities, code order, selected scope, batch boundaries and real ROM layout checks. No AI service, new review workflow, external skill installation or automatic rewriting of existing translations is added. AI compliance and language accuracy still require validation in the actual game.
+
 ## Open latest work before font sync (0.32.21)
 
 After password validation (or explicitly remembered sign-in), restore the latest shared ROM/workspace before reading or uploading the font library. A slow or failed font request no longer prevents the ROM restore step from running. No extra SQL is needed for this ordering change. Existing missing-ROM, unsent-edit and conflict guards still apply.

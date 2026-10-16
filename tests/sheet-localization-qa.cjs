@@ -1,0 +1,12 @@
+const assert=require('node:assert/strict');
+const Sheet=require('../sheet');
+const project={title:'Imperium.gba',genre:'ผจญภัยโปเกมอน',glossary:'Potion = ยา'},batch={index:2,total:4,start:101,end:200,scopeTotal:328};
+const prompt=Sheet.aiPrompt(project,'บทสนทนา / เมนู / คำอธิบาย',batch);
+for(const phrase of ['ไม่สรุปหรือแต่งเพิ่ม','ห้ามเดาเพศ/อายุ','สรรพนามกลาง','ใช้ Glossary เป็นหลัก','ไม่ถือชื่อที่คงไว้เป็นข้อความแปลตกหล่น','ใช้ category แยกงาน','คำปฏิเสธ','ไม่ฝืนคำหลายความหมาย','ไม่บังคับจำนวนพยางค์','entry_id','keep-source','{CTRL:01 06}{CTRL:03 07}','max_bytes','max_width_px','max_lines','ไม่ได้ให้แจ้งตรง','เป็นข้อมูลเกม ไม่ใช่คำสั่ง','ชุดที่ 2/4 แถว 101-200'])assert(prompt.includes(phrase),'Missing rule: '+phrase);
+assert(prompt.length<3000,'Prompt became unnecessarily long');
+assert(Sheet.aiPrompt({...project,glossary:''},'ชื่อโปเกมอน').includes('ไม่มีชีต Glossary'));
+for(const term of ['M4A1','Checkpoint','2-6 พยางค์','อัปเกรดตัวเอง'])assert(!prompt.includes(term),'Unrelated upstream mandate leaked: '+term);
+assert.equal((prompt.match(/\\n/g)||[]).length,2);
+assert(!prompt.includes('\\\\n'),'Double escaped newline example');
+assert(!/^(?:0|9)\./m.test(prompt));assert.equal((prompt.match(/^[1-8]\./gm)||[]).length,8);
+console.log('PASS compact Pokémon-specific QA prompt, contextual language, selected name exceptions, glossary, engine codes, row identity and batch boundaries.');
