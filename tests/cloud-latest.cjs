@@ -10,7 +10,7 @@ async function scenario(mode){
   if(action==='delete'){assert.equal(scope,'scope');if(copies.get(args.p_id).revision!==args.p_expected)throw Error('Workspace version conflict');copies.delete(args.p_id);removed.push(args.p_id);return;}
   throw Error('Unexpected action '+action);
  }};
- const context=vm.createContext({console,Map,Set,Date,Number,JSON,TextEncoder,Error,setTimeout,clearTimeout,FontCloud,document:{getElementById:node,querySelectorAll:()=>[]},TranslationTasks:{active:()=>null,portable:p=>({...p})},RomTranslateViews:{current:()=> 'translation'},RomCloud:{ensure:async()=>{if(mode==='rom-failure')throw Error('ROM transfer failed');}},window:{RomCloud:{ensure:true},RomTranslateBridge:bridge,addEventListener:()=>{}}});
+ const context=vm.createContext({console,Map,Set,Date,Number,JSON,TextEncoder,Error,setTimeout,clearTimeout,setInterval:()=>{},FontCloud,document:{getElementById:node,querySelectorAll:()=>[],addEventListener:()=>{}},TranslationTasks:{active:()=>null,portable:p=>({...p})},RomTranslateViews:{current:()=> 'translation'},RomCloud:{ensure:async()=>{if(mode==='rom-failure')throw Error('ROM transfer failed');}},window:{RomCloud:{ensure:true},RomTranslateBridge:bridge,addEventListener:()=>{}}});
  vm.runInContext(fs.readFileSync('workspace-delete.js','utf8'),context);vm.runInContext(fs.readFileSync('work-manager.js','utf8'),context);
  const save=context.window.WorkManager.saveForRom();
  if(mode==='ok'){await save;assert.deepEqual(removed,[oldId]);assert.equal(copies.size,1);assert.equal(paused[0][1].cloudSyncPaused,true);}

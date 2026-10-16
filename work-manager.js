@@ -1,7 +1,7 @@
 /* Portable work files and private cloud copies use the existing font connection. */
 const WorkManager = (() => {
   const $ = id => document.getElementById(id), bridge = () => window.RomTranslateBridge;
-  let busy = false, queued = false, timer = null, missingRom = null, attachingRom = false;
+  let busy = false, queued = false, timer = null, missingRom = null, attachingRom = false, awaitingRom = null, pollingRom = false;
   const sent = new Map(),resumedScopes=new Set();
   const newest=rows=>rows.slice().sort((a,b)=>(typeof b.updated_at==='number'?b.updated_at:Date.parse(b.updated_at)||0)-(typeof a.updated_at==='number'?a.updated_at:Date.parse(a.updated_at)||0)||Number(b.revision)-Number(a.revision));
   async function retainLatest(id,revision,scope){
@@ -85,20 +85,38 @@ const WorkManager = (() => {
     status(rows.length+' โปรเจกต์');return rows;
   }
   async function autoResume(rows,scope){
-    if(resumedScopes.has(scope)||bridge().isLoading()||bridge().pendingWorkspace())return;
+    if(resumedScopes.has(scope)||bridge().isLoading())return;
+    const staged=bridge().pendingWorkspace();if(staged&&(!awaitingRom||awaitingRom.scope!==scope||awaitingRom.id!==staged.workspaceId))return;
     const current=bridge().project(),clean=p=>p&&!p.cloudSyncPaused&&p.cloudScope===scope&&p.cloudRevision>0&&(p.cloudSavedChange||0)>=(p.lastChangedAt||0);
     // Never switch away from active work. A clean copy of the same workspace
     // can receive its newer cloud revision once on connection.
     const candidates=rows.slice().sort((a,b)=>(Date.parse(b.updated_at)||0)-(Date.parse(a.updated_at)||0)||String(a.workspace_id).localeCompare(String(b.workspace_id)));
     const item=current?(clean(current)?candidates.find(r=>r.workspace_id===current.workspaceId&&Number(r.revision)>current.cloudRevision):null):candidates[0];
     if(!item){resumedScopes.add(scope);return;}
-    const stamp=current?.lastChangedAt,guard=()=>FontCloud.authenticated()&&!bridge().isLoading()&&!bridge().pendingWorkspace()&&bridge().project()===current&&(!current||current.lastChangedAt===stamp&&clean(current));
+    const stamp=current?.lastChangedAt,guard=()=>FontCloud.authenticated()&&!bridge().isLoading()&&bridge().pendingWorkspace()===staged&&bridge().project()===current&&(!current||current.lastChangedAt===stamp&&clean(current));
     const result=await FontCloud.workspaceRequest('get',{p_id:item.workspace_id}),saved=result?.[0];
     if(!guard())return;
     if(!saved?.payload||saved.payload.workspaceId!==item.workspace_id)throw Error('ไม่พบไฟล์งานคลาวด์ที่ตรงกับรายการ');
     const payload={...saved.payload,cloudRevision:Number(saved.revision),cloudScope:scope,cloudAutosave:true,cloudSyncPaused:false,cloudDeletePending:false,lastCloudSavedAt:Date.parse(item.updated_at)||Date.now(),cloudSavedChange:saved.payload.lastChangedAt||0};
-    let cloudBytes=null;if(window.RomCloud&&!current){const cached=await bridge().cachedRom(payload.romHash).catch(()=>null);if(!cached?.bytes)cloudBytes=await RomCloud.forResume(payload);if(!guard())return;}if(await bridge().autoResumeWorkspace(payload,guard,cloudBytes)){resumedScopes.add(scope);status('ดึงโปรเจกต์ล่าสุดแล้ว · '+(payload.workspaceName||payload.title));}
+    let cloudBytes=null;if(window.RomCloud&&!current){const cached=await bridge().cachedRom(payload.romHash).catch(()=>null);if(!cached?.bytes)try{cloudBytes=await RomCloud.forResume(payload);}catch(e){if(e.name!=='AbortError')throw e;resumedScopes.add(scope);awaitingRom=null;status('ยกเลิกเปิดงานอัตโนมัติแล้ว');return;}if(!guard())return;}if(await bridge().autoResumeWorkspace(payload,guard,cloudBytes,staged)){awaitingRom=null;resumedScopes.add(scope);status('เปิดงานล่าสุดอัตโนมัติแล้ว · '+(payload.workspaceName||payload.title));}else if(!bridge().project()&&bridge().pendingWorkspace()?.workspaceId===payload.workspaceId){awaitingRom={id:payload.workspaceId,hash:payload.romHash,scope};status('รอ ROM สำรอง · พร้อมแล้วจะเปิดงานให้อัตโนมัติ');}
   }
+  async function pollAwaitingRom(){
+    const waiting=awaitingRom;if(!waiting||busy||pollingRom||!FontCloud.connected()||document.hidden)return;
+    if(bridge().project()||bridge().pendingWorkspace()?.workspaceId!==waiting.id){awaitingRom=null;return;}
+    pollingRom=true;
+    try{
+      if(await FontCloud.workspaceScope()!==waiting.scope){awaitingRom=null;return;}
+      const metadata=await RomCloud.readyInfo(waiting.id,waiting.hash);
+      if(!metadata?.ready||metadata.sha256!==waiting.hash)return;
+      if(awaitingRom!==waiting||bridge().project()||bridge().pendingWorkspace()?.workspaceId!==waiting.id)return;
+      await syncConnected();
+    }catch(e){status('ยังรอ ROM สำรอง · ระบบจะตรวจอีกครั้งอัตโนมัติ');}
+    finally{pollingRom=false;}
+  }
+  window.addEventListener('romtranslate:cloud-resume-cancelled',()=>{if(awaitingRom)resumedScopes.add(awaitingRom.scope);awaitingRom=null;});
+  window.addEventListener('focus',pollAwaitingRom);window.addEventListener('online',pollAwaitingRom);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)pollAwaitingRom();});
+  setInterval(pollAwaitingRom,60000);
   function serialized(p) { const payload = TranslationTasks.portable(p); delete payload.cloudRevision; return {payload, content:JSON.stringify(payload)}; }
   async function upload(manual = false, target = bridge().project(), options={}) {
     const p = target; if (!p) throw Error('เปิด ROM / ไฟล์งานก่อน');
