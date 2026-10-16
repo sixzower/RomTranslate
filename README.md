@@ -2,6 +2,16 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Status colours, backup payloads and target presets (0.32.41)
+
+Working/confirmed system status messages use the theme's green success colour; errors and partial failures use red, while idle instructions remain neutral. Cloud connection text, both cloud settings views, local/cloud backup receipts, save indicators, Excel repair, font operations and patch operations expose explicit states. Failed automatic workspace backups remain visible in red without repeatedly opening an error modal. Explicit foreground failures retain their popup. Failed writes never advance the confirmed save marker, and the next sync can retry through the existing CAS/readback safeguards.
+
+Cloud workspace uploads omit undo/checkpoint history, retaining current translations, original identity checks, fonts, targets, work scopes and the current view. Undo history remains in local storage and local project exports, and same-device reconciliation preserves the local history. This avoids resending potentially large checkpoints on every save. Fresh devices receive the current working state without the previous device's undo stack. The write RPC budget is now 60 seconds and the browser allows 75 seconds; existing installations should run [workspace-save-fix.sql](cloud/workspace-save-fix.sql) once. That script only changes per-function timeout settings, without replacing save logic or touching data. It cannot fix an unavailable network or service.
+
+**จัดกลุ่มงานแปล → ชุดเป้าหมายสำเร็จรูป** offers **แปลไทยแนว Sword & Shield** and **เฉพาะเนื้อเรื่องและเมนู**. These select canonical categories, preserve existing words, honour Excel exclusions and sync through the existing project. The first translates dialogue, menus, descriptions and descriptive information while retaining proper names in English. It is an editable starting policy, not a claim that every category in another ROM was automatically identified. The supplied Sword & Shield TH v1.7 ROM was checked for English Pokémon, item, move and ability names: examples include Bulbasaur/Ivysaur in adjacent 11-byte slots, Master Ball/Potion 12 slots apart at stride 44, and Pound/Tackle 32 slots apart at stride 13. No game binary or full text dump is published.
+
+Validation extends `tests/progress-cloud.cjs`: real PostgreSQL with isolated desktop/mobile browser contexts verifies presets, cloud payload omission with local history retained, green success in both themes, red backup errors, no background failure popup, unconfirmed state after failed writes and successful retry. Passed for source and standalone HTML. Timeout migration, login/retry and existing merge/CAS checks pass; real production latency and lock contention are not reproduced by the local backend.
+
 ## Pinned popup close buttons (0.32.40)
 
 The shared × button stays at the dialog's upper-right edge when its content scrolls. Its position follows dialog size changes and viewport resizing, including mobile visual-viewport changes, while preserving existing close/cancel actions. Checked all 24 shared dialogs with long content at 1280px and 390px in light/dark themes, on both source and standalone HTML: the close button stays visible, aligned and clickable after scrolling to the bottom; clicking it closes the notice dialog.
@@ -135,7 +145,7 @@ Local tests cover 7,035 preserved translations, disjoint edits and conflict reje
 
 ## Workspace backup timeout (0.32.19)
 
-For `57014` during project backup, run [workspace-timeout-fix.sql](cloud/workspace-timeout-fix.sql) once in the existing Supabase project's SQL Editor, then retry **สำรองตอนนี้** from the device holding the ROM. This preserves all data and revisions. The migration avoids waiting for another library write and sets only the two backup RPCs to a 30-second statement limit / 2-second row-lock limit; PostgREST reloads its schema configuration. The browser allows 40 seconds for these writes and never automatically retries an ambiguous write response. A project write must finish before ROM backup starts.
+For `57014` during project backup, run [workspace-save-fix.sql](cloud/workspace-save-fix.sql) once in the existing Supabase project's SQL Editor, then retry **สำรองตอนนี้** from the device holding the ROM. This preserves all data and revisions. The migration preserves the installed write functions and sets only the two backup RPCs to a 60-second statement limit / 2-second row-lock limit; PostgREST reloads its schema configuration. The browser allows 75 seconds for these writes and never automatically retries an ambiguous write response. A project write must finish before ROM backup starts.
 
 Tests verify large Thai payload preservation, permissions, revision conflicts and timeout feedback locally. They do not establish the cause of a production timeout or verify the user's live backup; persistent timeouts require Supabase database logs (query duration / lock waits / resource load).
 

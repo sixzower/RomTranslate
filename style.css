@@ -139,3 +139,14 @@ body[data-theme=dark] #fontCloudStatus[data-kind=error]{color:#ff8b94}
 .import-entry-preview summary{cursor:pointer;line-height:1.7;overflow-wrap:anywhere;padding:6px 0}.import-entry-preview p{white-space:pre-wrap;overflow-wrap:anywhere}[data-import-metrics]{font-size:12px;line-height:1.7}
 
 #progressCloudState{font-size:12px;color:var(--muted);line-height:1.7}#progressCloudState[data-state=saved]{color:#167b37}body[data-theme=dark] #progressCloudState[data-state=saved]{color:#62e68d}
+
+:root{--error:#b4232e;--danger:var(--error)}body[data-theme=dark]{--error:#ff929b;--danger:var(--error)}
+:is(#fontCloudStatus,#cloudManageStatus,#fontCloudBadge,#workStatus,#localSaveStatus,#cloudSaveStatus,#autosaveBadge,#saveState,#sheetRepairStatus,#patchStatus,#romFontStatus,#noticeText,#toast,#emuStatus,#fontEditorState)[data-kind=success],:is(#fontCloudStatus,#cloudManageStatus,#fontCloudBadge,#workStatus,#localSaveStatus,#cloudSaveStatus,#autosaveBadge,#saveState,#sheetRepairStatus,#patchStatus,#romFontStatus,#noticeText,#toast,#emuStatus,#fontEditorState)[data-kind=pending]{color:var(--success)}
+:is(#fontCloudStatus,#cloudManageStatus,#fontCloudBadge,#workStatus,#localSaveStatus,#cloudSaveStatus,#autosaveBadge,#saveState,#sheetRepairStatus,#patchStatus,#romFontStatus,#noticeText,#toast,#emuStatus,#fontEditorState)[data-kind=error],:is(#fontCloudStatus,#cloudManageStatus,#fontCloudBadge,#workStatus,#localSaveStatus,#cloudSaveStatus,#autosaveBadge,#saveState,#sheetRepairStatus,#patchStatus,#romFontStatus,#noticeText,#toast,#emuStatus,#fontEditorState)[data-kind=warning]{color:var(--error)}
+:is(#fontCloudStatus,#cloudManageStatus,#fontCloudBadge,#workStatus,#localSaveStatus,#cloudSaveStatus,#autosaveBadge,#saveState,#sheetRepairStatus,#patchStatus,#romFontStatus,#noticeText,#toast,#emuStatus,#fontEditorState)[data-kind=info]{color:var(--muted)}
+#cloudOpen[data-state=connected] #cloudConnectionText{color:var(--success)}#cloudOpen[data-state=disconnected] #cloudConnectionText{color:var(--error)}#cloudOpen[data-state=connecting] #cloudConnectionText{color:var(--success)}
+#operationDetail,#romCloudDetail,#sheetImportProgressText{color:var(--success)}.progress-preset-label select{max-width:360px}#progressPresetHint{font-size:12px}
+
+#fontEditorPreviewError,#fontSampleError,#fontRenameError,#workspaceConflictStatus{color:var(--error)}#sheetImportProgressDetail{color:var(--success)}
+
+#sheetPlan.sheet-plan-error,.format-error,.translation-bottom span.over,#cloudPending{color:var(--error)}#progressCloudState[data-state=pending]{color:var(--success)}#progressCloudState[data-state=error]{color:var(--error)}

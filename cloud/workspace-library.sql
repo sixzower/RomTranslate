@@ -122,9 +122,9 @@ returns void language sql security definer set search_path = pg_catalog as $$ se
 
 -- PostgREST applies per-RPC statement_timeout before executing the request.
 -- Keep row-lock waits short; do not change the timeout for other applications.
-alter function public.romtranslate_work_code_put(text,uuid,bigint,jsonb) set statement_timeout = '30s';
+alter function public.romtranslate_work_code_put(text,uuid,bigint,jsonb) set statement_timeout = '60s';
 alter function public.romtranslate_work_code_put(text,uuid,bigint,jsonb) set lock_timeout = '2s';
-alter function public.romtranslate_work_user_put(uuid,bigint,jsonb) set statement_timeout = '30s';
+alter function public.romtranslate_work_user_put(uuid,bigint,jsonb) set statement_timeout = '60s';
 alter function public.romtranslate_work_user_put(uuid,bigint,jsonb) set lock_timeout = '2s';
 
 revoke all on function public.romtranslate_work_owner(text),public.romtranslate_work_list(text),public.romtranslate_work_get(text,uuid),public.romtranslate_work_put(text,uuid,bigint,jsonb),public.romtranslate_work_delete(text,uuid,bigint) from public,anon,authenticated;

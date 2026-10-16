@@ -44,9 +44,9 @@ $$;
 
 -- PostgREST applies per-RPC statement_timeout before executing the request.
 -- Keep row-lock waits short; do not change the timeout for other applications.
-alter function public.romtranslate_work_code_put(text,uuid,bigint,jsonb) set statement_timeout = '30s';
+alter function public.romtranslate_work_code_put(text,uuid,bigint,jsonb) set statement_timeout = '60s';
 alter function public.romtranslate_work_code_put(text,uuid,bigint,jsonb) set lock_timeout = '2s';
-alter function public.romtranslate_work_user_put(uuid,bigint,jsonb) set statement_timeout = '30s';
+alter function public.romtranslate_work_user_put(uuid,bigint,jsonb) set statement_timeout = '60s';
 alter function public.romtranslate_work_user_put(uuid,bigint,jsonb) set lock_timeout = '2s';
 
 notify pgrst, 'reload schema';

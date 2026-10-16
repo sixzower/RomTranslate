@@ -40,11 +40,17 @@ const TranslationProgress=(()=>{
  function definition(value){return byWork.get(value)||byCategory.get(value)||null;}
  function categoryMatches(category,filter,family){return filter==='all'||filter==='proper-names'&&policy(category)==='keep'||filter===category||filter===family||definition(category)?.key===filter;}
  function workGroups(project,rows=groups(project)){const selected=new Set(selection(project,rows)),map=new Map();for(const row of rows){const def=definition(row.category)||{key:row.category,label:row.category.split(' / ').slice(1).join(' / ')||row.category,hint:'เลือกดูหรือแปลเฉพาะหมวดนี้',family:row.family},key=def.key;let group=map.get(key);if(!group){group={...def,policy:row.policy,categories:[],rows:[],total:0,done:0,selectedTotal:0,selectedDone:0};map.set(key,group);}group.categories.push(row.category);group.rows.push(row);group.total+=row.total;group.done+=row.done;if(selected.has(row.category)){group.selectedTotal+=row.total;group.selectedDone+=row.done;}}const order=new Map(WORK.map((w,i)=>[w.key,i]));return [...map.values()].map(g=>({...g,remaining:g.total-g.done,selectedRemaining:g.selectedTotal-g.selectedDone})).sort((a,b)=>(order.get(a.key)??999)-(order.get(b.key)??999));}
+ const presets=[
+  {id:'pokemon-th',name:'แปลไทยแนว Sword & Shield',hint:'แปลบทพูด เมนู คำอธิบาย โปเกเด็กซ์ และข้อมูลเทรนเนอร์ · คงชื่อเฉพาะเป็นอังกฤษ ปรับหมวดย่อยได้'},
+  {id:'story-menu',name:'เฉพาะเนื้อเรื่องและเมนู',hint:'แปลบทพูดและเมนูระบบก่อน · ยังไม่รวมคำอธิบายไอเท็ม ท่า ความสามารถ และโปเกเด็กซ์'}
+ ];
+ function presetSelection(project,id){if(!presets.some(p=>p.id===id))throw Error('ไม่พบชุดเป้าหมาย');return groups(project).filter(row=>policy(row.category)!=='keep'&&(id!=='story-menu'||['dialogue','menu'].includes(row.family))).map(row=>row.category);}
+ function matchingPreset(project){const selected=new Set(selection(project));return presets.find(p=>{const rows=presetSelection(project,p.id);return rows.length===selected.size&&rows.every(c=>selected.has(c));})?.id||'custom';}
  function recommended(project){return groups(project).filter(r=>policy(r.category)!=='keep').map(r=>r.category);}
  function matches(entry,category){return categoryMatches(entry.category,category,entry.family)&&(category!=='proper-names'||eligible(entry));}
  function groups(project){const map=new Map();for(const e of project?.entries||[]){if(!eligible(e))continue;let row=map.get(e.category);if(!row){row={category:e.category,family:e.family,policy:policy(e.category),total:0,done:0};map.set(e.category,row);}row.total++;if(translated(e))row.done++;}return [...map.values()].map(r=>({...r,remaining:r.total-r.done}));}
  function selection(project,rows=groups(project)){const allowed=new Set(rows.map(r=>r.category));return project?.progressCategories===undefined?[...allowed]:(validSelection(project.progressCategories)?project.progressCategories.filter(c=>allowed.has(c)):[]);}
  function stats(project){const rows=groups(project),selected=new Set(selection(project,rows));let total=0,done=0;for(const r of rows)if(selected.has(r.category)){total+=r.total;done+=r.done;}return {groups:rows,selected:[...selected],total,done,remaining:total-done,percent:total?done/total*100:0};}
- return {definition,categoryMatches,workGroups,policy,policies:POLICIES,recommended,matches,validSelection,eligible,translated,groups,selection,stats};
+ return {presets,presetSelection,matchingPreset,definition,categoryMatches,workGroups,policy,policies:POLICIES,recommended,matches,validSelection,eligible,translated,groups,selection,stats};
 })();
 if(typeof module!=="undefined")module.exports=TranslationProgress;
