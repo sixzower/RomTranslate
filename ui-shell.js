@@ -24,11 +24,26 @@ const UiShell = (() => {
   for(const menu of document.querySelectorAll('.tools-menu'))menu.addEventListener('click',e=>{if(e.target.closest('button'))menu.open=false;});
   document.addEventListener('pointerdown',e=>{for(const menu of document.querySelectorAll('.tools-menu[open]'))if(!menu.contains(e.target))menu.open=false;});
   const closeActions={glossaryDialog:'closeGlossary',romFontDialog:'romFontClose',remainingDialog:'remainingClose',progressDialog:'progressClose',sheetExportDialog:'sheetExportClose',sheetImportDialog:'sheetImportCancel',coverageDialog:'coverageClose',qualityDialog:'qualityClose',historyDialog:'historyClose',originalDialog:'cancelOriginal',romDialog:'closeRom',workDialog:'workClose',fontDialog:'closeFont',fontRenameDialog:'fontRenameCancel',fontCloudDialog:'fontCloudClose',fontHelpDialog:'fontHelpClose',promptDialog:'closePrompt',patchDialog:'patchClose',buildDialog:'closeBuild',noticeDialog:'noticeDismiss'};
+  // A fixed child stays reachable when the dialog itself scrolls. Track the
+  // dialog edge rather than the page edge, including content/viewport resizing.
+  const closeButtons=new Map();
+  function positionClose(dialog){
+    const button=closeButtons.get(dialog);if(!dialog.open||!button)return;
+    const box=dialog.getBoundingClientRect();
+    button.style.top=Math.max(7,box.top+7)+'px';
+    button.style.left=Math.max(7,box.right-36)+'px';
+  }
+  const closeResize=new ResizeObserver(entries=>{for(const entry of entries)positionClose(entry.target);});
+  const closeOpen=new MutationObserver(entries=>{for(const entry of entries)positionClose(entry.target);});
+  const repositionClose=()=>{for(const dialog of closeButtons.keys())positionClose(dialog);};
+  window.addEventListener('resize',repositionClose);
+  window.visualViewport?.addEventListener('resize',repositionClose);
+  window.visualViewport?.addEventListener('scroll',repositionClose);
   for(const dialog of document.querySelectorAll('dialog')){const button=document.createElement('button');button.type='button';button.className='dialog-x';button.textContent='×';button.setAttribute('aria-label','ปิดหน้าต่าง');button.title='ปิด';button.onclick=()=>{
     if(dialog.id==='operationDialog'||dialog.id==='sheetProgressDialog'){dialog.dispatchEvent(new Event('cancel',{cancelable:true}));return;}
     const action=$(closeActions[dialog.id]);if(action){dialog.dataset.closeRequested='yes';if(!action.disabled)action.click();else{const text=dialog.querySelector('[role=status]');if(text)text.textContent='กำลังทำงาน กรุณารอให้เสร็จก่อนปิด';}return;}
     const event=new Event('cancel',{cancelable:true});if(dialog.dispatchEvent(event))dialog.close();
-  };dialog.prepend(button);}
+  };dialog.prepend(button);closeButtons.set(dialog,button);closeResize.observe(dialog);closeOpen.observe(dialog,{attributes:true,attributeFilter:['open']});positionClose(dialog);}
   for(const bar of document.querySelectorAll('progress')){let label=bar.id==='progressBar'?$('progressPercent'):bar.id==='sheetImportProgressBar'?$('sheetImportPercent'):bar.id==='romCloudBar'?$('romCloudPercent'):null;
     if(!label){label=document.createElement('output');label.className='load-percent';label.setAttribute('aria-live','polite');bar.after(label);}
     if(bar.id!=='progressBar'){const row=document.createElement('div');row.className='load-progress-row';bar.before(row);row.append(bar,label);label.classList.add('load-percent');}

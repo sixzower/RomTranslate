@@ -2,6 +2,10 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Pinned popup close buttons (0.32.40)
+
+The shared × button stays at the dialog's upper-right edge when its content scrolls. Its position follows dialog size changes and viewport resizing, including mobile visual-viewport changes, while preserving existing close/cancel actions. Checked all 24 shared dialogs with long content at 1280px and 390px in light/dark themes, on both source and standalone HTML: the close button stays visible, aligned and clickable after scrolling to the bottom; clicking it closes the notice dialog.
+
 ## Shared translation targets and progress (0.32.39)
 
 Target groups and subcategories are explicit fields of the existing cloud workspace, together with active/paused work scopes and their canonical entry IDs. Snapshots materialize the actual target selection, and workspace hydration restores it centrally. An explicit empty selection remains empty. Percentages are derived from the current canonical ROM entries, actual translations and keep-source choices; drafts and excluded categories do not count. No separate saved percentage can drift from the project data.
