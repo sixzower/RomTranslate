@@ -24,11 +24,14 @@ const RomCloud=(()=>{
   }
   return m;
  }
- async function forResume(p,{strict=false}={}){try{
+ async function locate(p){
   let m=await readyInfo(p.workspaceId,p.romHash),source=p;
-  // Older versions could save the same source ROM under another workspace ID.
-  // Reuse only hash-matched original bytes; always keep the latest translation payload.
-  if(!m?.ready){const rows=await FontCloud.workspaceRequest('list');if(!Array.isArray(rows))throw Error('อ่านรายการ ROM ของงานเดิมไม่ได้');for(const row of rows){if(row.workspace_id===p.workspaceId||row.rom_sha256!==p.romHash)continue;const candidate=await readyInfo(row.workspace_id,p.romHash);if(candidate?.ready&&candidate.sha256===p.romHash){m=candidate;source={...p,workspaceId:row.workspace_id};break;}}}
+  if(!m?.ready){const rows=await FontCloud.workspaceRequest('list');if(!Array.isArray(rows))throw Error('อ่านรายการ ROM ของงานเดิมไม่ได้');for(const row of rows){if(row.workspace_id===p.workspaceId||row.rom_sha256!==p.romHash)continue;const candidate=await readyInfo(row.workspace_id,p.romHash);if(candidate?.sha256!==p.romHash)continue;if(candidate.ready||!m||(candidate.present?.length||0)>(m.present?.length||0)){m=candidate;source={...p,workspaceId:row.workspace_id};}if(m?.ready)break;}}
+  if(m&&(m.sha256!==p.romHash||!Number.isSafeInteger(m.size)||m.size<192||m.size>33554432||m.chunks!==Math.ceil(m.size/CHUNK)))throw Error('ข้อมูลไฟล์เกมบนคลาวด์ไม่ตรงกับโปรเจกต์');
+  return {metadata:m,source};
+ }
+ async function forResume(p,{strict=false}={}){try{
+  const {metadata:m,source}=await locate(p);
   if(strict&&!m?.ready){const error=Error(m?'ROM ของงานนี้ยังสำรองไม่ครบ':'คำแปลอยู่บนคลาวด์แล้ว แต่ยังไม่มี ROM ที่สำรองครบ');error.romRequired=true;throw error;}
   return await download(source,m);
  }catch(e){if(strict||e.name==='AbortError')throw e;if(!e.romSetupMissing)bridge().toast('ยังเปิดงานจากคลาวด์ไม่ได้: '+e.message);return null;}}
@@ -76,13 +79,7 @@ const RomCloud=(()=>{
    bridge().toast('ดาวน์โหลดชุดทำงานต่อแล้ว · แตก ZIP แล้วเปิด ROM และไฟล์สำรอง JSON ตามวิธีในชุด');
   }finally{end();}
  }
- function target(){const p=bridge().pendingWorkspace()||bridge().project();if(!p)throw Error('เปิดโปรเจกต์ก่อน');return p;}
- async function action(work){try{if(!FontCloud.connected())throw Error('เชื่อมคลังส่วนตัวก่อน');await work();}catch(e){const message=e.message+(/SHA-256/.test(e.message)?' · ลบ ROM คลาวด์ของงานนี้ แล้วกดเก็บ ROM ใหม่อีกครั้ง':'' );if(e.romSetupMissing)$('romCloudSetup').hidden=false;$('romCloudStatus').textContent=message;bridge().toast(message,e.name==='AbortError'?'info':'error');}}
- $('romCloudUpload').onclick=()=>action(async()=>{await WorkManager.saveForRom({interactive:true});$('romCloudStatus').textContent='สำรอง ROM และคำแปลครบแล้ว พร้อมเปิดงานต่ออีกเครื่อง';bridge().toast('สำรอง ROM และคำแปลครบแล้ว');});
- $('romWorkDownload').onclick=async()=>{try{await saveWork(target());}catch(e){$('romCloudStatus').textContent=e.message;bridge().toast(e.message,e.name==='AbortError'?'info':'error');}};
- $('romCloudRemove').onclick=()=>action(async()=>{const p=target();if(!confirm('ลบเฉพาะ ROM ของ “'+(p.workspaceName||p.title)+'” จากคลาวด์? คำแปลและ ROM ในเครื่องยังอยู่'))return;await bridge().storeCloudState(p.workspaceId,{cloudAutosave:false,cloudSyncPaused:true,cloudRomReady:false});await FontCloud.romRequest('delete',{p_id:p.workspaceId});$('romCloudStatus').textContent='ลบ ROM คลาวด์แล้ว · หยุดสำรองงานนี้ · คำแปลยังอยู่';bridge().toast('ลบ ROM คลาวด์แล้ว');});
- $('romCloudCheck').onclick=()=>action(async()=>{const p=target(),m=await info(p.workspaceId);$('romCloudStatus').textContent=!m?'ยังไม่ได้เก็บ ROM บนคลาวด์':m.ready?'เก็บ ROM ครบแล้ว · '+(m.size/1048576).toFixed(2)+' MB':'อัปโหลดยังค้าง '+Math.floor((m.present?.length||0)/m.chunks*100)+'% · กดเก็บ ROM เพื่อส่งต่อจากเดิม';});
- $('romCloudSql').onclick=async()=>{try{await navigator.clipboard.writeText(RomCloudSchema);$('romCloudStatus').textContent='คัดลอก SQL แล้ว วางใน Supabase SQL Editor แล้ว Run ครั้งเดียว';}catch{$('romCloudSqlText').value=RomCloudSchema;$('romCloudSqlText').hidden=false;$('romCloudSqlText').select();}};
- return {forResume,info,readyInfo,checkSetup,saveWork,ensure};
+ $('romCloudSql').onclick=async()=>{try{await navigator.clipboard.writeText(RomCloudSchema);$('cloudManageStatus').textContent='คัดลอก SQL แล้ว วางใน Supabase SQL Editor แล้ว Run ครั้งเดียว';}catch{$('romCloudSqlText').value=RomCloudSchema;$('romCloudSqlText').hidden=false;$('romCloudSqlText').select();}};
+ return {forResume,info,readyInfo,locate,checkSetup,saveWork,ensure};
 })();
 window.RomCloud=RomCloud;

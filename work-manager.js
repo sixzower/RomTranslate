@@ -1,7 +1,7 @@
 /* Portable work files and private cloud copies use the existing font connection. */
 const WorkManager = (() => {
   const $ = id => document.getElementById(id), bridge = () => window.RomTranslateBridge;
-  let busy = false, queued = false, timer = null, missingRom = null, attachingRom = false, awaitingRom = null, pollingRom = false;
+  let busy = false, queued = false, timer = null, latestCloud = null, remoteReady = false, awaitingRom = null, pollingRom = false;
   const sent = new Map(),resumedScopes=new Set();
   const newest=rows=>rows.slice().sort((a,b)=>(typeof b.updated_at==='number'?b.updated_at:Date.parse(b.updated_at)||0)-(typeof a.updated_at==='number'?a.updated_at:Date.parse(a.updated_at)||0)||Number(b.revision)-Number(a.revision));
   async function retainLatest(id,revision,scope){
@@ -20,7 +20,11 @@ const WorkManager = (() => {
     if(!saved?.payload||saved.payload.workspaceId!==item.workspace_id||saved.payload.romHash!==item.rom_sha256)throw Error('ไม่พบไฟล์งานและ ROM ที่ตรงกับรายการ กรุณารีเฟรช');
     if(await FontCloud.workspaceScope()!==scope)throw Error('คลังเปลี่ยนแล้ว กรุณาเปิดรายการใหม่');
     status('กำลังเปิด ROM และคำแปลล่าสุด…');
-    let loaded;try{loaded=await bridge().loadWorkspace({...saved.payload,cloudRevision:Number(saved.revision),cloudScope:scope,cloudAutosave:true,cloudSyncPaused:false,cloudDeletePending:false,lastCloudSavedAt:Date.parse(item.updated_at)||Date.now(),cloudSavedChange:saved.payload.lastChangedAt||0},{requireRom:true});}catch(e){if(!e.romRequired)throw e;missingRom={item,scope,hash:saved.payload.romHash};$('cloudRomName').textContent=saved.payload.workspaceName||saved.payload.title;$('cloudRomAttachStatus').textContent='คำแปลเดิมยังอยู่ เลือกเฉพาะไฟล์เกมต้นฉบับครั้งเดียว';$('cloudRomNeeded').showModal();status('รอเชื่อม ROM ต้นฉบับ · ไม่ต้องนำเข้าคำแปลใหม่');return false;}
+    const payload={...saved.payload,cloudRevision:Number(saved.revision),cloudScope:scope,cloudAutosave:true,cloudSyncPaused:false,cloudDeletePending:false,lastCloudSavedAt:Date.parse(item.updated_at)||Date.now(),cloudSavedChange:saved.payload.lastChangedAt||0};
+    let loaded;try{loaded=await bridge().loadWorkspace(payload,{requireRom:true});}catch(e){if(!e.romRequired)throw e;
+      if(!bridge().project()&&!bridge().pendingWorkspace())await bridge().autoResumeWorkspace(payload,()=>FontCloud.authenticated()&&!bridge().project()&&!bridge().pendingWorkspace(),null);
+      if(!bridge().project()&&bridge().pendingWorkspace()?.workspaceId===payload.workspaceId){awaitingRom={id:payload.workspaceId,hash:payload.romHash,scope};resumedScopes.delete(scope);}
+      await inspectCloudRom(item);status('คำแปลยังอยู่ · รอเครื่องเดิมสำรองไฟล์เกมให้ครบ');return false;}
     if(loaded!==true)throw Error('ยังเปิด ROM ไม่สำเร็จ · งานเดิมยังอยู่ กรุณาลองอีกครั้ง');
     $('workDialog').close();$('fontCloudDialog').close();$('cloudManageDialog').close();status('เปิด ROM และคำแปลล่าสุดแล้ว');bridge().toast('เปิด ROM พร้อมคำแปลล่าสุดแล้ว ทำงานต่อได้เลย');
   }
@@ -33,9 +37,11 @@ const WorkManager = (() => {
   function renderCurrent() {
     const p = bridge()?.project(), task = TranslationTasks.active(p);backupStatus(p);for(const button of document.querySelectorAll('#workCloudRows button'))button.disabled=busy;
     $('workBanner').hidden = !task || RomTranslateViews.current()!=='translation';
-    $('romWorkDownload').disabled=busy||!(p||bridge()?.pendingWorkspace());
-    $('romCloudUpload').disabled=busy||!p||!FontCloud.connected();for(const id of ['romCloudRemove','romCloudCheck'])$(id).disabled=busy||!(p||bridge()?.pendingWorkspace())||!FontCloud.connected();
-    $('cloudRomChoose').disabled=busy||attachingRom;$('workCloudRefresh').disabled = busy||!FontCloud.connected();$('romCloudOpen').disabled=busy||!FontCloud.connected();
+    $('cloudBackupRetry').hidden=!p||!!p.cloudRomReady&&!p.cloudSyncPaused&&(p.cloudSavedChange||0)>=(p.lastChangedAt||0);
+    $('cloudBackupRetry').disabled=busy||!p||!FontCloud.connected();
+    $('workCloudRefresh').disabled=busy||!FontCloud.connected();
+    $('romCloudOpen').disabled=busy||FontCloud.connected()&&(!latestCloud||!remoteReady&&p?.romHash!==latestCloud.rom_sha256);
+    $('romCloudOpen').textContent=!FontCloud.connected()?'เชื่อมคลังส่วนตัว':!latestCloud?'ยังไม่มีงานบนคลาวด์':remoteReady||p&&p.romHash===latestCloud.rom_sha256?'เปิดงานต่อ':'รอไฟล์เกมบนคลาวด์';
     if (task) { const s = TranslationTasks.stats(p, task); $('workBannerText').textContent = 'กำลังดูชุด: '+task.name + ` · แปลแล้ว ${s.done}/${s.total} · เหลือ ${s.remaining}`; }
   }
   function localRecords(records){
@@ -45,44 +51,38 @@ const WorkManager = (() => {
     return {rows,issues};
   }
   async function open() {
-    $('workDialog').showModal();renderCurrent();await run(async()=>{status('กำลังโหลดโปรเจกต์…');if(FontCloud.connected()){const rows=await listCloud();await window.RomCloud?.checkSetup(rows[0]?.workspace_id);}else status('บันทึกในเครื่องอัตโนมัติ · เชื่อมคลังส่วนตัวเพื่อสำรองข้ามเครื่อง');});
+    $('workDialog').showModal();renderCurrent();await run(async()=>{status('กำลังโหลดโปรเจกต์…');if(FontCloud.connected()){await listCloud();status('');}else status('บันทึกในเครื่องอัตโนมัติ · เชื่อมคลังส่วนตัวเพื่อสำรองข้ามเครื่อง');});
   }
   async function run(action) {
     if (busy){status('กำลังจัดการโปรเจกต์ กรุณารอสักครู่');return;} busy = true; renderCurrent();
-    try { await action(); } catch (e) { status(e.message);if(e.networkFailure)FontCloud.reportError(e.message);if($('cloudRomNeeded').open)$('cloudRomAttachStatus').textContent=e.message;else if($('workDialog').open)window.UiShell?.notify(e.message,true);else bridge().toast(e.message,'error'); }
+    try { await action(); } catch (e) { status(e.message);if(e.networkFailure)FontCloud.reportError(e.message);if($('workDialog').open)window.UiShell?.notify(e.message,true);else bridge().toast(e.message,'error'); }
     finally { busy = false; renderCurrent(); if (queued) { queued = false; schedule(); } }
   }
-  async function listCloud() {
-    const result = await FontCloud.workspaceRequest('list'); if (!Array.isArray(result)) throw Error('อ่านรายการไฟล์งานไม่สำเร็จ');const rows=newest(result);
-    $('workCloudRows').replaceChildren();
-    for (const item of rows) {
-      const row = document.createElement('article');row.className='project-card';row.dataset.workspaceId=item.workspace_id;const info=document.createElement('div'),title=document.createElement('strong'),meta=document.createElement('small');title.textContent=item.name;meta.textContent='อัปเดต '+time(item.updated_at)+(Number(item.pending_tasks)>0?' · '+Number(item.pending_tasks)+' ชุดงานค้าง':'');info.className='project-card-info';info.append(title,meta);row.append(info);const actions=document.createElement('div');actions.className='project-card-actions';row.append(actions);
-      const more=document.createElement('details'),moreTitle=document.createElement('summary');moreTitle.textContent='เพิ่มเติม';more.append(moreTitle);actions.append(more);
-      more.append(button('ดาวน์โหลดชุดทำงานต่อ',()=>run(async()=>{
-        const result=await FontCloud.workspaceRequest('get',{p_id:item.workspace_id}),payload=result?.[0]?.payload;
-        if(!payload||payload.workspaceId!==item.workspace_id||payload.romHash!==item.rom_sha256)throw Error('ข้อมูล ROM ไม่ตรงกับโปรเจกต์ที่เลือก กรุณารีเฟรชรายการ');
-        status('กำลังจัดชุด ROM และไฟล์งานล่าสุด…');await RomCloud.saveWork(payload);status('ส่งชุดทำงานต่อให้เบราว์เซอร์แล้ว · แตก ZIP แล้วเปิด ROM และไฟล์สำรอง JSON');
-      })));
-      more.append(button('ลบสำเนาคลาวด์', () => {
-        if (!confirm('ลบสำเนาคลาวด์ “' + item.name + '”? คำแปลในเครื่องและไฟล์ JSON ยังอยู่')) return;
-        run(async()=>{
-          status('กำลังลบสำเนาโปรเจกต์…');
-          const scope=await FontCloud.workspaceScope(),p=bridge().project();
-          if(p?.workspaceId===item.workspace_id)clearTimeout(timer);
-          await bridge().storeCloudState(item.workspace_id,{cloudAutosave:false,cloudSyncPaused:true,cloudDeletePending:true});
-          const request=async(action,args)=>{if(await FontCloud.workspaceScope()!==scope)throw Error('คลังเปลี่ยนระหว่างลบ กรุณาเปิดรายการใหม่');return FontCloud.workspaceRequest(action,args);};
-          try{await WorkspaceDelete.remove(item,request,status);}catch(e){if(/Workspace version conflict/.test(e.message)){try{await listCloud();}catch{}throw Error('โปรเจกต์มีรุ่นใหม่กว่า รีเฟรชก่อนลบอีกครั้ง · หยุดสำรองเพื่อไม่ทับงาน');}throw e;}
-          sent.delete(item.workspace_id);
-          await bridge().storeCloudState(item.workspace_id,{cloudRevision:0,cloudSyncPaused:true,cloudAutosave:false,cloudDeletePending:false,lastCloudSavedAt:0,cloudSavedChange:0});
-          for(const card of $('workCloudRows').children)if(card.dataset.workspaceId===item.workspace_id)card.remove();
-          try{await listCloud();}catch(e){if(e.networkFailure)FontCloud.reportError(e.message);status('ลบสำเนาคลาวด์แล้ว แต่รีเฟรชรายการไม่ได้ · งานในเครื่องยังอยู่');return;}
-          status('ลบสำเนาคลาวด์แล้ว งานในเครื่องยังอยู่');
-        });
-      }));
-      $('workCloudRows').append(row);
-    }
-    if (!rows.length) $('workCloudRows').textContent = 'ยังไม่มีโปรเจกต์บนคลาวด์ · เปิด ROM แล้วเชื่อมคลังเพื่อเริ่มบันทึก';renderCurrent();
-    status(rows.length+' โปรเจกต์');return rows;
+  async function inspectCloudRom(item){
+    remoteReady=false;$('cloudRomState').dataset.state='checking';$('cloudRomState').textContent='กำลังตรวจไฟล์เกมบนคลาวด์…';$('cloudRomHint').textContent='';
+    try{const {metadata:m}=await RomCloud.locate({workspaceId:item.workspace_id,romHash:item.rom_sha256});if(latestCloud?.workspace_id!==item.workspace_id)return;
+      if(m?.ready){remoteReady=true;$('cloudRomState').dataset.state='ready';$('cloudRomState').textContent='ไฟล์เกมและคำแปลพร้อมเปิด · '+(m.size/1048576).toFixed(0)+' MB';}
+      else{$('cloudRomState').dataset.state='waiting';const count=new Set(m?.present||[]).size,total=m?.chunks||0;const percent=total?Math.floor(count/total*100):0;$('cloudRomState').textContent=m?'ไฟล์เกมยังสำรองไม่ครบ · '+percent+'% ('+count+'/'+total+' ส่วน)':'พบคำแปล · ยังไม่มีไฟล์เกมบนคลาวด์';$('cloudRomHint').textContent='เปิดเว็บที่เครื่องเดิมให้สำรอง ROM ครบก่อน มือถือจะเปิดงานให้เอง ไม่ต้องเลือกไฟล์ในมือถือ';}
+    }catch(e){$('cloudRomState').dataset.state='error';$('cloudRomState').textContent=e.romSetupMissing?'ยังไม่ได้ติดตั้งที่เก็บไฟล์เกม':'ตรวจไฟล์เกมไม่สำเร็จ';$('cloudRomHint').textContent=e.message;}
+    renderCurrent();
+  }
+  async function removeCloudItem(item){
+    if(!confirm('ลบโปรเจกต์ “'+item.name+'” และไฟล์เกมบนคลาวด์? งานในเครื่องยังอยู่'))return;
+    status('กำลังลบโปรเจกต์…');const scope=await FontCloud.workspaceScope();clearTimeout(timer);
+    await bridge().storeCloudState(item.workspace_id,{cloudAutosave:false,cloudSyncPaused:true,cloudDeletePending:true});
+    const request=async(action,args)=>{if(await FontCloud.workspaceScope()!==scope)throw Error('คลังเปลี่ยนระหว่างลบ กรุณาเปิดรายการใหม่');return FontCloud.workspaceRequest(action,args);};
+    await WorkspaceDelete.remove(item,request,status);sent.delete(item.workspace_id);
+    await bridge().storeCloudState(item.workspace_id,{cloudRevision:0,cloudSyncPaused:true,cloudAutosave:false,cloudDeletePending:false,lastCloudSavedAt:0,cloudSavedChange:0});
+    await listCloud();status('ลบโปรเจกต์และไฟล์เกมบนคลาวด์แล้ว · งานในเครื่องยังอยู่');
+  }
+  async function listCloud(){
+    const result=await FontCloud.workspaceRequest('list');if(!Array.isArray(result))throw Error('อ่านรายการไฟล์งานไม่สำเร็จ');const rows=newest(result),item=rows[0];latestCloud=item||null;remoteReady=false;
+    $('workCloudRows').replaceChildren();$('workCloudActions').replaceChildren();$('cloudRomHint').textContent='';
+    if(item){const row=document.createElement('article'),info=document.createElement('div'),title=document.createElement('strong'),meta=document.createElement('small');row.className='project-card';row.dataset.workspaceId=item.workspace_id;info.className='project-card-info';title.textContent=item.name;meta.textContent='บันทึกล่าสุด '+time(item.updated_at);info.append(title,meta);row.append(info);$('workCloudRows').append(row);
+      $('workCloudActions').append(button('ดาวน์โหลดสำรอง (.zip)',()=>run(async()=>{const saved=(await FontCloud.workspaceRequest('get',{p_id:item.workspace_id}))?.[0]?.payload;if(!saved||saved.workspaceId!==item.workspace_id||saved.romHash!==item.rom_sha256)throw Error('โปรเจกต์เปลี่ยนแล้ว กรุณาตรวจสถานะใหม่');await RomCloud.saveWork(saved);})),button('ลบโปรเจกต์บนคลาวด์',()=>run(()=>removeCloudItem(item))));
+      await inspectCloudRom(item);
+    }else{$('workCloudRows').textContent='ยังไม่มีงานบนคลาวด์';$('cloudRomState').textContent='เปิด ROM ใหม่ที่เครื่องที่ต้องการเริ่มแปล แล้วเชื่อมคลังเพื่อสำรอง';$('cloudRomState').dataset.state='empty';}
+    renderCurrent();return rows;
   }
   async function autoResume(rows,scope){
     if(resumedScopes.has(scope)||bridge().isLoading())return;
@@ -154,23 +154,8 @@ const WorkManager = (() => {
   }
   $('workOpen').onclick = open; $('workClose').onclick = () => $('workDialog').close();
   $('workCloudRefresh').onclick=()=>run(listCloud);
-  $('romCloudOpen').onclick=()=>run(async()=>{if(!FontCloud.connected())throw Error('เชื่อมคลังส่วนตัวก่อน');const rows=await listCloud();if(!rows.length)throw Error('ยังไม่มีโปรเจกต์บนคลาวด์');await loadCloudItem(rows[0]);});
-  $('cloudRomChoose').onclick=()=>$('cloudRomFile').click();
-  $('cloudRomNeeded').addEventListener('cancel',event=>{if(attachingRom){event.preventDefault();$('cloudRomAttachStatus').textContent='กำลังตรวจและเชื่อม ROM กรุณารอสักครู่';}else missingRom=null;});
-  $('cloudRomFile').onchange=()=>{const file=$('cloudRomFile').files[0],target=missingRom;$('cloudRomFile').value='';if(!file||!target)return;
-    run(async()=>{attachingRom=true;$('cloudRomChoose').disabled=true;try{
-      $('cloudRomAttachStatus').textContent='กำลังตรวจ ROM ให้ตรงกับคำแปล…';
-      if(!FontCloud.connected()||await FontCloud.workspaceScope()!==target.scope)throw Error('คลังเปลี่ยนแล้ว กรุณาเปิดงานล่าสุดอีกครั้ง');
-      await bridge().attachWorkspaceRom(file,target.hash);
-      const rows=await FontCloud.workspaceRequest('list'),latest=newest(rows)[0];
-      if(latest?.workspace_id!==target.item.workspace_id||latest.rom_sha256!==target.hash)throw Error('งานล่าสุดบนคลาวด์เปลี่ยนแล้ว กรุณาปิดหน้าต่างนี้และเปิดงานล่าสุดอีกครั้ง · ยังไม่ได้แก้คำแปล');
-      if(await FontCloud.workspaceScope()!==target.scope)throw Error('คลังเปลี่ยนแล้ว กรุณาเปิดงานล่าสุดอีกครั้ง');
-      const loaded=await loadCloudItem(latest);if(loaded===false)return;
-      missingRom=null;$('cloudRomNeeded').close();
-      await upload(false,bridge().project(),{interactive:true});
-      bridge().toast('เปิด ROM และคำแปลล่าสุดแล้ว · สำรองครบ พร้อมทำงานต่อข้ามเครื่อง');
-    }finally{attachingRom=false;$('cloudRomChoose').disabled=false;$('cloudRomFile').value='';}});
-  };
+  $('romCloudOpen').onclick=()=>{if(!FontCloud.connected()){FontCloud.open();return;}return run(async()=>{const rows=await listCloud();if(!rows.length)throw Error('ยังไม่มีโปรเจกต์บนคลาวด์');await loadCloudItem(rows[0]);});};
+  $('cloudBackupRetry').onclick=()=>run(async()=>{await upload(true,bridge().project(),{interactive:true});await listCloud();});
   $('workPauseCurrent').onclick = () => { const p=bridge().project(),t=TranslationTasks.active(p);if(t){TranslationTasks.finish(p,t.id,'paused');bridge().workChanged();} };
   $('workCancelCurrent').onclick = () => { const p=bridge().project(),t=TranslationTasks.active(p);if(t){TranslationTasks.finish(p,t.id,'cancelled');bridge().workChanged();} };
   async function syncConnected(onProgress=()=>{}){
