@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
 const oldId='11111111-1111-4111-8111-111111111111',id='22222222-2222-4222-8222-222222222222';
 async function scenario(mode){
- const nodes=new Map(),node=name=>{if(!nodes.has(name))nodes.set(name,{open:false,hidden:false,disabled:false,textContent:'',children:[]});return nodes.get(name);};
+ const nodes=new Map(),node=name=>{if(!nodes.has(name))nodes.set(name,{open:false,hidden:false,disabled:false,textContent:'',children:[],addEventListener:()=>{}});return nodes.get(name);};
  const project={workspaceId:id,cloudRevision:2,cloudScope:'scope',cloudAutosave:true,lastChangedAt:10},copies=new Map([[oldId,{workspace_id:oldId,revision:1,updated_at:'2026-01-01T00:00:00Z'}],[id,{workspace_id:id,revision:2,updated_at:'2026-02-01T00:00:00Z'}]]),removed=[],paused=[];let lists=0,scope='scope';
  const bridge={project:()=>project,pendingWorkspace:()=>null,storeCloudState:async(key,data)=>{if(key===id)Object.assign(project,data);else paused.push([key,data]);}},FontCloud={connected:()=>true,workspaceScope:async()=>scope,workspaceRequest:async(action,args)=>{
   if(action==='put'){if(mode==='save-failure')throw Error('save failed');copies.set(id,{workspace_id:id,revision:3,updated_at:'2026-03-01T00:00:00Z'});return 3;}

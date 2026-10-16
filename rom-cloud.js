@@ -17,12 +17,19 @@ const RomCloud=(()=>{
   start('กำลังดึง ROM ของโปรเจกต์');
   try{const bytes=new Uint8Array(m.size);for(let i=0;i<m.chunks;i++){check();const part=await request('get',{p_id:p.workspaceId,p_index:i}),data=unbase64(part?.data||'');if(part?.index!==i||data.length!==Math.min(CHUNK,m.size-i*CHUNK))throw Error('ชิ้นส่วน ROM ที่โหลดมาไม่ครบ');bytes.set(data,i*CHUNK);progress((i+1)/m.chunks*95,'ดึง ROM '+(i+1)+' / '+m.chunks+' ส่วน');await new Promise(resolve=>setTimeout(resolve,0));}if(await RomCore.fingerprint(bytes)!==p.romHash)throw Error('SHA-256 ของ ROM คลาวด์ไม่ตรงกับต้นฉบับ');progress(100,'ตรวจ SHA-256 แล้ว พร้อมใช้งาน');return bytes;}finally{end();}
  }
+ async function readyInfo(id,hash){
+  let m=await info(id);
+  if(m&&!m.ready&&m.sha256===hash&&Number.isSafeInteger(m.size)&&m.size>=192&&m.size<=33554432&&m.chunks===Math.ceil(m.size/CHUNK)&&Array.isArray(m.present)&&new Set(m.present).size===m.chunks&&m.present.every(i=>Number.isInteger(i)&&i>=0&&i<m.chunks)){
+   m=await FontCloud.romRequest('finish',{p_id:id});
+  }
+  return m;
+ }
  async function forResume(p,{strict=false}={}){try{
-  let m=await info(p.workspaceId),source=p;
+  let m=await readyInfo(p.workspaceId,p.romHash),source=p;
   // Older versions could save the same source ROM under another workspace ID.
   // Reuse only hash-matched original bytes; always keep the latest translation payload.
-  if(!m?.ready){const rows=await FontCloud.workspaceRequest('list');if(!Array.isArray(rows))throw Error('อ่านรายการ ROM ของงานเดิมไม่ได้');for(const row of rows){if(row.workspace_id===p.workspaceId||row.rom_sha256!==p.romHash)continue;const candidate=await info(row.workspace_id);if(candidate?.ready&&candidate.sha256===p.romHash){m=candidate;source={...p,workspaceId:row.workspace_id};break;}}}
-  if(strict&&!m?.ready)throw Error(m?'ROM ของงานนี้ยังสำรองไม่ครบ · เปิดเว็บที่เครื่องเดิมและเชื่อมคลัง ระบบจะส่งไฟล์ที่เหลือให้อัตโนมัติ':'คลาวด์มีคำแปลแล้ว แต่ยังไม่มี ROM · เปิดเว็บที่เครื่องเดิมและเชื่อมคลังเพื่อสำรอง ROM อัตโนมัติ ไม่ต้องนำเข้าไฟล์คำแปลใหม่');
+  if(!m?.ready){const rows=await FontCloud.workspaceRequest('list');if(!Array.isArray(rows))throw Error('อ่านรายการ ROM ของงานเดิมไม่ได้');for(const row of rows){if(row.workspace_id===p.workspaceId||row.rom_sha256!==p.romHash)continue;const candidate=await readyInfo(row.workspace_id,p.romHash);if(candidate?.ready&&candidate.sha256===p.romHash){m=candidate;source={...p,workspaceId:row.workspace_id};break;}}}
+  if(strict&&!m?.ready){const error=Error(m?'ROM ของงานนี้ยังสำรองไม่ครบ':'คำแปลอยู่บนคลาวด์แล้ว แต่ยังไม่มี ROM ที่สำรองครบ');error.romRequired=true;throw error;}
   return await download(source,m);
  }catch(e){if(strict)throw e;if(!e.romSetupMissing)bridge().toast('ยังเปิดงานจากคลาวด์ไม่ได้: '+e.message);return null;}}
  async function ensure(p,{interactive=false,onProgress=()=>{}}={}){

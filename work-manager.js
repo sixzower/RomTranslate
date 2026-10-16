@@ -1,7 +1,7 @@
 /* Portable work files and private cloud copies use the existing font connection. */
 const WorkManager = (() => {
   const $ = id => document.getElementById(id), bridge = () => window.RomTranslateBridge;
-  let busy = false, queued = false, timer = null;
+  let busy = false, queued = false, timer = null, missingRom = null, attachingRom = false;
   const sent = new Map(),resumedScopes=new Set();
   const newest=rows=>rows.slice().sort((a,b)=>(typeof b.updated_at==='number'?b.updated_at:Date.parse(b.updated_at)||0)-(typeof a.updated_at==='number'?a.updated_at:Date.parse(a.updated_at)||0)||Number(b.revision)-Number(a.revision));
   async function retainLatest(id,revision,scope){
@@ -20,7 +20,7 @@ const WorkManager = (() => {
     if(!saved?.payload||saved.payload.workspaceId!==item.workspace_id||saved.payload.romHash!==item.rom_sha256)throw Error('ไม่พบไฟล์งานและ ROM ที่ตรงกับรายการ กรุณารีเฟรช');
     if(await FontCloud.workspaceScope()!==scope)throw Error('คลังเปลี่ยนแล้ว กรุณาเปิดรายการใหม่');
     status('กำลังเปิด ROM และคำแปลล่าสุด…');
-    const loaded=await bridge().loadWorkspace({...saved.payload,cloudRevision:Number(saved.revision),cloudScope:scope,cloudAutosave:true,cloudSyncPaused:false,cloudDeletePending:false,lastCloudSavedAt:Date.parse(item.updated_at)||Date.now(),cloudSavedChange:saved.payload.lastChangedAt||0},{requireRom:true});
+    let loaded;try{loaded=await bridge().loadWorkspace({...saved.payload,cloudRevision:Number(saved.revision),cloudScope:scope,cloudAutosave:true,cloudSyncPaused:false,cloudDeletePending:false,lastCloudSavedAt:Date.parse(item.updated_at)||Date.now(),cloudSavedChange:saved.payload.lastChangedAt||0},{requireRom:true});}catch(e){if(!e.romRequired)throw e;missingRom={item,scope,hash:saved.payload.romHash};$('cloudRomName').textContent=saved.payload.workspaceName||saved.payload.title;$('cloudRomAttachStatus').textContent='คำแปลเดิมยังอยู่ เลือกเฉพาะไฟล์เกมต้นฉบับครั้งเดียว';$('cloudRomNeeded').showModal();status('รอเชื่อม ROM ต้นฉบับ · ไม่ต้องนำเข้าคำแปลใหม่');return false;}
     if(loaded!==true)throw Error('ยังเปิด ROM ไม่สำเร็จ · งานเดิมยังอยู่ กรุณาลองอีกครั้ง');
     $('workDialog').close();$('fontCloudDialog').close();$('cloudManageDialog').close();status('เปิด ROM และคำแปลล่าสุดแล้ว');bridge().toast('เปิด ROM พร้อมคำแปลล่าสุดแล้ว ทำงานต่อได้เลย');
   }
@@ -35,7 +35,7 @@ const WorkManager = (() => {
     $('workBanner').hidden = !task || RomTranslateViews.current()!=='translation';
     $('romWorkDownload').disabled=busy||!(p||bridge()?.pendingWorkspace());
     $('romCloudUpload').disabled=busy||!p||!FontCloud.connected();for(const id of ['romCloudRemove','romCloudCheck'])$(id).disabled=busy||!(p||bridge()?.pendingWorkspace())||!FontCloud.connected();
-    $('workCloudRefresh').disabled = busy||!FontCloud.connected();$('romCloudOpen').disabled=busy||!FontCloud.connected();
+    $('cloudRomChoose').disabled=busy||attachingRom;$('workCloudRefresh').disabled = busy||!FontCloud.connected();$('romCloudOpen').disabled=busy||!FontCloud.connected();
     if (task) { const s = TranslationTasks.stats(p, task); $('workBannerText').textContent = 'กำลังดูชุด: '+task.name + ` · แปลแล้ว ${s.done}/${s.total} · เหลือ ${s.remaining}`; }
   }
   function localRecords(records){
@@ -49,7 +49,7 @@ const WorkManager = (() => {
   }
   async function run(action) {
     if (busy){status('กำลังจัดการโปรเจกต์ กรุณารอสักครู่');return;} busy = true; renderCurrent();
-    try { await action(); } catch (e) { status(e.message);if(e.networkFailure)FontCloud.reportError(e.message);if($('workDialog').open)window.UiShell?.notify(e.message,true); }
+    try { await action(); } catch (e) { status(e.message);if(e.networkFailure)FontCloud.reportError(e.message);if($('cloudRomNeeded').open)$('cloudRomAttachStatus').textContent=e.message;else if($('workDialog').open)window.UiShell?.notify(e.message,true);else bridge().toast(e.message,'error'); }
     finally { busy = false; renderCurrent(); if (queued) { queued = false; schedule(); } }
   }
   async function listCloud() {
@@ -137,6 +137,22 @@ const WorkManager = (() => {
   $('workOpen').onclick = open; $('workClose').onclick = () => $('workDialog').close();
   $('workCloudRefresh').onclick=()=>run(listCloud);
   $('romCloudOpen').onclick=()=>run(async()=>{if(!FontCloud.connected())throw Error('เชื่อมคลังส่วนตัวก่อน');const rows=await listCloud();if(!rows.length)throw Error('ยังไม่มีโปรเจกต์บนคลาวด์');await loadCloudItem(rows[0]);});
+  $('cloudRomChoose').onclick=()=>$('cloudRomFile').click();
+  $('cloudRomNeeded').addEventListener('cancel',event=>{if(attachingRom){event.preventDefault();$('cloudRomAttachStatus').textContent='กำลังตรวจและเชื่อม ROM กรุณารอสักครู่';}else missingRom=null;});
+  $('cloudRomFile').onchange=()=>{const file=$('cloudRomFile').files[0],target=missingRom;$('cloudRomFile').value='';if(!file||!target)return;
+    run(async()=>{attachingRom=true;$('cloudRomChoose').disabled=true;try{
+      $('cloudRomAttachStatus').textContent='กำลังตรวจ ROM ให้ตรงกับคำแปล…';
+      if(!FontCloud.connected()||await FontCloud.workspaceScope()!==target.scope)throw Error('คลังเปลี่ยนแล้ว กรุณาเปิดงานล่าสุดอีกครั้ง');
+      await bridge().attachWorkspaceRom(file,target.hash);
+      const rows=await FontCloud.workspaceRequest('list'),latest=newest(rows)[0];
+      if(latest?.workspace_id!==target.item.workspace_id||latest.rom_sha256!==target.hash)throw Error('งานล่าสุดบนคลาวด์เปลี่ยนแล้ว กรุณาปิดหน้าต่างนี้และเปิดงานล่าสุดอีกครั้ง · ยังไม่ได้แก้คำแปล');
+      if(await FontCloud.workspaceScope()!==target.scope)throw Error('คลังเปลี่ยนแล้ว กรุณาเปิดงานล่าสุดอีกครั้ง');
+      const loaded=await loadCloudItem(latest);if(loaded===false)return;
+      missingRom=null;$('cloudRomNeeded').close();
+      await upload(false,bridge().project(),{interactive:true});
+      bridge().toast('เปิด ROM และคำแปลล่าสุดแล้ว · สำรองครบ พร้อมทำงานต่อข้ามเครื่อง');
+    }finally{attachingRom=false;$('cloudRomChoose').disabled=false;$('cloudRomFile').value='';}});
+  };
   $('workPauseCurrent').onclick = () => { const p=bridge().project(),t=TranslationTasks.active(p);if(t){TranslationTasks.finish(p,t.id,'paused');bridge().workChanged();} };
   $('workCancelCurrent').onclick = () => { const p=bridge().project(),t=TranslationTasks.active(p);if(t){TranslationTasks.finish(p,t.id,'cancelled');bridge().workChanged();} };
   async function syncConnected(onProgress=()=>{}){
