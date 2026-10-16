@@ -2,6 +2,10 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Whole-page Excel drops (0.32.31)
+
+Drag one or more `.xlsx` files onto the page to open the same reviewed import as the file picker. A full-page hint appears during file drags; text selection/dragging retains its native behavior. The drop handler prevents file navigation, rejects mixed file types, requires an open project and refuses concurrent operations or open dialogs. It passes File objects directly to the shared importer without assigning an input's files or requiring DataTransfer for internal restores. No translations change until the existing apply step.
+
 ## Excel import audio (0.32.30)
 
 After applying a clean import, a short ascending tone confirms completion. A distinct descending tone signals unreadable files, blocked rows, missing/untranslated rows, drafts or layout failures. Partial imports retain the warning tone rather than implying everything passed. Cancellation is silent; audio uses the existing local Web Audio preference and browser gesture unlock, with no audio downloads.
