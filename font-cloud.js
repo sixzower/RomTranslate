@@ -86,7 +86,7 @@ const FontCloud=(()=>{
    const font=FontPresets.validate(row.font),canonical=await FontPresets.idFor(font);
    // JSONB can reorder composite keys; IDs from old clients are migration keys,
    // not proof that an otherwise schema-valid font has changed.
-   const id=await FontPresets.importData(font,false,{activate:false,cloud:false});
+   const id=await FontPresets.importData(font,false,{activate:false,cloud:false,fromCloud:true});
    if(row.font_id!==canonical)migrated++;
    if(!validated.some(f=>f.id===id))validated.push({id,font});
    remoteIds.add(row.font_id);
