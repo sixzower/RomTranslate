@@ -2,6 +2,10 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Open latest work before font sync (0.32.21)
+
+After password validation (or explicitly remembered sign-in), restore the latest shared ROM/workspace before reading or uploading the font library. A slow or failed font request no longer prevents the ROM restore step from running. No extra SQL is needed for this ordering change. Existing missing-ROM, unsent-edit and conflict guards still apply.
+
 ## One shared project (0.32.20)
 
 Every connected device follows the primary cloud workspace for the same ROM. Old device-specific IDs adopt the primary ID before saving. A persisted local snapshot enables three-way merging of edits to different fields; existing nonblank translations are preserved when an old cloud copy has blank/missing rows. Concurrent changes to the same field stop with a conflict message; neither version is silently overwritten. Source text and ROM hashes must match. Cloud updates are checked on focus, before saving and once per minute while visible and connected. Sign-in still requires a password unless remember is explicitly selected.
