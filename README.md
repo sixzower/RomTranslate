@@ -2,6 +2,16 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Whole-font game margins and positioning (0.32.48)
+
+In **ฟอนต์ → ออกแบบ**, expand **ระยะขอบและจัดตำแหน่งทั้งชุด**. Choose a 4–16px-wide frame, a 7–15px target height, individual margins, proportional fit or original size, and horizontal/vertical alignment. Before/after examples include the real 15px and 12px game renderers plus a selected-glyph frame view. Apply stages the placement for the whole draft; one-pixel arrow buttons move the entire set, with atomic undo/redo and reset. Saving uses the existing explicit preset/project apply flow and locked fonts remain protected.
+
+Placement metadata transforms composed Thai clusters using a common origin and scale at each bank height, preserving relative vowel/tone positions and original raw matrices/native composites. It is stored in preset JSON, project/cloud font data and translated-ROM recovery metadata. Actual ROM glyph tiles, advances and width checks use the same placement. Out-of-frame moves are rejected rather than cropped; edited glyphs that no longer fit produce a repair action leading back to these controls. Missing source glyphs remain reported; fitting does not invent them. Bitmap resizing can merge fine details, so review the examples before saving.
+
+The verified game uses 12/14/15px banks; a 16px-high game frame is disabled. Small-bank vertical margins scale proportionally, and game line spacing is unchanged. This is sizing within the supported game's font system, not automatic support for arbitrary GBA engines or a conversion to independently drawn 7–16px typefaces. Fonts without placement metadata retain byte-identical rendering.
+
+Validation: `node tests/font-layout.cjs` checks a fixed legacy-renderer golden digest, common transforms, source isolation, cancellation and rejection of unsafe bounds. `tests/font-positioning.cjs <private-original.gba>` checks staging, apply/undo/reset/arrows, locks, reload, source and standalone layouts, and compares actual patched ROM glyph bytes/advances and recovered metadata. Existing pixel-editor/export/ROM and repair-navigation regressions also pass. No SQL or new cloud polling is required.
+
 ## Jump from failed font checks to the offending glyph (0.32.47)
 
 Failed checks on font cards and the selected-font inspector are now small red **กดแก้ไข** actions. Structured diagnostic targets identify the actual glyph and, for native frame overflow, the first offending source pixel; composed vowel/tone failures resolve to the mark rather than assuming the base consonant. Clicking opens the pixel editor on that glyph, clears filters that would hide it, and focuses the identified grid cell. Missing glyphs open at the start of their own grid. Font metadata validation failures focus the name field.
