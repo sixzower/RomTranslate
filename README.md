@@ -2,6 +2,14 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Project download timeouts (0.32.37)
+
+For `เปิดโปรเจกต์ ... [57014]`, run [workspace-read-fix.sql](cloud/workspace-read-fix.sql) once in the existing Supabase SQL Editor, then open the latest website and retry the project. Existing workspace timeout SQL configures writes only; it does not fix the default read RPC budget. This upgrade preserves project IDs, revisions, translations, ROM chunks, fonts and passwords. It creates no stored copies and changes no global role timeouts. The combined installation SQL and copyable workspace setup include it.
+
+Project reads now use a private, read-only RPC with responses bounded to 262,144 Unicode characters. Owner authentication is evaluated once per request and the existing primary key selects the workspace. Every part is checked against the initial revision, and the browser verifies SHA-256 over the reassembled UTF-8 JSON before handing any payload to the workspace loader. A save or delete during download fails safely instead of opening mixed revisions. The new RPC and existing get/list RPCs have a per-function 60-second statement budget; the browser permits 75 seconds per request. No write response is retried by this change. Installations missing the new RPC retain the old reader until the SQL upgrade; a database timeout identifies the exact migration rather than repeatedly downloading the full payload.
+
+Validation: `tests/workspace-read.cjs` exercises repeatable migration and real PostgreSQL reads with 27,166 Thai/emoji entries, exact payload/checksum, revision-change rejection, damaged-response rejection, read-only execution, code/user isolation and direct-table denial. `tests/workspace-read-browser.cjs` exercises the actual source and standalone browser transport, bounded downloads, network retry, old-installation fallback and timeout/conflict messages without mutations. PGlite and routed browser responses cannot establish performance or timeout settings in the user's live Supabase project; the migration must be run there by its owner.
+
 ## Link message-box text bounds (0.32.36)
 
 The screenshot entry `$309F4A` uses the link-message wrapper at `0x138D8C`: `StringExpandPlaceholders` (`0x2162DC`) writes into `gStringVar4` (`0x0203EBDC`), then the native message-box printer (`0x175004`) displays it. Its 71-byte source length is not the buffer capacity. Four exclusively verified wrapper-owned strings now allow 256 encoded bytes and use scrolling 208 px message-box layout, including the original SCROLL/PARA/VAR tokens. Call targets, scratch-buffer literal, pointer ownership and the pinned ROM hash are checked; shared/unproven strings retain their existing limits. No new machine-code patch is required for these messages.
