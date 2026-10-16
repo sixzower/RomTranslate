@@ -1,1 +1,1 @@
-const AppRelease={"version": "0.32.28"};
+const AppRelease={"version": "0.32.29"};

@@ -17,7 +17,7 @@ const SheetImportBatch=(()=>{
  async function review(files,project,rom,progress){
   if(files.length>100)throw Error('เลือกได้ครั้งละไม่เกิน 100 ไฟล์');
   if(files.reduce((n,f)=>n+f.size,0)>128*1024*1024)throw Error('ขนาดไฟล์รวมต้องไม่เกิน 128 MB');
-  const result={allowPartial:true,changes:[],issues:[],warnings:[],fileWarnings:[],entryIds:[],rows:0,blanks:0,unchanged:0,duplicates:0,formatted:0,files:files.length,filename:files.length===1?files[0].name:`Excel ${files.length} ไฟล์`,scope:''},changes=new Map(),ids=new Set(),origins=new Map();
+  const result={allowPartial:true,changes:[],issues:[],missing:[],warnings:[],fileWarnings:[],entryIds:[],rows:0,blanks:0,unchanged:0,duplicates:0,formatted:0,files:files.length,filename:files.length===1?files[0].name:`Excel ${files.length} ไฟล์`,scope:''},changes=new Map(),ids=new Set(),origins=new Map();
   for(let i=0;i<files.length;i++){
    const file=files[i];progress.file(i,file.name);progress.check();
    try{
@@ -25,7 +25,7 @@ const SheetImportBatch=(()=>{
     // Per-file pass validates identity/tokens; layout and font allocation run once
     // across the combined files and existing project below.
     const data=await progress.read(file),report=await TranslationSheet.readXlsx(data,project,project.entries,{review:true,rom,deferProjectFonts:true,deferChecks:true,onProgress:progress.update});
-    result.rows+=report.rows;result.blanks+=report.blanks;result.unchanged+=report.unchanged;
+    result.missing.push(...(report.missing||[]).map(item=>({...item,file:file.name})));result.rows+=report.rows;result.blanks+=report.blanks;result.unchanged+=report.unchanged;
     result.fileWarnings.push(...(report.fileWarnings||[]).map(s=>file.name+': '+s));
     result.issues.push(...report.issues.map(issue=>({...issue,file:file.name})));
     for(const id of report.entryIds)ids.add(id);

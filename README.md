@@ -2,6 +2,12 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Excel import receipts (0.32.29)
+
+The review dialog and retained post-import receipt distinguish applied translations, layout failures, retained drafts, blank cells, unchanged rows and rejected identities. Success counts use accepted unique entries, never warning counts. Errors show file/sheet/original row/entry ID, source and a suggested fix; the downloadable report includes fixes and missing/blank rows. Green/red text adapts to both themes and the dialog fits mobile widths. Applying still uses the existing identity checks, one history checkpoint and blank-preservation behavior.
+
+New exports keep a hidden, chunked entry-ID manifest in the existing Instructions sheet. Imports can identify missing IDs when that manifest and ROM hash remain intact; older files only offer the declared row-count comparison. No importer can prove completeness if both the rows and their reference metadata have been removed or altered. Missing rows are reported without deleting existing translations or blocking intentional partial imports.
+
 ## Resilient shared workspace workflow (0.32.28)
 
 - Before sending, persist a per-tab pending snapshot in IndexedDB. Reload restores that tab's pending draft, even if another tab saved to the shared local cache. Connectivity/visibility return resumes cloud synchronization; the UI distinguishes local persistence from cloud confirmation. Closing a browser or killing a mobile app during an unfinished storage operation cannot be guaranteed to flush data; mobile OS behavior still needs physical-device testing.
