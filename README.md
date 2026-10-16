@@ -2,6 +2,14 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## ROM backup timeout (0.32.25)
+
+For `57014` while backing up ROM (after translations have saved), run [rom-timeout-fix.sql](cloud/rom-timeout-fix.sql) once in the existing Supabase SQL Editor. This updates only the ROM RPC and keeps all uploaded chunks, translations, fonts and project IDs. The previous workspace-timeout SQL does not configure this separate RPC.
+
+ROM info/download reads no longer acquire a write lock on the file. Writes retain their file lock, advisory-lock contention returns promptly, and the RPC has a 60-second statement / 2-second row-lock limit with a 75-second client allowance. Finalization checks chunk counts and sizes first and computes SHA-256 inside the SQL query, returning only the digest rather than another whole-file buffer to PL/pgSQL. Full-file hash verification remains required. Remembered sign-in also waits for page initialization so it cannot run before the workspace module loads. The UI identifies begin/put/finish/read stages and shows the verification phase before declaring completion. Retrying resumes confirmed chunks.
+
+Tests verify repeatable migration with a partially uploaded file, read-only info/download transactions, configured timeout limits, corrupt/incomplete rejection and real 32 MB end-to-end restore. These local checks do not prove the cause or resolution of a timeout on the user's production database.
+
 ## Merge work-task state across devices (0.32.24)
 
 Work-task arrays are merged by task ID rather than treated as a conflicting translation field. Independent tasks are retained, cursor differences do not stop backup, scope settings stay together, and only one task remains active. Completed/canceled tasks are not reactivated by another device's stale active state. Three-way deletions of unchanged tasks are honored. Simultaneous scope-setting changes use the confirmed cloud settings; unsent changes to actual translation text still use the existing conflict protection. No SQL update is required.

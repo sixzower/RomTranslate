@@ -55,6 +55,7 @@ const RomCloud=(()=>{
    let confirmed=m.ready?total:[...present].reduce((sum,i)=>sum+chunkBytes(i),0);
    const show=()=>update(Math.min(99,confirmed/total*100),'สำรอง ROM '+Math.floor(confirmed/total*100)+'% · เซิร์ฟเวอร์รับแล้ว '+confirmed.toLocaleString()+' / '+total.toLocaleString()+' ไบต์');show();
    if(!m.ready)for(let i=0;i<chunks;i++){check();if(!present.has(i)){await scoped('put',{p_id:p.workspaceId,p_index:i,p_data:base64(bytes.subarray(i*CHUNK,(i+1)*CHUNK))},true);confirmed+=chunkBytes(i);show();}await new Promise(resolve=>setTimeout(resolve,0));}
+   update(99,'ส่งชิ้นส่วนครบแล้ว · กำลังตรวจ SHA-256 และยืนยัน ROM บนคลาวด์…');
    const result=await scoped('finish',{p_id:p.workspaceId},true);if(!result?.ready)throw Error('เซิร์ฟเวอร์ยังไม่ยืนยัน ROM');
    update(100,'สำรอง ROM ครบแล้ว');window.CompletionSounds?.play('upload');
   }finally{if(interactive)end();else busy=false;}

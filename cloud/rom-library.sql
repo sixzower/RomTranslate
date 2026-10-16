@@ -20,14 +20,20 @@ alter table public.romtranslate_rom_chunks enable row level security;
 revoke all on public.romtranslate_rom_files,public.romtranslate_rom_chunks from public,anon,authenticated;
 create or replace function public.romtranslate_rom(p_action text,p_id uuid,p_code text default null,p_index integer default null,p_data text default null,p_size integer default null,p_hash text default null)
 returns jsonb language plpgsql security definer set search_path=pg_catalog as $$
-declare owner_id text; expected_hash text; f public.romtranslate_rom_files%rowtype; chunk bytea; combined bytea; result jsonb; total integer;
+declare owner_id text; expected_hash text; f public.romtranslate_rom_files%rowtype; chunk bytea; actual_hash text; stored_chunks integer; stored_bytes bigint; result jsonb; total integer;
 begin
  if p_action is null or p_action not in ('info','begin','put','finish','get','delete') or p_id is null then raise exception 'Invalid ROM request'; end if;
  owner_id:=public.romtranslate_work_owner(p_code);
- if p_action in ('begin','delete') then perform pg_advisory_xact_lock(hashtextextended(owner_id,0)); end if;
+ if p_action in ('begin','delete') and not pg_try_advisory_xact_lock(hashtextextended(owner_id,0)) then
+  raise exception using errcode='55P03',message='ROM backup is busy; retry shortly';
+ end if;
  select w.rom_sha256 into expected_hash from public.romtranslate_workspaces w where w.owner_key=owner_id and w.workspace_id=p_id;
  if not found then raise exception 'Save workspace before uploading its ROM'; end if;
- select r.* into f from public.romtranslate_rom_files r where r.owner_key=owner_id and r.workspace_id=p_id for update;
+ if p_action in ('info','get') then
+  select r.* into f from public.romtranslate_rom_files r where r.owner_key=owner_id and r.workspace_id=p_id;
+ else
+  select r.* into f from public.romtranslate_rom_files r where r.owner_key=owner_id and r.workspace_id=p_id for update;
+ end if;
  if p_action='delete' then
   delete from public.romtranslate_rom_files r where r.owner_key=owner_id and r.workspace_id=p_id;return jsonb_build_object('deleted',true);
  end if;
@@ -57,8 +63,12 @@ begin
   return jsonb_build_object('index',p_index,'stored',true);
  elsif p_action='finish' then
   if not f.ready then
-   select string_agg(c.data,''::bytea order by c.chunk_index) into combined from public.romtranslate_rom_chunks c where c.owner_key=owner_id and c.workspace_id=p_id;
-   if (select count(*) from public.romtranslate_rom_chunks c where c.owner_key=owner_id and c.workspace_id=p_id)<>total or combined is null or octet_length(combined)<>f.size_bytes or encode(sha256(combined),'hex')<>f.rom_sha256 then raise exception 'Incomplete ROM or SHA-256 mismatch'; end if;
+   select count(*),coalesce(sum(octet_length(c.data)),0) into stored_chunks,stored_bytes from public.romtranslate_rom_chunks c where c.owner_key=owner_id and c.workspace_id=p_id;
+   if stored_chunks<>total or stored_bytes<>f.size_bytes then raise exception 'Incomplete ROM or SHA-256 mismatch'; end if;
+   -- Return only the digest from the executor, avoiding a second 32 MB bytea
+   -- copy in the PL/pgSQL function's memory context. Full-file SHA stays mandatory.
+   select encode(sha256(string_agg(c.data,''::bytea order by c.chunk_index)),'hex') into actual_hash from public.romtranslate_rom_chunks c where c.owner_key=owner_id and c.workspace_id=p_id;
+   if actual_hash is distinct from f.rom_sha256 then raise exception 'Incomplete ROM or SHA-256 mismatch'; end if;
    update public.romtranslate_rom_files r set ready=true,updated_at=now() where r.owner_key=owner_id and r.workspace_id=p_id;
    f.ready:=true;
   end if;
@@ -71,6 +81,9 @@ begin
  return jsonb_build_object('sha256',f.rom_sha256,'size',f.size_bytes,'ready',f.ready,'chunks',total,'present',coalesce((select jsonb_agg(c.chunk_index order by c.chunk_index) from public.romtranslate_rom_chunks c where c.owner_key=owner_id and c.workspace_id=p_id),'[]'::jsonb));
 end;
 $$;
+-- PostgREST applies this per-RPC timeout; other application RPCs are unchanged.
+alter function public.romtranslate_rom(text,uuid,text,integer,text,integer,text) set statement_timeout='60s';
+alter function public.romtranslate_rom(text,uuid,text,integer,text,integer,text) set lock_timeout='2s';
 revoke all on function public.romtranslate_rom(text,uuid,text,integer,text,integer,text) from public;
 grant execute on function public.romtranslate_rom(text,uuid,text,integer,text,integer,text) to anon,authenticated;
 notify pgrst,'reload schema';
