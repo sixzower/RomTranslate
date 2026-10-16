@@ -22,7 +22,9 @@ const SheetImportBatch=(()=>{
    const file=files[i];progress.file(i,file.name);progress.check();
    try{
     if(file.size>32*1024*1024)throw Error('ไฟล์ต้องไม่เกิน 32 MB');
-    const data=await progress.read(file),report=await TranslationSheet.readXlsx(data,project,project.entries,{review:true,rom,deferProjectFonts:true,onProgress:progress.update});
+    // Per-file pass validates identity/tokens; layout and font allocation run once
+    // across the combined files and existing project below.
+    const data=await progress.read(file),report=await TranslationSheet.readXlsx(data,project,project.entries,{review:true,rom,deferProjectFonts:true,deferChecks:true,onProgress:progress.update});
     result.rows+=report.rows;result.blanks+=report.blanks;result.unchanged+=report.unchanged;
     result.fileWarnings.push(...(report.fileWarnings||[]).map(s=>file.name+': '+s));
     result.issues.push(...report.issues.map(issue=>({...issue,file:file.name})));
@@ -42,9 +44,12 @@ const SheetImportBatch=(()=>{
    result.issues=result.issues.filter(i=>['identity','input'].includes(i.code));
    const unsafe=new Set(result.issues.filter(issue=>issue.severity==='error'&&['identity','input'].includes(issue.code)).map(issue=>Number(issue.id)));
    const allocator=RomCore.fontAllocator(rom,project.entries);
-   for(let i=0;i<project.entries.length;i++){
-    if(i%200===0){progress.combined(i,project.entries.length);await new Promise(resolve=>setTimeout(resolve,0));}
-    const entry=project.entries[i],change=changes.get(entry.id);
+   const candidates=project.entries.filter(entry=>changes.has(entry.id)||entry.translation?.trim());
+   let yielded=performance.now();
+   for(let i=0;i<candidates.length;i++){
+    progress.check();
+    if(i===0||i%200===0||i%32===0&&performance.now()-yielded>=16){progress.combined(i,candidates.length);await new Promise(resolve=>setTimeout(resolve,0));yielded=performance.now();}
+    const entry=candidates[i],change=changes.get(entry.id);
     if(change&&!unsafe.has(entry.id)){const formatted=formatText({...entry,translationChoice:change.translationChoice},change.translation,rom);if(formatted!==change.translation){change.translation=formatted;result.formatted++;}}
     const text=change?.translation||entry.translation;if(!text?.trim())continue;
     const checked=TranslationQuality.entry(change?{...entry,translationChoice:change.translationChoice}:entry,text,rom,project.glossary,allocator);
@@ -52,8 +57,11 @@ const SheetImportBatch=(()=>{
     else if(checked.issues.some(x=>x.code==='font'&&x.message.includes('ฟอนต์เต็ม')))result.issues.push({row:0,id:entry.id,severity:'error',code:'font',message:'คำแปลรวมทั้งโปรเจกต์ใช้ฟอนต์เกินความจุ'});
    }
   }
+  progress.combined?.(1,1);
   result.errors=result.issues.filter(i=>i.severity==='error').length;
   result.warnings=result.issues.filter(i=>i.severity!=='error');progress.check();return result;
  }
  return {review,formatText};
 })();
+
+if(typeof module!=="undefined")module.exports=SheetImportBatch;

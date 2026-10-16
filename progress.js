@@ -4,9 +4,9 @@ const TranslationProgress=(()=>{
  function visible(text){return (text||'').replace(/\{(?:CTRL|VAR|DYNAMIC|EXTRA|KEY|GLYPH)(?::[^}]*)?\}|\{(?:PARA|SCROLL)\}/gi,'').trim();}
  function eligible(entry){return !!entry.verified&&entry.family!=='unclassified'&&entry.storage!=='unverified'&&!!visible(entry.source);}
  function translated(entry){const text=visible(entry.translation);return !!text&&(text!==visible(entry.source)||entry.translationChoice==='keep-source'&&entry.translation===entry.source);}
- const KEEP_CATEGORIES=new Set(['ไอเท็ม / ชื่อ','ไอเท็ม / ชื่อพหูพจน์','ชื่อโปเกมอน / ชื่อ','ชื่อเทรนเนอร์ / ชื่อ','ท่า / ชื่อ','ความสามารถ / ชื่อ','ชื่อโปเกมอน / นิสัย','เมนู / ตัวเลือกนิสัย']);
+ const KEEP_CATEGORIES=new Set(['ไอเท็ม / ชื่อ','ไอเท็ม / ชื่อพหูพจน์','ชื่อโปเกมอน / ชื่อ','ชื่อเทรนเนอร์ / ชื่อ','ท่า / ชื่อ','ความสามารถ / ชื่อ','ชื่อโปเกมอน / นิสัย','เมนู / ตัวเลือกนิสัย','เมนู / ชื่อสถานที่']);
  const OPTIONAL_CATEGORIES=new Set(['ชื่อเทรนเนอร์ / ประเภทเทรนเนอร์','ชื่อโปเกมอน / กลุ่มโปเกเด็กซ์','เมนู / ริบบอน']);
- const POLICIES={translate:{name:'เนื้อหาที่แนะนำให้แปล',hint:'บทสนทนา เมนู และคำอธิบาย ช่วยให้อ่านและเล่นเข้าใจ'},keep:{name:'ชื่อเฉพาะ · แนะนำคงภาษาอังกฤษ',hint:'ชื่อไอเท็ม โปเกมอน เทรนเนอร์ ท่า ความสามารถ และนิสัย คงอังกฤษเพื่อเทียบคู่มือได้ง่าย เลือกแปลเองได้'},optional:{name:'เลือกแปลได้ตามสไตล์',hint:'ประเภทเทรนเนอร์ กลุ่มโปเกเด็กซ์ และริบบอน แปลได้โดยไม่เปลี่ยนชื่อเฉพาะ'}};
+ const POLICIES={translate:{name:'เนื้อหาที่แนะนำให้แปล',hint:'บทสนทนา เมนู และคำอธิบาย ช่วยให้อ่านและเล่นเข้าใจ'},keep:{name:'ชื่อเฉพาะ · แนะนำคงภาษาอังกฤษ',hint:'ชื่อไอเท็ม โปเกมอน เทรนเนอร์ ท่า ความสามารถ นิสัย และสถานที่ คงอังกฤษเพื่อเทียบคู่มือได้ง่าย เลือกแปลเองได้'},optional:{name:'เลือกแปลได้ตามสไตล์',hint:'ประเภทเทรนเนอร์ กลุ่มโปเกเด็กซ์ และริบบอน แปลได้โดยไม่เปลี่ยนชื่อเฉพาะ'}};
  function policy(category){return KEEP_CATEGORIES.has(category)?'keep':OPTIONAL_CATEGORIES.has(category)?'optional':'translate';}
  function recommended(project){return groups(project).filter(r=>policy(r.category)!=='keep').map(r=>r.category);}
  function matches(entry,category){return category==='all'||category==='proper-names'&&policy(entry.category)==='keep'&&eligible(entry)||category===entry.family||category===entry.category;}
