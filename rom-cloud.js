@@ -48,6 +48,7 @@ const RomCloud=(()=>{
   try{
    update(0,'กำลังตรวจ ROM บนคลาวด์');const existing=await scoped('info',{p_id:p.workspaceId});
    if(existing?.ready){if(existing.sha256!==p.romHash||existing.size<192||existing.size>33554432||existing.chunks!==Math.ceil(existing.size/CHUNK))throw Error('ROM คลาวด์ไม่ตรงกับโปรเจกต์');update(100,'ROM สำรองครบแล้ว');return;}
+   await bridge().storeCloudState?.(p.workspaceId,{cloudRomReady:false});
    let bytes;if(bridge().project()?.workspaceId===p.workspaceId){const snapshot=bridge().romSnapshot();if(snapshot.hash!==p.romHash)throw Error('ROM ในเครื่องไม่ตรงกับงาน');bytes=snapshot.bytes;}else bytes=(await bridge().cachedRom(p.romHash).catch(()=>null))?.bytes;
    if(!bytes)throw Error('คำแปลถูกบันทึกแล้ว แต่เครื่องนี้ไม่มี ROM ต้นฉบับ · เปิดเว็บที่เครื่องเดิมและเชื่อมคลัง ระบบจะสำรอง ROM ให้เอง');
    if(bytes.byteLength>33554432||await RomCore.fingerprint(bytes)!==p.romHash)throw Error('ROM ไม่ตรงกับโปรเจกต์ จึงยังสำรองไม่ได้');

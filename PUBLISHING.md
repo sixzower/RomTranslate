@@ -4,7 +4,7 @@ Source updates go to sixzower/RomTranslate main. The user has enabled Pages with
 
 Site: https://sixzower.github.io/RomTranslate/
 
-After pushing, let the Pages build finish. The footer should show version 0.32.26. Refresh without cache if old assets are visible. The browser game tester's first visit can reload once to enable its worker runtime.
+After pushing, let the Pages build finish. The footer should show version 0.32.27. Refresh without cache if old assets are visible. The browser game tester's first visit can reload once to enable its worker runtime.
 
 `download/index.html` is the self-contained editing/Excel release, containing no ROM and no API credentials. On GitHub, open it and use Download raw file to save index.html. Its game-test tab opens the live site because the threaded emulator requires browser headers/service workers unavailable on file URLs.
 

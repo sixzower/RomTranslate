@@ -2,6 +2,12 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Stable Cloud project dialog (0.32.27)
+
+The page and menu are named **โปรเจกต์ Cloud**. Repeated cloud checks reuse the same project card and action buttons, updating only changed text. Confirmed ROM availability remains visible until a new result arrives; background checks no longer dim the controls or briefly clear the backed-up flag. Foreground actions still show their busy state and operations remain serialized. Delete/download handlers read the current project revision rather than the revision at card creation. Status space is reserved to reduce layout jumps. No SQL update is needed.
+
+A mobile browser regression observes the DOM through background synchronization and verifies stable node identities, readiness text, backup-button visibility and primary-button state.
+
 ## One ROM restore progress window (0.32.26)
 
 Automatic restore uses one foreground progress dialog for metadata lookup, download and ROM scanning. The login window closes when restore starts, and the scanner updates the same dialog instead of opening a second operation window. Cached startup restore also avoids starting an overlapping loader. The shared dialog closes when scanning finishes, before subsequent background sync. Preparation/download can be canceled; scanning retains its existing non-cancellable behavior. No SQL change is required.
