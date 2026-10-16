@@ -2,6 +2,10 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Cloud sign-in (0.32.18)
+
+Remembering sign-in is now off by default. Without explicit opt-in, credentials stay in memory only and reload/new tabs require the admin password. Legacy default-on remembered sessions are cleared once; font and workspace data are preserved. Selecting remember explicitly enables future automatic connection.
+
 ## Cloud continuation (0.32.17)
 
 Cloud and cached-ROM restores now call the ROM loader directly with in-memory bytes. They never create `File`/`DataTransfer` objects, assign `input.files`, invoke a file-input change handler, or open a device file picker. Only **เปิด ROM ใหม่** explicitly chooses a new local game. Unsupported/unrecoverable cloud ROM bytes fail with an explicit error and preserve the active workspace instead of entering the legacy original-ROM file chooser. This avoids reliance on file-input APIs that vary across mobile browsers; remembered login, latest translation payload, font, target categories and task/view restoration use the same guarded workspace path.
