@@ -2,6 +2,16 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Editable presets, locks and drag ordering (0.32.43)
+
+Every preset, including bundled sources, can be opened for pixel editing, renamed, grouped or locally removed after unlocking its top-right padlock. Bundled fonts start locked; imported/custom fonts start unlocked. Locks persist locally and block rename, removal, group changes, swaps and edits to an already-open draft (including keyboard, undo and saving). Use, copy and export remain available. Saving a pixel draft creates/applies an edited version; its source stays available. At least one font must remain. Removing a bundled source hides it persistently on this device; removing an active font applies an available fallback, including after reload.
+
+Card sizes come from actual glyph matrices (8×16 and/or 16×16), with native game height shown separately. The pixel grid, copy/paste, transforms and raw preview support the complete 16-column native image, preserving colour indices and synchronizing its 8-column compatibility rows. JSON retains native data; native PNG and 4bpp export use full 16×16 cells (tiles in top-left, top-right, bottom-left, bottom-right order), including source shadows. Standard 8×16 export remains byte-compatible. Game font height limits still apply; the preview reports out-of-bounds designs.
+
+Drag the ⠿ handle onto another unlocked card to swap positions using mouse or touch; locked cards cannot be moved or used as swap targets. Up/down buttons provide a keyboard alternative, respecting the current filter. Locks, ordering and removal preferences are local device settings, as stated in the library. No SQL or additional cloud traffic is added.
+
+Validation: `tests/font-locks.cjs` exercises every bundled preset, API/UI/draft lock enforcement, native pixels beyond column 8 through saving and game rasterization, exact native PNG/4bpp bytes, desktop and real touch pointer swaps, locked targets, persisted locks/order, bundled rename/delete, reload fallback and both themes on mobile. Existing font workspace and editor tests also cover standard exports and an actual built/recovered ROM. These checks run against source and standalone HTML.
+
 ## Unified font workspace (0.32.42)
 
 **ฟอนต์** is now the single entry for the library and pixel editor. The former font-menu command opens the same workspace. Its header separates the font actually applied to the current project from the primary font used for new projects on this device. Library cards show previews, groups and active/default badges. Selecting or importing a JSON font previews it without applying it; **ใช้กับงานนี้** explicitly changes the project. **เปิดแก้ไข** opens a separate draft, preserving the original preset; saving creates/applies the edited content version. Existing pixel tools, shadows, spacing, undo/redo and JSON/PNG/BIN export remain available. Additional source/export information is collapsed.
