@@ -2,6 +2,14 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Full alphabet popup (0.32.46)
+
+Click a font sample on its card or in the inspector to open its complete glyph inventory. The popup works for locked and unlocked presets, showing every stored glyph exactly once, with consonants, leading/upper/lower vowels and marks, other vowel symbols, digits and spaces grouped by actual character. This also handles bundled/native presets whose category metadata differs. Raw previews preserve full 8×16 or 16×16 pixels and source shadows; missing shapes are labelled. The optional 15px Thai composition mode supplies ก as a base for marks/vowels, and the 2×/3×/4× zoom changes the gallery size. The UI explains that game digits/English still use the original ROM font.
+
+A simple click/tap opens the popup; moving from the same canvas still drags/swaps, and mobile swiping still scrolls. Canvas previews are keyboard-accessible with Enter/Space. The shared pinned × and Escape close the modal; each opening starts at the top. Viewing, changing modes/zoom and theme redraws preserve the active project font and pixel-editor draft.
+
+Validation: `tests/font-glyph-preview.cjs` covers the complete 85-glyph inventory, exact raw alpha pixels including native matrices, vowel/mark/digit groups, mode/zoom, locked/unlocked and inspector entry, keyboard/touch, drag/swipe exclusion, pinned × after scrolling, unchanged active fonts/draft and mobile/theme overflow. Tests run against source and downloadable standalone HTML; font card/lock/workspace regression checks also pass.
+
 ## Minimal font cards and renderer compatibility checks (0.32.45)
 
 Padlocks use small stroke SVGs with transparent backgrounds and no border, including disabled states. The three main tabs include matching minimal translation, controller and typography icons while preserving their labels. Font previews now use three shared lines, larger cards and full-width mobile cards for clearer shape comparison; the inspector also uses a larger sample. Unrenderable sample clusters show a labelled □ placeholder while retaining the rest of the example, rather than blanking the whole canvas.
