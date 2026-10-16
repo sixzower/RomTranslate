@@ -2,7 +2,9 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
-## Cloud continuation (0.32.15)
+## Cloud continuation (0.32.16)
+
+The staged-work **ลองเปิดงานต่อ** action opens private-library sign-in when disconnected and retries cloud loading when connected. It never falls back to the native local-ROM picker during connection or authentication. This routing fix does not establish that a particular production workspace has a complete cloud ROM backup.
 
 With a remembered private-library login, navigating to the website restores the latest workspace **and source ROM** automatically; no file picker or project button is needed after the first complete backup. If a tab opened before the ROM arrived, it keeps the workspace staged and checks only ROM metadata once per minute and on focus/online. Once ready, it fetches the latest workspace payload and opens automatically. Staging an incomplete backup no longer consumes the one-time resume flag. Cancelling the staged resume suppresses later automatic reopening in that tab, and active work is still protected from replacement.
 
