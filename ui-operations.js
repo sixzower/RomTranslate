@@ -3,6 +3,7 @@ const UiOperations = (() => {
   const $ = id => document.getElementById(id); let active = null;
   const controls = ['openRom','import','export','workOpen','buildRom','sheetExport','sheetImport','patchOpen','emuBuild','emuOpen','qualityButton','qualityNext'];
   function update(event = {}) {
+    if(active?.sharedResume){window.RomCloud.resumeOperation(event);return;}
     const bar = $('operationProgress'), labels = {scan:'อ่านข้อความต้นฉบับ',validate:'ตรวจคำแปล',write:'เขียนข้อความ',finish:'เก็บข้อมูลสำหรับเปิดแก้ต่อ',done:'เสร็จแล้ว'};
     const ranges = {audit:[0,99],scan:[0,40],validate:[40,75],write:[75,90],finish:[90,99],done:[100,100]};
     $('operationDetail').textContent = event.message || labels[event.phase] || 'กำลังทำงาน…';
@@ -15,11 +16,11 @@ const UiOperations = (() => {
   async function run(title,work,{cancellable=false}={}) {
     if (active) throw Error('มีงานกำลังทำอยู่ กรุณารอหรือยกเลิกงานเดิม');
     const controller=new AbortController(),prior=controls.map(id=>[$(id),$(id)?.disabled]);
-    active={controller,cancellable};$('operationTitle').textContent=title;update();$('operationCancel').hidden=!cancellable;$('operationCancel').disabled=false;
+    active={controller,cancellable,sharedResume:title==='เปิดไฟล์ ROM'&&window.RomCloud?.resuming===true};$('operationTitle').textContent=title;update();$('operationCancel').hidden=!cancellable;$('operationCancel').disabled=false;
     for(const [node]of prior)if(node)node.disabled=true;
-    $('operationDialog').showModal();
+    if(!active.sharedResume)$('operationDialog').showModal();
     try { await new Promise(resolve=>setTimeout(resolve,0));const result=await work(controller.signal,update);$('operationCancel').disabled=true;update({phase:'done',completed:1,total:1});await new Promise(resolve=>setTimeout(resolve,80));return result; }
-    finally { active=null;$('operationDialog').close();for(const [node,disabled]of prior)if(node)node.disabled=disabled;window.RomTranslateBridge?.refreshUI?.(); }
+    finally { const shared=active.sharedResume;active=null;if(shared)window.RomCloud.endResume();else $('operationDialog').close();for(const [node,disabled]of prior)if(node)node.disabled=disabled;window.RomTranslateBridge?.refreshUI?.(); }
   }
   return {run,update,get busy(){return !!active;}};
 })();

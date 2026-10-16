@@ -2,6 +2,10 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## One ROM restore progress window (0.32.26)
+
+Automatic restore uses one foreground progress dialog for metadata lookup, download and ROM scanning. The login window closes when restore starts, and the scanner updates the same dialog instead of opening a second operation window. Cached startup restore also avoids starting an overlapping loader. The shared dialog closes when scanning finishes, before subsequent background sync. Preparation/download can be canceled; scanning retains its existing non-cancellable behavior. No SQL change is required.
+
 ## ROM backup timeout (0.32.25)
 
 For `57014` while backing up ROM (after translations have saved), run [rom-timeout-fix.sql](cloud/rom-timeout-fix.sql) once in the existing Supabase SQL Editor. This updates only the ROM RPC and keeps all uploaded chunks, translations, fonts and project IDs. The previous workspace-timeout SQL does not configure this separate RPC.
