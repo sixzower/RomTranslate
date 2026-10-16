@@ -2,6 +2,12 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Workspace backup timeout (0.32.19)
+
+For `57014` during project backup, run [workspace-timeout-fix.sql](cloud/workspace-timeout-fix.sql) once in the existing Supabase project's SQL Editor, then retry **สำรองตอนนี้** from the device holding the ROM. This preserves all data and revisions. The migration avoids waiting for another library write and sets only the two backup RPCs to a 30-second statement limit / 2-second row-lock limit; PostgREST reloads its schema configuration. The browser allows 40 seconds for these writes and never automatically retries an ambiguous write response. A project write must finish before ROM backup starts.
+
+Tests verify large Thai payload preservation, permissions, revision conflicts and timeout feedback locally. They do not establish the cause of a production timeout or verify the user's live backup; persistent timeouts require Supabase database logs (query duration / lock waits / resource load).
+
 ## Cloud sign-in (0.32.18)
 
 Remembering sign-in is now off by default. Without explicit opt-in, credentials stay in memory only and reload/new tabs require the admin password. Legacy default-on remembered sessions are cleared once; font and workspace data are preserved. Selecting remember explicitly enables future automatic connection.

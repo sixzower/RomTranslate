@@ -63,7 +63,9 @@ begin
     or jsonb_typeof(p_payload->'entries') is distinct from 'array' or jsonb_typeof(p_payload->'workTasks') is distinct from 'array'
     or octet_length(p_payload::text) > 16777216 then raise exception 'Invalid work file (maximum 16 MB)'; end if;
   if jsonb_array_length(p_payload->'entries') not between 1 and 100000 or jsonb_array_length(p_payload->'workTasks')>100 then raise exception 'Invalid work file row count'; end if;
-  perform pg_advisory_xact_lock(hashtextextended(p_owner,0));
+  if not pg_try_advisory_xact_lock(hashtextextended(p_owner,0)) then
+    raise exception using errcode='55P03', message='Workspace is busy: another backup is running; try again shortly';
+  end if;
   select w.revision into old_revision from public.romtranslate_workspaces w where w.owner_key=p_owner and w.workspace_id=p_id for update;
   if found then
     if old_revision<>p_expected then raise exception 'Workspace version conflict: reload the cloud copy before saving'; end if;
@@ -82,7 +84,9 @@ create or replace function public.romtranslate_work_delete(p_owner text,p_id uui
 returns void language plpgsql security definer set search_path = pg_catalog as $$
 declare old_revision bigint;
 begin
-  perform pg_advisory_xact_lock(hashtextextended(p_owner,0));
+  if not pg_try_advisory_xact_lock(hashtextextended(p_owner,0)) then
+    raise exception using errcode='55P03', message='Workspace is busy: another backup is running; try again shortly';
+  end if;
   select w.revision into old_revision from public.romtranslate_workspaces w where w.owner_key=p_owner and w.workspace_id=p_id for update;
   if not found then return; end if;
   if p_expected is null or p_expected<>old_revision then raise exception 'Workspace version conflict: refresh the list before deleting'; end if;
@@ -111,8 +115,16 @@ returns bigint language sql security definer set search_path = pg_catalog as $$ 
 create or replace function public.romtranslate_work_user_delete(p_id uuid,p_expected bigint)
 returns void language sql security definer set search_path = pg_catalog as $$ select public.romtranslate_work_delete(public.romtranslate_work_owner(null),p_id,p_expected); $$;
 
+-- PostgREST applies per-RPC statement_timeout before executing the request.
+-- Keep row-lock waits short; do not change the timeout for other applications.
+alter function public.romtranslate_work_code_put(text,uuid,bigint,jsonb) set statement_timeout = '30s';
+alter function public.romtranslate_work_code_put(text,uuid,bigint,jsonb) set lock_timeout = '2s';
+alter function public.romtranslate_work_user_put(uuid,bigint,jsonb) set statement_timeout = '30s';
+alter function public.romtranslate_work_user_put(uuid,bigint,jsonb) set lock_timeout = '2s';
+
 revoke all on function public.romtranslate_work_owner(text),public.romtranslate_work_list(text),public.romtranslate_work_get(text,uuid),public.romtranslate_work_put(text,uuid,bigint,jsonb),public.romtranslate_work_delete(text,uuid,bigint) from public,anon,authenticated;
 revoke all on function public.romtranslate_work_code_list(text),public.romtranslate_work_code_get(text,uuid),public.romtranslate_work_code_put(text,uuid,bigint,jsonb),public.romtranslate_work_code_delete(text,uuid,bigint),public.romtranslate_work_user_list(),public.romtranslate_work_user_get(uuid),public.romtranslate_work_user_put(uuid,bigint,jsonb),public.romtranslate_work_user_delete(uuid,bigint) from public,anon,authenticated;
 grant execute on function public.romtranslate_work_code_list(text),public.romtranslate_work_code_get(text,uuid),public.romtranslate_work_code_put(text,uuid,bigint,jsonb),public.romtranslate_work_code_delete(text,uuid,bigint) to anon,authenticated;
 grant execute on function public.romtranslate_work_user_list(),public.romtranslate_work_user_get(uuid),public.romtranslate_work_user_put(uuid,bigint,jsonb),public.romtranslate_work_user_delete(uuid,bigint) to authenticated;
+notify pgrst, 'reload schema';
 commit;

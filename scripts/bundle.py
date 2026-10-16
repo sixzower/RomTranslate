@@ -9,6 +9,7 @@ admin_sql = '-- One-time shared admin setup. Preserves existing vaults, fonts an
 (root / 'cloud/admin-setup.sql').write_text(admin_sql)
 (root / 'admin-schema.js').write_text('/* One-time admin setup SQL; no plaintext password or private vault code. */\nconst AdminSchema=' + json.dumps(admin_sql, ensure_ascii=False) + ';\n')
 (root / 'cloud/admin-link-upgrade.sql').write_text('-- Upgrade old-vault adoption; run once in the same Supabase SQL Editor. Preserves all existing data and the admin password.\n' + (root / 'cloud/admin-library.sql').read_text())
+(root / 'workspace-schema.js').write_text('const WorkspaceSchema=' + json.dumps((root / 'cloud/workspace-library.sql').read_text(), ensure_ascii=False) + ';\n')
 (root / 'rom-cloud-schema.js').write_text('const RomCloudSchema=' + json.dumps((root / 'cloud/rom-library.sql').read_text(), ensure_ascii=False) + ';\n')
 runpy.run_path(str(root / 'scripts/build_seaglass_complete.py'), run_name='__main__')
 # Verified source mappings and explicitly labelled supplemental designs; no source ROM.

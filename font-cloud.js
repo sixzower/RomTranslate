@@ -26,13 +26,14 @@ const FontCloud=(()=>{
   if(!config)throw Error('ตั้งค่า Project URL และ public key ก่อน');
   const label=requestLabel(path,method),readOnly=method==='GET'||/_(?:list|get)$/.test(path)||path.endsWith('/romtranslate_rom')&&['info','get'].includes(body?.p_action),payload=body?JSON.stringify(body):null,bytes=payload?new TextEncoder().encode(payload).length:0;
   for(let attempt=0;;attempt++){
-   operationStage=label;const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),15000),started=Date.now();let httpStatus=null;
+   operationStage=label;const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),/work_(?:code|user)_put$/.test(path)?40000:15000),started=Date.now();let httpStatus=null;
    try{
     const response=await fetch(config.url+path,{method,credentials:'omit',cache:'no-store',signal:controller.signal,headers:{apikey:config.key,...(auth?{Authorization:'Bearer '+session.access_token}:{}),...(body?{'Content-Type':'application/json'}:{}),...headers},...(body?{body:payload}:{})});httpStatus=response.status;
     const raw=await response.text();let result;try{result=raw?JSON.parse(raw):null;}catch{throw Error(label+': บริการตอบกลับไม่ถูกต้อง [HTTP '+response.status+']');}
     if(!response.ok){
      if(auth&&response.status===401){saveSession(null);throw Error('เซสชันหมดอายุ กรุณาเข้าสู่บัญชีอีกครั้ง [HTTP 401]');}
-     throw Error(label+': '+(result?.msg||result?.message||result?.error_description||'คำขอไม่สำเร็จ')+' [HTTP '+response.status+']'+(result?.code?' ['+result.code+']':''));
+     const detail=result?.code==='57014'&&/work_(?:code|user)_put$/.test(path)?'ฐานข้อมูลบันทึกไม่ทันเวลาที่กำหนด · ยังไม่ยืนยันการสำรองรอบนี้ · รัน SQL แก้เวลาบันทึก cloud/workspace-timeout-fix.sql แล้วกดสำรองตอนนี้อีกครั้ง':result?.code==='55P03'?'มีการสำรองอีกชุดกำลังทำงานอยู่ · รอสักครู่แล้วกดสำรองตอนนี้อีกครั้ง':(result?.msg||result?.message||result?.error_description||'คำขอไม่สำเร็จ');
+     throw Error(label+': '+detail+' [HTTP '+response.status+']'+(result?.code?' ['+result.code+']':''));
     }
     return result;
    }catch(e){
