@@ -2,6 +2,12 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Visible deletion for bundled fonts (0.32.44)
+
+The selected font's **ลบฟอนต์** action is now visible next to Use/Edit/Primary, outside collapsed management controls. Built-in sources follow the same unlock-and-confirm flow as imported presets. The hint explains unlocking, local removal scope and the last-font safeguard; the last remaining font's delete action is disabled. Removal records both preset ID and content fingerprint, so subsequent cloud font downloads cannot recreate a removed bundled font under its hash ID. Hidden bundled source matching also covers removals made before this update. Explicit imports and project-embedded fonts retain their existing restoration behaviour.
+
+Extended `tests/font-locks.cjs` verifies the initially visible button, lock and cancel protection, renamed/original bundled sources staying removed through reload and cloud import, removal of every bundled preset, usable custom fallback, and the last-font guard. These checks pass for source and standalone HTML.
+
 ## Editable presets, locks and drag ordering (0.32.43)
 
 Every preset, including bundled sources, can be opened for pixel editing, renamed, grouped or locally removed after unlocking its top-right padlock. Bundled fonts start locked; imported/custom fonts start unlocked. Locks persist locally and block rename, removal, group changes, swaps and edits to an already-open draft (including keyboard, undo and saving). Use, copy and export remain available. Saving a pixel draft creates/applies an edited version; its source stays available. At least one font must remain. Removing a bundled source hides it persistently on this device; removing an active font applies an available fallback, including after reload.
