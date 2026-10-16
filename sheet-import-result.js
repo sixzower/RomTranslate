@@ -19,8 +19,8 @@ const SheetImportResult=(()=>{
   const add=(parent,text,kind)=>{const p=document.createElement('p');p.textContent=text;if(kind)p.className='import-'+kind;parent.append(p);return p;};
   const changes=parts?.changes||[],drafts=parts?.drafts||[],needsFix=parts?.needsFix||[];
   const summary=[`ตรวจ ${report.files} ไฟล์ · ${report.rows} แถว · เปลี่ยน ${report.changes.length} ข้อความ · ว่าง ${report.blanks} แถว · เหมือนเดิม ${report.unchanged} แถว · ข้อผิดพลาด ${report.errors} จุด`,report.formatted?`จัดบรรทัดอัตโนมัติ ${report.formatted} แถว`:'',report.duplicates?`รวมแถวซ้ำที่เหมือนกัน ${report.duplicates} แถว`:'',parts?`นำเข้าได้ ${changes.length} แถว`:'',parts?.rejected?`ข้ามแถวที่จับคู่ไม่ได้ ${parts.rejected} แถว`:'',needsFix.length?`รวม ${needsFix.length} แถวที่ล้นกรอบ`:'',...(report.fileWarnings||[])].filter(Boolean);$('sheetImportSummary').textContent=summary.join(' · ');
-  if(report.repairMessage)add(out,report.repairMessage,'neutral');
-  const auto=$('sheetAutoFix');if(auto){auto.hidden=applied||!report.changes.length;auto.onclick=()=>actions.onRepair?.();}
+  if(report.repairMessage)add(out,report.repairMessage,'neutral');if(report.expandedTextRows)add(out,`คำอธิบายท่า ${report.expandedTextRows} รายการรองรับพื้นที่ขยาย 256 ไบต์แล้ว · ตรวจขนาดหน้าจอแยกจากจำนวนไบต์`,'neutral');
+  const auto=$('sheetAutoFix');if(auto){auto.hidden=applied||!report.changes.length||!report.issues.some(issue=>issue.severity==='error'||issue.code==='glossary');auto.onclick=()=>actions.onRepair?.();}
   const clean=Math.max(0,changes.length-needsFix.length),errors=report.issues.filter(i=>i.severity==='error');
   add(out,applied?`นำเข้าสำเร็จ ${changes.length.toLocaleString()} รายการ · ผ่านเงื่อนไขเกม ${clean.toLocaleString()} รายการ`:`พร้อมนำเข้า ${changes.length.toLocaleString()} รายการ · ผ่านเงื่อนไขเกม ${clean.toLocaleString()} รายการ`,changes.length?'success':'neutral');
   if(!parts)add(out,'ยังนำเข้าชุดนี้ไม่ได้ กรุณาแก้ข้อผิดพลาดด้านล่าง แล้วเลือกไฟล์ใหม่','error');

@@ -63,6 +63,7 @@ const SheetImportBatch=(()=>{
    }
   }
   progress.combined?.(1,1);
+  const expandedIds=new Set(project.entries.filter(entry=>entry.moveTextExpansion).map(entry=>entry.id));result.expandedTextRows=result.changes.filter(change=>expandedIds.has(change.id)).length;
   result.formattedIds=[...formattedIds];result.formatted=formattedIds.size;
   result.errors=result.issues.filter(i=>i.severity==='error').length;
   result.warnings=result.issues.filter(i=>i.severity!=='error');progress.check();return result;
