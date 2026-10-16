@@ -2,6 +2,14 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Jump from failed font checks to the offending glyph (0.32.47)
+
+Failed checks on font cards and the selected-font inspector are now small red **กดแก้ไข** actions. Structured diagnostic targets identify the actual glyph and, for native frame overflow, the first offending source pixel; composed vowel/tone failures resolve to the mark rather than assuming the base consonant. Clicking opens the pixel editor on that glyph, clears filters that would hide it, and focuses the identified grid cell. Missing glyphs open at the start of their own grid. Font metadata validation failures focus the name field.
+
+The repair panel groups failures by glyph and offers a selector plus previous/next navigation. Draft edits trigger a debounced check; repairing a glyph marks it resolved without moving away while drawing. Remaining glyphs can be chosen explicitly, and a fully valid draft shows green with a reminder to save. Returning to the same source retains its current draft; switching sources uses the existing dirty-draft confirmation. Locked sources require explicit unlock confirmation, and declining either confirmation leaves the lock/draft intact. Merely opening a failure never applies the font to the project; saving retains the existing new-version behavior.
+
+Validation: `tests/font-issue-jump.cjs` covers card/inspector entry, missing upper/lower marks, filter clearing, draft reuse and cancellation, lock confirmation, exact native composed-mark overflow at column 12/row 16, repair to green, unchanged active font before saving, source preservation, and mobile/light/dark operation. Tested source and standalone HTML together with the card, gallery and editor regression checks.
+
 ## Full alphabet popup (0.32.46)
 
 Click a font sample on its card or in the inspector to open its complete glyph inventory. The popup works for locked and unlocked presets, showing every stored glyph exactly once, with consonants, leading/upper/lower vowels and marks, other vowel symbols, digits and spaces grouped by actual character. This also handles bundled/native presets whose category metadata differs. Raw previews preserve full 8×16 or 16×16 pixels and source shadows; missing shapes are labelled. The optional 15px Thai composition mode supplies ก as a base for marks/vowels, and the 2×/3×/4× zoom changes the gallery size. The UI explains that game digits/English still use the original ROM font.
