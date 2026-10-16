@@ -17,7 +17,7 @@ const RomCloud=(()=>{
   start('กำลังดึง ROM ของโปรเจกต์');
   try{const bytes=new Uint8Array(m.size);for(let i=0;i<m.chunks;i++){check();const part=await request('get',{p_id:p.workspaceId,p_index:i}),data=unbase64(part?.data||'');if(part?.index!==i||data.length!==Math.min(CHUNK,m.size-i*CHUNK))throw Error('ชิ้นส่วน ROM ที่โหลดมาไม่ครบ');bytes.set(data,i*CHUNK);progress((i+1)/m.chunks*95,'ดึง ROM '+(i+1)+' / '+m.chunks+' ส่วน');await new Promise(resolve=>setTimeout(resolve,0));}if(await RomCore.fingerprint(bytes)!==p.romHash)throw Error('SHA-256 ของ ROM คลาวด์ไม่ตรงกับต้นฉบับ');progress(100,'ตรวจ SHA-256 แล้ว พร้อมใช้งาน');return bytes;}finally{end();}
  }
- async function forResume(p){try{const m=await info(p.workspaceId);return await download(p,m);}catch(e){if(!e.romSetupMissing)bridge().toast('ยังดึง ROM อัตโนมัติไม่ได้: '+e.message+' · เลือก ROM ต้นฉบับจากเครื่องเพื่อทำต่อได้');return null;}}
+ async function forResume(p,{strict=false}={}){try{const m=await info(p.workspaceId);if(strict&&!m?.ready)throw Error(m?'ROM บนคลาวด์ยังส่งไม่ครบ · กลับเครื่องเดิมแล้วกดเก็บ ROM อีกครั้ง':'ยังไม่ได้เก็บ ROM บนคลาวด์ · เปิด ROM ที่เครื่องเดิมแล้วกดเก็บ ROM บนคลาวด์ก่อน');return await download(p,m);}catch(e){if(strict)throw e;if(!e.romSetupMissing)bridge().toast('ยังดึง ROM อัตโนมัติไม่ได้: '+e.message+' · เลือก ROM ต้นฉบับจากเครื่องเพื่อทำต่อได้');return null;}}
  async function saveWork(p){
   if(busy)throw Error('กำลังรับส่ง ROM กรุณารอสักครู่');
   const current=bridge().project(),active=current?.workspaceId===p.workspaceId;

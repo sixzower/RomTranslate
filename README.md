@@ -2,6 +2,12 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Cloud continuation (0.32.12)
+
+The current client keeps one latest cloud workspace, using the existing authenticated workspace/ROM RPCs; no new SQL migration is required. Only the active workspace (or the most recent local workspace when the cloud is empty) is uploaded. After a confirmed save, older cloud workspaces are deleted with their observed revisions; existing foreign-key cascades free their ROM chunks. Local copies are retained and paused, and font presets are unaffected. Failed saves preserve the previous backup. Revision or connection failures stop cleanup and are reported for retry. Update other devices before using this policy there.
+
+In **โปรเจกต์ Cloud**, **เปิด ROM และทำงานต่อ** opens the latest cloud payload together with its matching cached or cloud ROM. Cloud chunks must pass size and SHA-256 checks before loading; translations, font, target categories and task/view state are restored through the existing workspace loader. This action reports missing/incomplete ROMs without staging an unusable workspace or closing the project dialog. If no ROM has been stored yet, upload it once from the original device. The ZIP download remains available separately.
+
 ## Default font
 
 The default Thai font is **Quetzal TH 1.0.3 — adapted 8×16**, extracted from the user's Quetzal ROM and adapted to the editor's bitmap schema. JSON, monochrome PNG/4bpp exports, preview and extraction provenance are in `fonts/`. `scripts/build_user_font.py` verifies JSON against the exported 4bpp bytes and bundles the browser modules using Python's standard library. The optional extractor additionally uses Pillow and requires the exact privately supplied source ROM; no ROM is shipped.
