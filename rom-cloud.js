@@ -1,10 +1,13 @@
 /* Private, optional, chunked ROM copies; translation backups remain independent. */
 const RomCloud=(()=>{
- const $=id=>document.getElementById(id),CHUNK=262144,bridge=()=>window.RomTranslateBridge;let busy=false,cancelled=false;
+ const $=id=>document.getElementById(id),CHUNK=262144,bridge=()=>window.RomTranslateBridge;let busy=false,cancelled=false,preparing=false;
  function check(){if(cancelled)throw new DOMException('ยกเลิกรับส่ง ROM แล้ว','AbortError');}
  function progress(value,text){check();value=Math.min(100,Math.max(0,Math.floor(value)));$('romCloudBar').value=value;$('romCloudPercent').textContent=value+'%';$('romCloudDetail').textContent=text;}
  $('romCloudProgress').addEventListener('cancel',event=>{event.preventDefault();cancelled=true;$('romCloudDetail').textContent='กำลังยกเลิก… ชิ้นส่วนที่ส่งแล้วเก็บไว้ส่งต่อหรือลบได้';});
  function start(title){if(busy)throw Error('กำลังรับส่ง ROM กรุณารอสักครู่');busy=true;cancelled=false;$('romCloudHeading').textContent=title;progress(0,'กำลังตรวจไฟล์');$('romCloudProgress').showModal();}
+ function beginResume(){if(busy||preparing)return false;preparing=true;cancelled=false;resumeStage('กำลังอ่านโปรเจกต์ล่าสุดจากคลาวด์');return true;}
+ function resumeStage(message){if(!preparing)return;check();$('romCloudHeading').textContent='เปิด ROM และงานแปลล่าสุด';$('romCloudBar').removeAttribute('value');$('romCloudPercent').textContent='';$('romCloudDetail').textContent=message;if(!$('romCloudProgress').open)$('romCloudProgress').showModal();}
+ function endResume(){if(!preparing)return;preparing=false;if(!busy)$('romCloudProgress').close();}
  function end(){busy=false;$('romCloudProgress').close();}
  function base64(bytes){let text='';for(let i=0;i<bytes.length;i+=8192)text+=String.fromCharCode(...bytes.subarray(i,i+8192));return btoa(text);}
  function unbase64(value){const raw=atob(value),bytes=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);return bytes;}
@@ -30,11 +33,11 @@ const RomCloud=(()=>{
   if(m&&(m.sha256!==p.romHash||!Number.isSafeInteger(m.size)||m.size<192||m.size>33554432||m.chunks!==Math.ceil(m.size/CHUNK)))throw Error('ข้อมูลไฟล์เกมบนคลาวด์ไม่ตรงกับโปรเจกต์');
   return {metadata:m,source};
  }
- async function forResume(p,{strict=false}={}){try{
+ async function forResume(p,{strict=false}={}){const own=beginResume();try{check();resumeStage('กำลังตรวจไฟล์เกมของ '+(p.workspaceName||p.title));
   const {metadata:m,source}=await locate(p);
   if(strict&&!m?.ready){const error=Error(m?'ROM ของงานนี้ยังสำรองไม่ครบ':'คำแปลอยู่บนคลาวด์แล้ว แต่ยังไม่มี ROM ที่สำรองครบ');error.romRequired=true;throw error;}
-  return await download(source,m);
- }catch(e){if(strict||e.name==='AbortError')throw e;if(!e.romSetupMissing)bridge().toast('ยังเปิดงานจากคลาวด์ไม่ได้: '+e.message);return null;}}
+  check();return await download(source,m);
+ }catch(e){if(strict||e.name==='AbortError')throw e;if(!e.romSetupMissing)bridge().toast('ยังเปิดงานจากคลาวด์ไม่ได้: '+e.message);return null;}finally{if(own)endResume();}}
  async function ensure(p,{interactive=false,onProgress=()=>{}}={}){
   if(busy)throw Error('กำลังรับส่ง ROM กรุณารอสักครู่');
   const scope=await FontCloud.workspaceScope();
@@ -80,6 +83,6 @@ const RomCloud=(()=>{
   }finally{end();}
  }
  $('romCloudSql').onclick=async()=>{try{await navigator.clipboard.writeText(RomCloudSchema);$('cloudManageStatus').textContent='คัดลอก SQL แล้ว วางใน Supabase SQL Editor แล้ว Run ครั้งเดียว';}catch{$('romCloudSqlText').value=RomCloudSchema;$('romCloudSqlText').hidden=false;$('romCloudSqlText').select();}};
- return {forResume,info,readyInfo,locate,checkSetup,saveWork,ensure};
+ return {beginResume,resumeStage,endResume,forResume,info,readyInfo,locate,checkSetup,saveWork,ensure};
 })();
 window.RomCloud=RomCloud;

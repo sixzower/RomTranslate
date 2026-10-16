@@ -2,6 +2,12 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Visible automatic ROM restore (0.32.23)
+
+Password sign-in and the explicit retry button now retry latest-workspace restoration even if an earlier attempt was canceled or found an empty library. Ordinary background synchronization still respects cancellation. The ROM progress dialog opens before cloud workspace lookup, shows metadata preparation separately from confirmed download progress, then hands off to the ROM scanner. Missing or incomplete ROMs keep their pending translations and display an immediate reason after login instead of only a generic connection-success message. Waiting devices continue checking for a completed backup.
+
+Local regression tests cover the initial mobile loader, partial/missing-ROM feedback, explicit retry after cancellation, and actual 32 MB ROM restore with PostgreSQL. The user's production library is not directly accessible here; a production ROM backup must still complete on the source device.
+
 ## Pokémon translation prompt (0.32.22)
 
 The eight-rule Excel prompt adapts language QA guidance from [game-localization-qa](https://github.com/memolyviza2012-max/game-localization-qa), revision `1b35f87`, by Danaiwit (memolyviza2012-max), under [MIT](vendor/GAME-LOCALIZATION-QA-LICENSE.txt). Attribution and the full license are also embedded in the downloadable HTML's script.
