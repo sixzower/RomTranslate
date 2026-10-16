@@ -2,6 +2,10 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Distinct Excel filenames (0.32.32)
+
+Export filenames begin with `[ส่งให้AI]`, then category, batch index/total, row range, a bounded game label and an export timestamp. The matching returned filename begins with `[แปลแล้ว]`; it is shown beside the source name in the export preview, written in Instructions and requested verbatim in the copied/embedded prompt. ZIP names and their manifest use the same convention and record the suggested returned name. Names are sanitized and byte-limited; redundant filter counts/labels are omitted from filenames. Import still validates ROM/entry/offset/source data and accepts arbitrary filenames, so an AI ignoring the naming instruction does not prevent import or establish translation completeness.
+
 ## Whole-page Excel drops (0.32.31)
 
 Drag one or more `.xlsx` files onto the page to open the same reviewed import as the file picker. A full-page hint appears during file drags; text selection/dragging retains its native behavior. The drop handler prevents file navigation, rejects mixed file types, requires an open project and refuses concurrent operations or open dialogs. It passes File objects directly to the shared importer without assigning an input's files or requiring DataTransfer for internal restores. No translations change until the existing apply step.

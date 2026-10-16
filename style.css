@@ -129,3 +129,5 @@ body[data-theme=dark] #fontCloudStatus[data-kind=error]{color:#ff8b94}
 #sheetImportDialog{width:min(780px,94vw)}#sheetImportOutcome{line-height:1.7}#sheetImportOutcome p{margin:5px 0}.import-success{color:#167b37}.import-error{color:#c22b2b}.import-neutral{color:var(--muted)}.import-detail{border-bottom:1px solid var(--border);padding:6px 0}.import-detail p{margin:4px 0}body[data-theme=dark] .import-success{color:#62e68d}body[data-theme=dark] .import-error{color:#ff8585}
 
 #sheetDropOverlay{position:fixed;inset:10px;z-index:2147483000;display:grid;place-items:center;background:var(--surface);background:color-mix(in srgb,var(--surface) 90%,transparent);border:3px dashed #238449;border-radius:12px;pointer-events:none;padding:20px;color:var(--text);text-align:center}#sheetDropOverlay>div{padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:18px;overflow-wrap:anywhere}#sheetDropOverlay small{display:block;margin-top:8px;font-size:13px;color:var(--muted)}
+
+.sheet-filenames{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.8;color:var(--muted)}
