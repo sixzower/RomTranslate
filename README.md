@@ -2,6 +2,14 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## One shared project (0.32.20)
+
+Every connected device follows the primary cloud workspace for the same ROM. Old device-specific IDs adopt the primary ID before saving. A persisted local snapshot enables three-way merging of edits to different fields; existing nonblank translations are preserved when an old cloud copy has blank/missing rows. Concurrent changes to the same field stop with a conflict message; neither version is silently overwritten. Source text and ROM hashes must match. Cloud updates are checked on focus, before saving and once per minute while visible and connected. Sign-in still requires a password unless remember is explicitly selected.
+
+Run [workspace-single-project.sql](cloud/workspace-single-project.sql) once in the existing Supabase SQL Editor. It includes the backup timeout fix and prevents old browsers from writing a different workspace over the primary one. Existing data are preserved; older cloud copies are removed only after the primary ROM backup completes. Opening a different ROM requires finishing/removing the current cloud project first. A missing/incomplete ROM still needs the original device to complete its backup once; translation JSON cannot reconstruct the ROM.
+
+Local tests cover 7,035 preserved translations, disjoint edits and conflict rejection, original ROM recovery on touch/mobile Chromium, and real PostgreSQL RPCs. The private production library and physical iOS Safari have not been accessed from this environment.
+
 ## Workspace backup timeout (0.32.19)
 
 For `57014` during project backup, run [workspace-timeout-fix.sql](cloud/workspace-timeout-fix.sql) once in the existing Supabase project's SQL Editor, then retry **สำรองตอนนี้** from the device holding the ROM. This preserves all data and revisions. The migration avoids waiting for another library write and sets only the two backup RPCs to a 30-second statement limit / 2-second row-lock limit; PostgREST reloads its schema configuration. The browser allows 40 seconds for these writes and never automatically retries an ambiguous write response. A project write must finish before ROM backup starts.

@@ -14,5 +14,7 @@ assert.equal(config.length,2);for(const f of config){assert(f.proconfig.includes
 await db.exec('set role anon');const second=Number(await put(first));assert(second>first);await assert.rejects(put(first),/version conflict/);
 const saved=(await db.query('select * from public.romtranslate_work_code_get($1,$2)',[code,id])).rows[0];assert.deepEqual(saved.payload,payload);assert.equal(Number(saved.revision),second);
 await assert.rejects(db.query('select * from public.romtranslate_workspaces'),/permission denied/);
+await db.exec('reset role');const shared=fs.readFileSync('cloud/workspace-single-project.sql','utf8');await db.exec(shared);await db.exec(shared);await db.exec('set role anon');const otherId='22345678-1234-4234-8234-123456789abc';await assert.rejects(db.query('select public.romtranslate_work_code_put($1,$2,0,$3::jsonb)',[code,otherId,JSON.stringify({...payload,workspaceId:otherId})]),/primary cloud workspace/);assert.deepEqual((await db.query('select * from public.romtranslate_work_code_get($1,$2)',[code,id])).rows[0].payload,payload);
+
 console.log('PASS repeatable timeout migration preserves 27,166 Thai rows, revisions, conflict guards and private access; RPC-only 30s timeout and 2s lock limit configured. Real concurrent lock contention is not simulated by PGlite.');
 }finally{await db.close();}})().catch(e=>{console.error(e);process.exit(1)});

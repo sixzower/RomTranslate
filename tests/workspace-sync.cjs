@@ -1,0 +1,12 @@
+const assert=require('node:assert/strict'),{reconcile}=require('../workspace-sync.js');
+const row=(id,t)=>({id,romOffset:id,source:'source '+id,translation:t});
+const p=entries=>({romHash:'a'.repeat(64),workspaceId:'primary',entries,workTasks:[],glossary:'',genre:''});
+const base=p([row(192,'เก่า'),row(200,'')]);
+const local=structuredClone(base),remote=structuredClone(base);local.entries[1].translation='เพิ่มจากเครื่องแรก';remote.entries[0].translation='แก้จากมือถือ';
+let result=reconcile(local,remote,base);assert.equal(result.entries[0].translation,'แก้จากมือถือ');assert.equal(result.entries[1].translation,'เพิ่มจากเครื่องแรก');
+const many=p(Array.from({length:7035},(_,i)=>row(192+i,'ไทย '+i)));result=reconcile(many,p([row(192,'')]),null);assert.equal(result.entries.filter(r=>r.translation).length,7035);
+const conflicting=structuredClone(base);conflicting.entries[0].translation='แก้อีกแบบ';assert.throws(()=>reconcile(conflicting,remote,base),/แก้ข้อมูลเดียวกันต่างกัน/);assert.equal(base.entries[0].translation,'เก่า');
+assert.throws(()=>reconcile(local,{...remote,romHash:'b'.repeat(64)}),/คนละไฟล์/);
+assert.throws(()=>reconcile(local,{...remote,entries:[{...row(192,'ไทย'),source:'wrong'}]}),/ต้นฉบับไม่ตรง/);
+result=reconcile({...many,workspaceId:'old-local'},p([]));assert.equal(result.workspaceId,'primary');assert.equal(result.entries.length,7035);
+console.log('PASS primary ID adoption, 7,035 nonblank translations preserved, three-way disjoint edits, concurrent same-field conflict and ROM/source identity checks.');
