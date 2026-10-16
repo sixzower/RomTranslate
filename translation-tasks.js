@@ -21,7 +21,7 @@ const TranslationTasks = (() => {
     if (!valid(saved.workTasks) || saved.workspaceId !== undefined && !uuid(saved.workspaceId) || saved.workspaceName !== undefined && !text(saved.workspaceName, 100)) throw Error('ข้อมูลไฟล์งาน / งานค้างไม่ถูกต้อง');
     const ids = new Set(p.entries.filter(e => e.verified).map(e => e.id));
     if (saved.workTasks?.some(t => t.entryIds.some(id => !ids.has(id)))) throw Error('งานค้างมีรหัสข้อความที่ไม่ตรงกับ ROM');
-    for(const key of ['lastChangedAt','lastLocalSavedAt','lastLocalSavedChange','lastCloudSavedAt','cloudSavedChange','lastExportedAt'])p[key]=Number.isFinite(saved[key])&&saved[key]>=0?saved[key]:undefined;
+    for(const key of ['lastChangedAt','lastLocalSavedAt','lastLocalSavedChange','lastCloudSavedAt','cloudSavedChange','lastExportedAt','cloudPendingChange','cloudVerifiedAt','cloudVerifiedRevision','cloudVerifiedChange'])p[key]=Number.isFinite(saved[key])&&saved[key]>=0?saved[key]:undefined;
     p.viewState=validView(saved.viewState)?structuredClone(saved.viewState):undefined;
     p.workTasks = structuredClone(saved.workTasks || []);
     p.workspaceId = saved.workspaceId || crypto.randomUUID();

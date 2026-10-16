@@ -2,6 +2,7 @@
 const WorkManager = (() => {
   const $ = id => document.getElementById(id), bridge = () => window.RomTranslateBridge;
   let busy = false, foregroundBusy = false, card = null, queued = false, timer = null, latestCloud = null, remoteReady = false, awaitingRom = null, pollingRom = false;
+  let queuedSince=0,pendingConflict=null,verifiedDisplayId=null;
   const sent = new Map(),resumedScopes=new Set();
   const newest=rows=>rows.slice().sort((a,b)=>(typeof b.updated_at==='number'?b.updated_at:Date.parse(b.updated_at)||0)-(typeof a.updated_at==='number'?a.updated_at:Date.parse(a.updated_at)||0)||Number(b.revision)-Number(a.revision));
   async function retainLatest(id,revision,scope){
@@ -24,10 +25,10 @@ const WorkManager = (() => {
     const saved=(await FontCloud.workspaceRequest('get',{p_id:item.workspace_id}))?.[0];
     if(await FontCloud.workspaceScope()!==scope||bridge().project()!==current||p.lastChangedAt!==stamp)throw Error('งานเปลี่ยนระหว่างซิงก์ · จะบันทึกรอบถัดไป');
     if(!saved?.payload||saved.payload.workspaceId!==item.workspace_id||saved.payload.romHash!==p.romHash)throw Error('อ่านโปรเจกต์หลักไม่สำเร็จ · ยังไม่ส่งงานไปแทนที่');
-    if(p.workspaceId===item.workspace_id&&Number(saved.revision)===Number(p.cloudRevision))return p;
+    if(p.workspaceId===item.workspace_id&&Number(saved.revision)===Number(p.cloudRevision)){if(window.CloudSafety?.samePayload(serialized(p).payload,saved.payload))sent.set(p.workspaceId,serialized(p).content);return p;}
     const local=TranslationTasks.portable(p);
     // Merge unsent fields against the last confirmed server snapshot.
-    const merged=WorkspaceSync.reconcile(local,saved.payload,p.cloudBase||null);
+    let merged;try{merged=WorkspaceSync.reconcile(local,saved.payload,p.cloudBase||null);}catch(e){if(e.workspaceConflict){await bridge().flushLocal?.();pendingConflict={error:e,local,remote:saved.payload,base:p.cloudBase||null,revision:Number(saved.revision),scope,project:p,stamp};renderCurrent();e.message='มีข้อมูลขัดกัน '+e.details.length+' ช่อง · กดเลือกคำแปลที่ขัดกัน งานทั้งสองฉบับยังอยู่';}throw e;}
     const payload={...merged,cloudRevision:Number(saved.revision),cloudScope:scope,cloudAutosave:true,cloudSyncPaused:false,cloudBase:structuredClone(saved.payload)};
     const guard=()=>FontCloud.authenticated()&&bridge().project()===current&&p.lastChangedAt===stamp;
     if(current!==p)throw Error('โปรเจกต์ในเครื่องยังไม่เปิด · เปิดงานหลักก่อนซิงก์');
@@ -56,11 +57,13 @@ const WorkManager = (() => {
   function status(message) {if(busy&&!foregroundBusy&&/^(กำลัง|ตรวจการสำรอง|อ่านรายการ|ตรวจรายการ)/.test(message))return;setText('workStatus',message);}
   function button(label, action) { const b = document.createElement('button'); b.textContent = label; b.onclick = action; return b; }
   function time(value){return new Date(value).toLocaleString('th-TH',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:'Asia/Bangkok'});}
-  function backupStatus(p){$('backupStatus').hidden=!p;const local=$('localSaveStatus'),cloud=$('cloudSaveStatus'),badge=$('autosaveBadge');if(!p){setText('localSaveStatus','ยังไม่ได้เปิดโปรเจกต์');setText('cloudSaveStatus','ยังไม่ได้เปิดโปรเจกต์');setText('autosaveBadge','บันทึกงานอัตโนมัติ');return;}const pending=(p.lastLocalSavedChange||0)<(p.lastChangedAt||0);setText('localSaveStatus',pending?'กำลังบันทึก…':p.lastLocalSavedAt?'บันทึกแล้ว · '+time(p.lastLocalSavedAt):'รอบันทึกครั้งแรก');setText('autosaveBadge',pending?'กำลังบันทึก…':p.lastLocalSavedAt?'บันทึกแล้ว '+new Date(p.lastLocalSavedAt).toLocaleTimeString('th-TH',{timeZone:'Asia/Bangkok'}):'บันทึกงานอัตโนมัติ');badge.title=local.textContent;
-    const suffix=p.lastCloudSavedAt?' · ล่าสุด '+time(p.lastCloudSavedAt):'';setText('cloudSaveStatus',p.cloudDeletePending?'รอตรวจผลลบสำเนา · หยุดสำรองชั่วคราว':p.cloudSyncPaused?'หยุดสำรองงานนี้'+suffix:!FontCloud.connected()?'รอเชื่อมคลังส่วนตัว'+suffix:(p.cloudSavedChange||0)<(p.lastChangedAt||0)?'มีการแก้ไข รอสำรอง'+suffix:p.lastCloudSavedAt?(p.cloudRomReady?'ROM และคำแปลสำรองครบแล้ว':'คำแปลสำรองแล้ว · ROM ยังไม่พร้อม')+suffix:'ยังไม่ได้สำรอง');
+  function backupStatus(p){$('backupStatus').hidden=!p;const local=$('localSaveStatus'),cloud=$('cloudSaveStatus'),badge=$('autosaveBadge');if(!p){setText('localSaveStatus','ยังไม่ได้เปิดโปรเจกต์');setText('cloudSaveStatus','ยังไม่ได้เปิดโปรเจกต์');setText('autosaveBadge','บันทึกงานอัตโนมัติ');return;}const pending=(p.lastLocalSavedChange||0)<(p.lastChangedAt||0);setText('localSaveStatus',pending?'กำลังบันทึก…':p.lastLocalSavedAt?'บันทึกแล้ว · '+time(p.lastLocalSavedAt):'รอบันทึกครั้งแรก');setText('autosaveBadge',pending?'กำลังบันทึก…':p.lastLocalSavedAt?'บันทึกแล้ว '+new Date(p.lastLocalSavedAt).toLocaleTimeString('th-TH',{timeZone:'Asia/Bangkok'}):'บันทึกงานอัตโนมัติ');badge.title=local.textContent;if(FontCloud.authenticated?.()&&(p.cloudSavedChange||0)<(p.lastChangedAt||0)&&!pending)setText('autosaveBadge','ในเครื่องแล้ว · รอส่งคลาวด์');
+    const suffix=p.lastCloudSavedAt?' · ล่าสุด '+time(p.lastCloudSavedAt):'';setText('cloudSaveStatus',p.cloudDeletePending?'รอตรวจผลลบสำเนา · หยุดสำรองชั่วคราว':p.cloudSyncPaused?'หยุดสำรองงานนี้'+suffix:!FontCloud.connected()?'รอเชื่อมคลังส่วนตัว'+suffix:(p.cloudSavedChange||0)<(p.lastChangedAt||0)?((p.lastLocalSavedChange||0)>=(p.lastChangedAt||0)?'บันทึกในเครื่องแล้ว · รอส่งคลาวด์':'กำลังเก็บงานในเครื่อง')+suffix:p.lastCloudSavedAt?(p.cloudRomReady?'ROM และคำแปลสำรองครบแล้ว':'คำแปลสำรองแล้ว · ROM ยังไม่พร้อม')+suffix:'ยังไม่ได้สำรอง');
   }
   function renderCurrent() {
-    const p = bridge()?.project(), task = TranslationTasks.active(p);backupStatus(p);for(const button of document.querySelectorAll('#workCloudRows button,#workCloudActions button'))button.disabled=foregroundBusy;
+    if(pendingConflict&&bridge()?.project()!==pendingConflict.project)pendingConflict=null;
+    if($('workResolveConflict')){$('workResolveConflict').hidden=!pendingConflict;$('workResolveConflict').textContent='เลือกคำแปลที่ขัดกัน'+(pendingConflict?' ('+pendingConflict.error.details.length+')':'');}
+    const p = bridge()?.project(), task = TranslationTasks.active(p);backupStatus(p);if($('workVerification')&&verifiedDisplayId!==(p?.workspaceId||null)){verifiedDisplayId=p?.workspaceId||null;setText('workVerification',p?.cloudVerifiedAt?'เคยตรวจรุ่น '+p.cloudVerifiedRevision+' เมื่อ '+time(p.cloudVerifiedAt)+' · กดตรวจอีกครั้งเพื่อยืนยันข้อมูลปัจจุบัน':'');$('workVerification').dataset.state='pending';}if($('workVerify'))$('workVerify').disabled=foregroundBusy||!p||!FontCloud.connected();if($('workResolveConflict'))$('workResolveConflict').disabled=foregroundBusy;if($('workVerification')&&p?.cloudVerifiedAt&&((p.cloudVerifiedChange||0)<(p.lastChangedAt||0)||Number(p.cloudRevision)>Number(p.cloudVerifiedRevision))){setText('workVerification','มีการเปลี่ยนแปลงหลังตรวจครั้งล่าสุด · กดตรวจความพร้อมข้ามเครื่องอีกครั้ง');$('workVerification').dataset.state='pending';}for(const button of document.querySelectorAll('#workCloudRows button,#workCloudActions button'))button.disabled=foregroundBusy;
     $('workBanner').hidden = !task || RomTranslateViews.current()!=='translation';
     $('cloudBackupRetry').hidden=!p||!!p.cloudRomReady&&!p.cloudSyncPaused&&(p.cloudSavedChange||0)>=(p.lastChangedAt||0);
     $('cloudBackupRetry').disabled=foregroundBusy||!p||!FontCloud.connected();
@@ -78,8 +81,8 @@ const WorkManager = (() => {
   async function open() {
     $('workDialog').showModal();renderCurrent();await run(async()=>{status('กำลังโหลดโปรเจกต์…');if(FontCloud.connected()){await listCloud();status('');}else status('บันทึกในเครื่องอัตโนมัติ · เชื่อมคลังส่วนตัวเพื่อสำรองข้ามเครื่อง');});
   }
-  async function run(action) {
-    if (busy){status('กำลังจัดการโปรเจกต์ กรุณารอสักครู่');return;} busy = true; foregroundBusy=true; renderCurrent();
+  async function run(action,{foreground=true}={}) {
+    if (busy){status('กำลังจัดการโปรเจกต์ กรุณารอสักครู่');return;} busy = true; foregroundBusy=foreground; renderCurrent();
     try { await action(); } catch (e) { status(e.message);if(e.networkFailure)FontCloud.reportError(e.message);if($('workDialog').open)window.UiShell?.notify(e.message,true);else bridge().toast(e.message,'error'); }
     finally { busy = false; foregroundBusy=false; renderCurrent(); if (queued) { queued = false; schedule(); } }
   }
@@ -148,10 +151,17 @@ const WorkManager = (() => {
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)pollAwaitingRom();});
   setInterval(pollAwaitingRom,60000);
   function serialized(p) { const payload = TranslationTasks.portable(p); delete payload.cloudRevision; return {payload, content:JSON.stringify(payload)}; }
-  async function upload(manual = false, target = bridge().project(), options={}) {
+  async function upload(manual=false,target=bridge().project(),options={}){
+    const scope=await FontCloud.workspaceScope();
+    const work=async assertWriter=>{await bridge().flushLocal?.();await uploadInner(manual,target,{...options,assertWriter,writerScope:scope});};
+    const ran=window.CloudSafety?await CloudSafety.withWriter(scope,work):(await work(()=>{}),true);
+    if(!ran){queued=true;status('อีกแท็บกำลังบันทึก · งานในเครื่องรอส่ง');}
+  }
+  async function uploadInner(manual = false, target = bridge().project(), options={}) {
     let p = target; if (!p) throw Error('เปิด ROM / ไฟล์งานก่อน');
     if (!manual && (!p.cloudAutosave||p.cloudSyncPaused)) return;
     const scope = await FontCloud.workspaceScope();
+    if(options.writerScope&&scope!==options.writerScope)throw Error('คลังเปลี่ยนระหว่างรอคิว · งานในเครื่องยังอยู่');
     if (p.cloudScope !== scope) {
       if (!manual && p.cloudScope) { status('ไฟล์นี้อยู่คนละคลัง ไม่ย้ายคลังอัตโนมัติ'); return; }
       p.cloudScope = scope; p.cloudRevision = 0;
@@ -162,8 +172,8 @@ const WorkManager = (() => {
     if (new TextEncoder().encode(content).length > 16*1024*1024) throw Error('ไฟล์งานคลาวด์ต้องไม่เกิน 16 MB ดาวน์โหลด JSON สำรองได้');
     status('กำลังบันทึกไฟล์งานบนคลาวด์…');
     let revision;
-    try { revision = Number(await FontCloud.workspaceRequest('put', {p_id:p.workspaceId,p_expected:p.cloudRevision || 0,p_payload:payload})); }
-    catch (e) { if (/Workspace version conflict/.test(e.message)) { p.cloudAutosave = false;p.cloudSyncPaused=true;await bridge().storeCloudState(p.workspaceId,{cloudAutosave:false,cloudSyncPaused:true}); throw Error('อีกเครื่องมีไฟล์งานรุ่นใหม่กว่า หยุดซิงก์เพื่อไม่ทับข้อมูล ดาวน์โหลด JSON ของเครื่องนี้ไว้ แล้วรีเฟรชรายการและเปิดฉบับคลาวด์ก่อน'); } throw e; }
+    try { await options.assertWriter?.();const args={p_id:p.workspaceId,p_expected:p.cloudRevision||0,p_payload:payload};const request=async(action,value)=>{await options.assertWriter?.();if(await FontCloud.workspaceScope()!==scope)throw Error('คลังเปลี่ยนระหว่างบันทึก');return FontCloud.workspaceRequest(action,value);};revision=window.CloudSafety?await CloudSafety.putConfirmed(request,args):Number(await request('put',args)); }
+    catch (e) { if (/Workspace version conflict/.test(e.message)) { queued=true;throw Error('คลาวด์เปลี่ยนระหว่างบันทึก · เก็บงานในเครื่องแล้ว กำลังรอรวมกับฉบับล่าสุด'); } throw e; }
     if (!Number.isSafeInteger(revision) || revision < 1) throw Error('เวอร์ชันไฟล์งานตอบกลับไม่ถูกต้อง');
     sent.set(p.workspaceId, content);p.cloudRevision=revision;await bridge().storeCloudState(p.workspaceId,{cloudScope:scope,cloudRevision:revision,cloudAutosave:true,cloudSyncPaused:false,cloudDeletePending:false,lastCloudSavedAt:Date.now(),cloudSavedChange:changedAt,cloudBase:structuredClone(payload)});
     await finishBackup(p,revision,scope,options);
@@ -180,8 +190,30 @@ const WorkManager = (() => {
   }
   function schedule() {
     clearTimeout(timer); const p = bridge()?.project(); if (!p?.cloudAutosave || !FontCloud.connected()) return;
-    timer = setTimeout(() => { if (busy) { queued = true; return; } run(() => upload()); }, 1500);
+    queuedSince||=Date.now();const delay=!p.cloudRevision?1500:Math.min(12000,Math.max(0,30000-(Date.now()-queuedSince)));timer=setTimeout(()=>{queuedSince=0;if(busy){queued=true;return;}run(()=>upload(),{foreground:false});},delay);
   }
+  async function verifyCloud(){
+    const p=bridge().project();if(!p)throw Error('เปิดโปรเจกต์ก่อนตรวจ');const scope=await FontCloud.workspaceScope(),stamp=p.lastChangedAt;
+    const saved=(await FontCloud.workspaceRequest('get',{p_id:p.workspaceId}))?.[0],metadata=await RomCloud.readyInfo(p.workspaceId,p.romHash);
+    if(await FontCloud.workspaceScope()!==scope||bridge().project()!==p||p.lastChangedAt!==stamp)throw Error('งานเปลี่ยนระหว่างตรวจ กรุณาตรวจใหม่');
+    if(!saved?.payload||!metadata?.ready||metadata.sha256!==p.romHash)throw Error('คำแปลหรือ ROM บนคลาวด์ยังสำรองไม่ครบ · กดสำรองตอนนี้ก่อนตรวจ');
+    const local=await CloudSafety.manifest(bridge().workSnapshot()),remote=await CloudSafety.manifest(saved.payload);
+    const latest=await FontCloud.workspaceRequest('list');if(await FontCloud.workspaceScope()!==scope||bridge().project()!==p||p.lastChangedAt!==stamp||Number(latest.find(r=>r.workspace_id===p.workspaceId)?.revision)!==Number(saved.revision))throw Error('งานเปลี่ยนระหว่างตรวจ กรุณาตรวจใหม่');
+    if(local.digest!==remote.digest)throw Error('ข้อมูลในเครื่องกับคลาวด์ยังไม่ตรงกัน · งานในเครื่องยังอยู่ กดสำรองหรือเลือกคำแปลที่ขัดกันก่อน');
+    await bridge().storeCloudState(p.workspaceId,{cloudVerifiedAt:Date.now(),cloudVerifiedRevision:Number(saved.revision),cloudVerifiedChange:stamp});
+    verifiedDisplayId=p.workspaceId;setText('workVerification','ตรวจตรงกันแล้ว · '+time(p.cloudVerifiedAt)+' · รุ่น '+saved.revision+' · คำแปล '+remote.translations.toLocaleString()+' รายการ · ROM '+(metadata.size/1048576).toFixed(0)+' MB ผ่าน SHA-256 · ฟอนต์ '+remote.font+' · เป้าหมาย '+remote.goals+' หมวด');
+    $('workVerification').dataset.state='ready';bridge().toast('ROM คำแปล ฟอนต์ และเป้าหมายบนคลาวด์ตรงกันแล้ว','success');return remote;
+  }
+  if($('workVerify'))$('workVerify').onclick=()=>run(verifyCloud);
+  if($('workResolveConflict'))$('workResolveConflict').onclick=async()=>{
+    const packet=pendingConflict;if(!packet)return;const choices=await WorkspaceConflicts.choose(packet.error,packet.local);if(!choices)return;
+    await run(async()=>{const p=bridge().project();if(p!==packet.project||p.lastChangedAt!==packet.stamp||await FontCloud.workspaceScope()!==packet.scope)throw Error('งานเปลี่ยนระหว่างเลือก · กรุณาซิงก์แล้วเลือกจากข้อมูลล่าสุด');
+      const saved=(await FontCloud.workspaceRequest('get',{p_id:packet.remote.workspaceId}))?.[0];if(Number(saved?.revision)!==packet.revision)throw Error('อีกเครื่องบันทึกฉบับใหม่แล้ว · กรุณาซิงก์ก่อนเลือกอีกครั้ง');
+      const merged=WorkspaceSync.reconcile(packet.local,packet.remote,packet.base,choices),payload={...merged,cloudRevision:packet.revision,cloudScope:packet.scope,cloudAutosave:true,cloudSyncPaused:false,cloudBase:packet.remote};
+      const guard=()=>bridge().project()===p&&p.lastChangedAt===packet.stamp;
+      if(await bridge().loadWorkspace(payload,{guard,requireRom:true})!==true)throw Error('ยังใช้คำแปลที่เลือกไม่ได้ · งานเดิมยังอยู่');pendingConflict=null;await upload(true,bridge().project());status('บันทึกคำแปลที่เลือกแล้ว');
+    });
+  };
   $('workOpen').onclick = open; $('workClose').onclick = () => $('workDialog').close();
   $('workCloudRefresh').onclick=()=>run(listCloud);
   $('romCloudOpen').onclick=()=>{if(!FontCloud.connected()){FontCloud.open();return;}return run(async()=>{const rows=await listCloud();if(!rows.length)throw Error('ยังไม่มีโปรเจกต์บนคลาวด์');await loadCloudItem(rows[0]);});};
@@ -201,8 +233,8 @@ const WorkManager = (() => {
   window.addEventListener('romtranslate:project-changed',e=>{renderCurrent();const p=bridge().project();if(!p)return;if(FontCloud.connected()&&!p.cloudSyncPaused){p.cloudAutosave=true;schedule();}});
   async function followShared(){if(busy||!FontCloud.connected()||document.hidden)return;try{await syncConnected();}catch(e){status(e.message);}}
   window.addEventListener('focus',followShared);setInterval(followShared,60000);
-  window.addEventListener('online',schedule);window.addEventListener('romtranslate:view',renderCurrent);
+  window.addEventListener('online',schedule);document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule();});window.addEventListener('romtranslate:view',renderCurrent);
   window.addEventListener('romtranslate:cloud-connection',()=>{if(!FontCloud.connected())clearTimeout(timer);else{const p=bridge().project();if(p&&!p.cloudSyncPaused){p.cloudAutosave=true;schedule();}}renderCurrent();});
-  return {renderCurrent,open,syncConnected,saveForRom:async(options={})=>{if(busy)throw Error('กำลังบันทึกโปรเจกต์ กรุณารอสักครู่');busy=true;renderCurrent();try{await upload(true,bridge().project(),options);}finally{busy=false;renderCurrent();}}};
+  return {renderCurrent,open,syncConnected,verifyCloud,saveForRom:async(options={})=>{if(busy)throw Error('กำลังบันทึกโปรเจกต์ กรุณารอสักครู่');busy=true;renderCurrent();try{await upload(true,bridge().project(),options);}finally{busy=false;renderCurrent();}}};
 })();
 window.WorkManager=WorkManager;

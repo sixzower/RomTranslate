@@ -24,6 +24,8 @@ font_profiles.append({'id':'quetzal-th-native','name':'Quetzal TH 1.0.3 — ร�
 (root / 'rom-font-profiles.js').write_text('/* Verified source mappings and explicitly labelled supplements; no ROM bytes. */\nconst RomFontProfiles=' + json.dumps(font_profiles, ensure_ascii=False, separators=(',', ':')) + ';\nif(typeof module!=="undefined")module.exports=RomFontProfiles;\n')
 html = (root / 'index.html').read_text()
 version = json.loads((root / 'package.json').read_text())['version']
+(root / 'release.json').write_text(json.dumps({'format':'RomTranslate release v1','version':version})+'\n')
+(root / 'release-info.js').write_text('const AppRelease='+json.dumps({'version':version})+';\n')
 html = re.sub(r' · รุ่น \d+\.\d+\.\d+</span>', ' · รุ่น ' + version + '</span>', html)
 # Version local assets so deployed HTML cannot silently reuse an old app module.
 html = re.sub(r'(src="(?!vendor/|coi-serviceworker)[^"?]+\.js)(?:\?[^"]*)?"', lambda m: m[1] + '?v=' + version + '"', html)
@@ -37,7 +39,7 @@ css = css.replace("url('fonts/Prompt-Regular.ttf')", "url('data:font/ttf;base64,
 css = re.sub(r"@import url\([^;]+;\s*", '', css, count=1)
 js = (root / 'app.js').read_text().replace('</script', '<\\/script')
 html = re.sub(r'<link rel="stylesheet" href="style\.css(?:\?[^"]*)?">', lambda _: '<style>' + css + '</style>', html)
-for name in ('theme.js', 'vendor/exceljs.min.js', 'imperium-profile.js', 'game-font.js', 'rom-core.js', 'legacy-glyph-map.js', 'pixel-font.js', 'history.js', 'quality.js', 'xlsx-loader.js', 'sheet-table.js', 'sheet.js', 'bundled-fonts.js', 'font-presets.js', 'progress.js', 'translation-tasks.js', 'views.js', 'font-editor.js', 'sheet-batches.js', 'rom-patch.js', 'sheet-import-batch.js', 'sheet-progress.js', 'ui-operations.js', 'app.js', 'patch-ui.js', 'cloud-config.js', 'admin-schema.js', 'completion-sounds.js', 'font-cloud.js', 'workspace-schema.js', 'workspace-delete.js', 'workspace-sync.js', 'work-manager.js', 'rom-cloud-schema.js', 'rom-cloud.js', 'rom-font-profiles.js', 'rom-font.js', 'rom-font-ui.js', 'ui-shell.js', 'row-selection.js', 'remaining-overview.js'):
+for name in ('theme.js', 'vendor/exceljs.min.js', 'imperium-profile.js', 'game-font.js', 'rom-core.js', 'legacy-glyph-map.js', 'pixel-font.js', 'history.js', 'quality.js', 'xlsx-loader.js', 'sheet-table.js', 'sheet.js', 'bundled-fonts.js', 'font-presets.js', 'progress.js', 'translation-tasks.js', 'views.js', 'font-editor.js', 'sheet-batches.js', 'rom-patch.js', 'sheet-import-batch.js', 'sheet-progress.js', 'ui-operations.js', 'app.js', 'patch-ui.js', 'cloud-config.js', 'admin-schema.js', 'completion-sounds.js', 'font-cloud.js', 'workspace-schema.js', 'workspace-delete.js', 'release-info.js', 'workspace-conflicts.js', 'cloud-safety.js', 'workspace-sync.js', 'work-manager.js', 'rom-cloud-schema.js', 'rom-cloud.js', 'rom-font-profiles.js', 'rom-font.js', 'rom-font-ui.js', 'update-notice.js', 'ui-shell.js', 'row-selection.js', 'remaining-overview.js'):
     js = (root / name).read_text().replace('</script', '<\\/script')
     html = re.sub(r'<script src="' + re.escape(name) + r'(?:\?[^"]*)?"></script>', lambda _: '<script>' + js + '</script>', html)
 html = html.replace('</body>', '<template id="prompt-font-license"><pre>' + escape('\n'.join(line.rstrip() for line in (root / 'fonts/Prompt-OFL.txt').read_text().splitlines())) + '</pre></template></body>')

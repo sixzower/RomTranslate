@@ -34,23 +34,24 @@ const WorkspaceSync=(()=>{
   for(const task of tasks)if(task.status==='active'&&task.id!==active)task.status='paused';
   return {workTasks:tasks,activeWorkTask:active};
  }
- function reconcile(local,remote,base=null){
+ function reconcile(local,remote,base=null,choices={}){
   if(local.romHash!==remote.romHash)throw Error('โปรเจกต์หลักใช้ ROM คนละไฟล์ · งานในเครื่องยังอยู่');
   const byOffset=p=>new Map((p?.entries||[]).map(e=>[e.romOffset,e]));
-  const left=byOffset(local),right=byOffset(remote),before=byOffset(base?.romHash===local.romHash?base:null),out=structuredClone(remote),conflicts=[];
-  const choose=(l,r,b,known,label)=>{
+  const left=byOffset(local),right=byOffset(remote),before=byOffset(base?.romHash===local.romHash?base:null),out=structuredClone(remote),conflicts=[],details=[];
+  const choose=(l,r,b,known,label,key=label)=>{
    if(equal(l,r))return l;
    if(known&&equal(l,b))return r;
    if(known&&equal(r,b))return l;
    if(l==null||l==='')return r;
    if(r==null||r==='')return l;
-   conflicts.push(label);return r;
+   if(choices[key]==='local')return structuredClone(l);if(choices[key]==='remote')return structuredClone(r);
+   conflicts.push(label);details.push({key,label,local:l,remote:r});return r;
   };
   out.entries=[...new Set([...right.keys(),...left.keys()])].map(offset=>{
    const l=left.get(offset),r=right.get(offset),b=before.get(offset);
    if(!l)return structuredClone(r);if(!r)return structuredClone(l);
    if(l.source!==r.source||l.id!==r.id)throw Error('ข้อความต้นฉบับไม่ตรงกันที่ $'+Number(offset).toString(16));
-   const row={...r};for(const f of fields)row[f]=choose(l[f]||'',r[f]||'',b?.[f]||'',!!base&&(!b||b.source===l.source),String(l.id));return row;
+   const row={...r};for(const f of fields)row[f]=choose(l[f]||'',r[f]||'',b?.[f]||'',!!base&&(!b||b.source===l.source),String(l.id),String(l.id)+':'+f);return row;
   });
   for(const key of ['font','glossary','genre','progressCategories']){
    out[key]=choose(local[key],remote[key],base?.[key],!!base,key);
@@ -58,7 +59,7 @@ const WorkspaceSync=(()=>{
   Object.assign(out,mergeTasks(local,remote,base));
   // Per-device navigation is not a conflicting edit to the shared translation.
   out.viewState=structuredClone(local.viewState||remote.viewState);
-  if(conflicts.length){const e=Error('แก้ข้อมูลเดียวกันต่างกัน '+new Set(conflicts).size+' จุด ('+[...new Set(conflicts)].slice(0,3).join(', ')+') · ยังไม่เขียนทับทั้งสองฉบับ · ปิดการแก้ไขอีกเครื่องแล้วตรวจฉบับล่าสุดก่อน');e.workspaceConflict=true;e.fields=[...new Set(conflicts)];throw e;}
+  if(conflicts.length){const e=Error('แก้ข้อมูลเดียวกันต่างกัน '+new Set(conflicts).size+' จุด ('+[...new Set(conflicts)].slice(0,3).join(', ')+') · ยังไม่เขียนทับทั้งสองฉบับ · ปิดการแก้ไขอีกเครื่องแล้วตรวจฉบับล่าสุดก่อน');e.workspaceConflict=true;e.fields=[...new Set(conflicts)];e.details=details;throw e;}
   return out;
  }
  return {reconcile};
