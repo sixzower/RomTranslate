@@ -133,3 +133,5 @@ body[data-theme=dark] #fontCloudStatus[data-kind=error]{color:#ff8b94}
 .sheet-filenames{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.8;color:var(--muted)}
 
 #sheetDropOverlay,#sheetDropOverlay *,#sheetImportDialog,#sheetImportDialog button,#sheetImportDialog textarea{font-family:'Prompt',Tahoma,sans-serif}.import-detail textarea{display:block;width:100%;box-sizing:border-box;resize:vertical;font-size:13px;margin:6px 0}.import-detail label{display:block;margin:10px 0 4px}#sheetRepairStatus{color:var(--muted);font-size:12px;line-height:1.7}
+
+.import-duplicate{font-weight:bold;border-left:3px solid var(--border);padding-left:9px;overflow-wrap:anywhere}

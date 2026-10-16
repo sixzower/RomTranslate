@@ -1,5 +1,6 @@
 /* Reconcile one shared ROM workspace without turning existing translations blank. */
 const WorkspaceSync=(()=>{
+ const imports=typeof SheetImportHistory!=='undefined'?SheetImportHistory:require('./sheet-import-history');
  const fields=['translation','speaker','literal','contextual','translationChoice'];
  const stable=v=>v&&typeof v==='object'?(Array.isArray(v)?v.map(stable):Object.fromEntries(Object.keys(v).sort().map(k=>[k,stable(v[k])]))):v;
  const equal=(a,b)=>JSON.stringify(stable(a))===JSON.stringify(stable(b));
@@ -56,7 +57,7 @@ const WorkspaceSync=(()=>{
   for(const key of ['font','glossary','genre','progressCategories']){
    out[key]=choose(local[key],remote[key],base?.[key],!!base,key);
   }
-  Object.assign(out,mergeTasks(local,remote,base));
+  Object.assign(out,mergeTasks(local,remote,base));out.excelImports=imports.merge(local.excelImports,remote.excelImports);
   // Per-device navigation is not a conflicting edit to the shared translation.
   out.viewState=structuredClone(local.viewState||remote.viewState);
   if(conflicts.length){const e=Error('แก้ข้อมูลเดียวกันต่างกัน '+new Set(conflicts).size+' จุด ('+[...new Set(conflicts)].slice(0,3).join(', ')+') · ยังไม่เขียนทับทั้งสองฉบับ · ปิดการแก้ไขอีกเครื่องแล้วตรวจฉบับล่าสุดก่อน');e.workspaceConflict=true;e.fields=[...new Set(conflicts)];e.details=details;throw e;}

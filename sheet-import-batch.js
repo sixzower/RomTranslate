@@ -17,7 +17,7 @@ const SheetImportBatch=(()=>{
  async function review(files,project,rom,progress){
   if(files.length>100)throw Error('เลือกได้ครั้งละไม่เกิน 100 ไฟล์');
   if(files.reduce((n,f)=>n+f.size,0)>128*1024*1024)throw Error('ขนาดไฟล์รวมต้องไม่เกิน 128 MB');
-  const result={allowPartial:true,changes:[],issues:[],missing:[],warnings:[],fileWarnings:[],entryIds:[],rows:0,blanks:0,unchanged:0,duplicates:0,formatted:0,formattedIds:[],files:files.length,filename:files.length===1?files[0].name:`Excel ${files.length} ไฟล์`,scope:''},changes=new Map(),ids=new Set(),origins=new Map();
+  const result={allowPartial:true,changes:[],issues:[],missing:[],warnings:[],fileWarnings:[],entryIds:[],rows:0,blanks:0,unchanged:0,duplicates:0,formatted:0,formattedIds:[],sourceFiles:[],files:files.length,filename:files.length===1?files[0].name:`Excel ${files.length} ไฟล์`,scope:''},changes=new Map(),ids=new Set(),origins=new Map();
   for(let i=0;i<files.length;i++){
    const file=files[i];progress.file(i,file.name);progress.check();
    try{
@@ -25,6 +25,7 @@ const SheetImportBatch=(()=>{
     // Per-file pass validates identity/tokens; layout and font allocation run once
     // across the combined files and existing project below.
     const data=await progress.read(file),report=await TranslationSheet.readXlsx(data,project,project.entries,{review:true,rom,deferProjectFonts:true,deferChecks:true,onProgress:progress.update});
+    const hash=await RomCore.fingerprint(new Uint8Array(data));progress.check();result.sourceFiles.push({hash,name:file.name,entryIds:report.entryIds,rows:report.rows,blanks:report.blanks,unchanged:report.unchanged});
     result.missing.push(...(report.missing||[]).map(item=>({...item,file:file.name})));result.rows+=report.rows;result.blanks+=report.blanks;result.unchanged+=report.unchanged;
     result.fileWarnings.push(...(report.fileWarnings||[]).map(s=>file.name+': '+s));
     result.issues.push(...report.issues.map(issue=>({...issue,file:file.name})));
@@ -62,6 +63,10 @@ const SheetImportBatch=(()=>{
     else if(checked.issues.some(x=>x.code==='font'&&x.message.includes('ฟอนต์เต็ม')))result.issues.push({row:0,id:entry.id,severity:'error',code:'font',message:'คำแปลรวมทั้งโปรเจกต์ใช้ฟอนต์เกินความจุ'});
    }
   }
+  // A prior import may have normalized Thai clusters or line wrapping. Compare
+  // the final text, not the pre-layout spreadsheet text, before offering changes.
+  const byId=new Map(project.entries.map(entry=>[entry.id,entry])),blockedIds=new Set(result.issues.filter(i=>['identity','input'].includes(i.code)).map(i=>Number(i.id)));let unchanged=0;
+  result.changes=result.changes.filter(change=>{const entry=byId.get(change.id),blocked=blockedIds.has(change.id);const same=!blocked&&entry&&['translation','translationChoice','speaker'].every(key=>(change[key]||'')===(entry[key]||''));if(same)unchanged++;return !same;});result.unchanged+=unchanged;
   progress.combined?.(1,1);
   const expandedIds=new Set(project.entries.filter(entry=>entry.moveTextExpansion).map(entry=>entry.id));result.expandedTextRows=result.changes.filter(change=>expandedIds.has(change.id)).length;
   result.formattedIds=[...formattedIds];result.formatted=formattedIds.size;

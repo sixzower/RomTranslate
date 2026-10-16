@@ -1,5 +1,6 @@
 /* Work scopes contain canonical IDs, never worksheet row numbers or ROM bytes. */
 const TranslationTasks = (() => {
+  const imports=typeof SheetImportHistory!=='undefined'?SheetImportHistory:require('./sheet-import-history');
   const statuses = ['active', 'paused', 'completed', 'cancelled'];
   const uuid = s => typeof s === 'string' && /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(s);
   const text = (s, max) => typeof s === 'string' && s.length <= max;
@@ -22,6 +23,7 @@ const TranslationTasks = (() => {
     const ids = new Set(p.entries.filter(e => e.verified).map(e => e.id));
     if (saved.workTasks?.some(t => t.entryIds.some(id => !ids.has(id)))) throw Error('งานค้างมีรหัสข้อความที่ไม่ตรงกับ ROM');
     for(const key of ['lastChangedAt','lastLocalSavedAt','lastLocalSavedChange','lastCloudSavedAt','cloudSavedChange','lastExportedAt','cloudPendingChange','cloudVerifiedAt','cloudVerifiedRevision','cloudVerifiedChange'])p[key]=Number.isFinite(saved[key])&&saved[key]>=0?saved[key]:undefined;
+    p.excelImports=imports.merge(saved.excelImports);
     p.viewState=validView(saved.viewState)?structuredClone(saved.viewState):undefined;
     p.workTasks = structuredClone(saved.workTasks || []);
     p.workspaceId = saved.workspaceId || crypto.randomUUID();
@@ -71,7 +73,7 @@ const TranslationTasks = (() => {
     return {workspaceFormat: 'RomTranslate workspace v1', version: 2, title: p.title, romHash: p.romHash,
       workspaceId: p.workspaceId, workspaceName: p.workspaceName, cloudScope:p.cloudScope, cloudRevision:p.cloudRevision||0, cloudAutosave: p.cloudAutosave === true,cloudSyncPaused:p.cloudSyncPaused===true,
       viewState:validView(p.viewState)?structuredClone(p.viewState):undefined,glossary: p.glossary || '', genre: p.genre || '', font: structuredClone(p.font),
-      progressCategories: p.progressCategories?.slice(), workTasks: structuredClone(p.workTasks), activeWorkTask: p.activeWorkTask || null,
+      excelImports:imports.merge(p.excelImports),progressCategories: p.progressCategories?.slice(), workTasks: structuredClone(p.workTasks), activeWorkTask: p.activeWorkTask || null,
       entries: edited.map(e => ({id: e.id, romOffset: e.romOffset, source: e.source, translation: e.translation || '', speaker: e.speaker || '', literal: e.literal || '', contextual: e.contextual || '', translationChoice: e.translationChoice || ''})),
       history: structuredClone(p.history)};
   }

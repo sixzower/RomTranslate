@@ -2,6 +2,12 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Duplicate Excel import notices (0.32.35)
+
+Confirmed imports record up to 500 recent project-scoped file receipts: SHA-256 of the original workbook bytes, filename, time, accepted/draft counts and partial status. The import popup detects identical bytes even after renaming, shows the previous confirmation time and distinguishes partial imports. A changed workbook with the same filename is identified as a new version. Receipts warn without blocking deliberate reimport after undo or edits; previews, cancellation and rejected files do not create receipts.
+
+Receipts travel with local/project backups and the existing cloud workspace. Concurrent clients merge receipts by fingerprint/latest timestamp without creating translation conflicts. No additional cloud table or SQL is required. Historical fingerprints/times cannot be reconstructed for pre-upgrade imports; current matching words still produce an already-present notice. Final post-layout comparisons also recognize previously normalized Thai clusters and wrapping as unchanged, preventing those rows from appearing as new translations on every import. No Excel bytes are added to the workspace payload.
+
 ## Relocatable move descriptions (0.32.34)
 
 The screenshot entry `$326790` was incorrectly limited to its original 54 encoded bytes despite using a relocatable pointer. On the pinned Imperium ROM, 48 contest descriptions and 20 distinct advisory descriptions now allow 256 encoded bytes, including EOS. Advisory text passes directly to the native printer; contest descriptions also require real runtime changes. Both contest stack frames expand from 80 to 280 bytes, preserving stack alignment and reserving 256 text bytes after their 20-byte outgoing-argument area. Two absolute Thumb jumps dispatch to pool-resident wrappers: newly relocated contest strings copy already-laid-out bytes, while original strings retain the existing formatter and its fifth argument. This also prevents the old byte-splitting formatter from interpreting a font-0 control argument as a word boundary. Text checks use the verified 119 px contest and 96 px advisory areas, with three lines.
