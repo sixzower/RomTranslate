@@ -2,6 +2,12 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Repair imported translations before applying (0.32.33)
+
+The import dialog offers **ลองแก้อัตโนมัติ** and inline **ตรวจและใช้คำแก้** fields for matched rows with errors or glossary warnings. Automatic candidates normalize whitespace/reflow, compact two known menu phrases and use only user-defined English-to-Thai glossary terms outside control blocks. Candidates must retain control-code order and improve validation; there is no arbitrary truncation, generated translation, invented code placement, identity repair or font substitution. The complete candidate set is then checked again with a shared font allocator including existing project translations. Remaining failures stay visible and can be edited in the popup; missing codes remain drafts until a valid correction is supplied.
+
+Repairs stage changes only. Project/history/cloud state changes at the existing import confirmation and can be undone as one import. After applying, an issue links directly to its entry in the editor. The drop overlay, import dialog and editing controls use the bundled Prompt font. Regression tests cover safe formatting, menu compaction, glossary replacement, preserved long text, inline edits, invalid/valid tokens, apply/undo and font selection.
+
 ## Distinct Excel filenames (0.32.32)
 
 Export filenames begin with `[ส่งให้AI]`, then category, batch index/total, row range, a bounded game label and an export timestamp. The matching returned filename begins with `[แปลแล้ว]`; it is shown beside the source name in the export preview, written in Instructions and requested verbatim in the copied/embedded prompt. ZIP names and their manifest use the same convention and record the suggested returned name. Names are sanitized and byte-limited; redundant filter counts/labels are omitted from filenames. Import still validates ROM/entry/offset/source data and accepts arbitrary filenames, so an AI ignoring the naming instruction does not prevent import or establish translation completeness.

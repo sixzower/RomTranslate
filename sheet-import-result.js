@@ -13,11 +13,14 @@ const SheetImportResult=(()=>{
  }
  function rows(report){return [...report.issues,...(report.missing||[])].map(i=>({...i,fix:fix(i)}));}
  function needsAttention(report){return !report.parts||report.issues.some(i=>i.severity==='error')||(report.missing||[]).some(i=>i.code!=='blank'||!i.alreadyTranslated);}
- function render(report,applied=false){
+ function render(report,applied=false,actions={}){
   const $=id=>document.getElementById(id),out=$('sheetImportOutcome'),list=$('sheetChanges'),parts=report.parts;
-  out.replaceChildren();list.replaceChildren();
+  out.replaceChildren();list.replaceChildren();const editorIds=new Set(),identityIds=new Set(report.issues.filter(i=>i.code==='identity').map(i=>Number(i.id))),changesById=new Map(report.changes.map(c=>[Number(c.id),c]));
   const add=(parent,text,kind)=>{const p=document.createElement('p');p.textContent=text;if(kind)p.className='import-'+kind;parent.append(p);return p;};
   const changes=parts?.changes||[],drafts=parts?.drafts||[],needsFix=parts?.needsFix||[];
+  const summary=[`ตรวจ ${report.files} ไฟล์ · ${report.rows} แถว · เปลี่ยน ${report.changes.length} ข้อความ · ว่าง ${report.blanks} แถว · เหมือนเดิม ${report.unchanged} แถว · ข้อผิดพลาด ${report.errors} จุด`,report.formatted?`จัดบรรทัดอัตโนมัติ ${report.formatted} แถว`:'',report.duplicates?`รวมแถวซ้ำที่เหมือนกัน ${report.duplicates} แถว`:'',parts?`นำเข้าได้ ${changes.length} แถว`:'',parts?.rejected?`ข้ามแถวที่จับคู่ไม่ได้ ${parts.rejected} แถว`:'',needsFix.length?`รวม ${needsFix.length} แถวที่ล้นกรอบ`:'',...(report.fileWarnings||[])].filter(Boolean);$('sheetImportSummary').textContent=summary.join(' · ');
+  if(report.repairMessage)add(out,report.repairMessage,'neutral');
+  const auto=$('sheetAutoFix');if(auto){auto.hidden=applied||!report.changes.length;auto.onclick=()=>actions.onRepair?.();}
   const clean=Math.max(0,changes.length-needsFix.length),errors=report.issues.filter(i=>i.severity==='error');
   add(out,applied?`นำเข้าสำเร็จ ${changes.length.toLocaleString()} รายการ · ผ่านเงื่อนไขเกม ${clean.toLocaleString()} รายการ`:`พร้อมนำเข้า ${changes.length.toLocaleString()} รายการ · ผ่านเงื่อนไขเกม ${clean.toLocaleString()} รายการ`,changes.length?'success':'neutral');
   if(!parts)add(out,'ยังนำเข้าชุดนี้ไม่ได้ กรุณาแก้ข้อผิดพลาดด้านล่าง แล้วเลือกไฟล์ใหม่','error');
@@ -31,7 +34,13 @@ const SheetImportResult=(()=>{
   const details=rows(report);for(const issue of details.slice(0,300)){
    const block=document.createElement('section');block.className='import-detail';
    add(block,`${issue.file||''} · ${issue.sheet||''} · ${issue.row?'แถว '+issue.row:issue.code==='missing-entry'?'ไม่พบแถวในตาราง':'ระดับไฟล์'}${issue.id?' #'+issue.id:''}`, 'neutral');
-   add(block,issue.message,issue.severity==='error'||['missing-rows','missing-entry'].includes(issue.code)||issue.code==='blank'&&!issue.alreadyTranslated?'error':'neutral');if(issue.source)add(block,'ต้นฉบับ: '+issue.source);add(block,'วิธีแก้: '+issue.fix);list.append(block);
+   add(block,issue.message,issue.severity==='error'||['missing-rows','missing-entry'].includes(issue.code)||issue.code==='blank'&&!issue.alreadyTranslated?'error':'neutral');if(issue.source)add(block,'ต้นฉบับ: '+issue.source);add(block,'วิธีแก้: '+issue.fix);
+   const id=Number(issue.id),change=changesById.get(id),editable=change&&(issue.severity==='error'||issue.code==='glossary')&&!editorIds.has(id)&&!identityIds.has(id);
+   if(editable){editorIds.add(id);
+    if(applied){const button=document.createElement('button');button.textContent='ไปแก้คำแปลนี้';button.onclick=()=>{document.getElementById('sheetImportDialog').close();window.RomTranslateBridge?.goToEntry(id);};block.append(button);}
+    else if(actions.onRepair){const label=document.createElement('label');label.textContent='คำแปล — แก้ได้ที่นี่';const input=document.createElement('textarea');input.value=change.translation;input.maxLength=10000;input.dataset.repairId=String(id);input.rows=3;label.append(input);block.append(label);const button=document.createElement('button');button.textContent='ตรวจและใช้คำแก้';button.dataset.repairApply=String(id);button.onclick=()=>actions.onRepair({id,text:input.value});block.append(button);}
+   }
+   list.append(block);
   }
   if(details.length>300)add(list,`แสดง 300 / ${details.length.toLocaleString()} จุด ดาวน์โหลดรายการที่ต้องแก้เพื่อดูทั้งหมด`,'neutral');
   for(const change of changes.slice(0,30))add(list,`#${change.id} → ${change.translation}`,'success');

@@ -17,7 +17,7 @@ const SheetImportBatch=(()=>{
  async function review(files,project,rom,progress){
   if(files.length>100)throw Error('เลือกได้ครั้งละไม่เกิน 100 ไฟล์');
   if(files.reduce((n,f)=>n+f.size,0)>128*1024*1024)throw Error('ขนาดไฟล์รวมต้องไม่เกิน 128 MB');
-  const result={allowPartial:true,changes:[],issues:[],missing:[],warnings:[],fileWarnings:[],entryIds:[],rows:0,blanks:0,unchanged:0,duplicates:0,formatted:0,files:files.length,filename:files.length===1?files[0].name:`Excel ${files.length} ไฟล์`,scope:''},changes=new Map(),ids=new Set(),origins=new Map();
+  const result={allowPartial:true,changes:[],issues:[],missing:[],warnings:[],fileWarnings:[],entryIds:[],rows:0,blanks:0,unchanged:0,duplicates:0,formatted:0,formattedIds:[],files:files.length,filename:files.length===1?files[0].name:`Excel ${files.length} ไฟล์`,scope:''},changes=new Map(),ids=new Set(),origins=new Map();
   for(let i=0;i<files.length;i++){
    const file=files[i];progress.file(i,file.name);progress.check();
    try{
@@ -34,11 +34,16 @@ const SheetImportBatch=(()=>{
       const old=changes.get(c.id);
       if(['translation','translationChoice','speaker'].every(k=>(old[k]||'')===(c[k]||'')))result.duplicates++;
       else result.issues.push({file:file.name,row:0,id:c.id,severity:'error',code:'identity',message:`คำแปลซ้ำขัดกันกับ ${origins.get(c.id)} กรุณาเลือกฉบับเดียวแล้วนำเข้าใหม่`});
-     }else{changes.set(c.id,c);origins.set(c.id,file.name);}
+     }else{changes.set(c.id,{...c,file:file.name});origins.set(c.id,file.name);}
     }
    }catch(e){if(e.name==='AbortError')throw e;result.issues.push({file:file.name,row:0,id:'',severity:'error',code:'identity',message:e.message});}
   }
   progress.check();result.changes=[...changes.values()];result.entryIds=[...ids];
+  return validate(result,project,rom,progress);
+ }
+ async function validate(result,project,rom,progress={check(){},combined(){}}){
+  const formattedIds=new Set(result.formattedIds||[]);
+  const changes=new Map(result.changes.map(c=>[c.id,c])),origins=new Map(result.changes.map(c=>[c.id,c.file]));
   // Font allocation is shared across every file and existing translation.
   if(rom){
    result.issues=result.issues.filter(i=>['identity','input'].includes(i.code));
@@ -50,7 +55,7 @@ const SheetImportBatch=(()=>{
     progress.check();
     if(i===0||i%200===0||i%32===0&&performance.now()-yielded>=16){progress.combined(i,candidates.length);await new Promise(resolve=>setTimeout(resolve,0));yielded=performance.now();}
     const entry=candidates[i],change=changes.get(entry.id);
-    if(change&&!unsafe.has(entry.id)){const formatted=formatText({...entry,translationChoice:change.translationChoice},change.translation,rom);if(formatted!==change.translation){change.translation=formatted;result.formatted++;}}
+    if(change&&!unsafe.has(entry.id)){const formatted=formatText({...entry,translationChoice:change.translationChoice},change.translation,rom);if(formatted!==change.translation){change.translation=formatted;formattedIds.add(entry.id);}}
     const text=change?.translation||entry.translation;if(!text?.trim())continue;
     const checked=TranslationQuality.entry(change?{...entry,translationChoice:change.translationChoice}:entry,text,rom,project.glossary,allocator);
     if(change)for(const issue of checked.issues)result.issues.push({file:origins.get(entry.id),row:change.row,id:entry.id,offset:entry.offset,category:entry.category,source:entry.source,translation:text,sheet:change.sheet,...issue});
@@ -58,10 +63,44 @@ const SheetImportBatch=(()=>{
    }
   }
   progress.combined?.(1,1);
+  result.formattedIds=[...formattedIds];result.formatted=formattedIds.size;
   result.errors=result.issues.filter(i=>i.severity==='error').length;
   result.warnings=result.issues.filter(i=>i.severity!=='error');progress.check();return result;
  }
- return {review,formatText};
+ function candidates(entry,text,rom,glossary){
+  const clean=text.replace(/\r\n?/g,'\n').replace(/[\u200b\ufeff]/g,'').replace(/[ \t]+/g,' ').replace(/ *\n */g,'\n').trim();
+  const values=[clean];
+  if(entry.family==='menu')values.push(clean.replace(/กรุณารอสักครู่/g,'โปรดรอ').replace(/กรุณาเลือก/g,'เลือก'));
+  if(RomCore.screen(entry).wrap&&!/[{}]/.test(clean))values.push(clean.replace(/([^\n])\n(?=[^\n])/g,'$1 '));
+  // Apply only user-supplied terminology, outside control-code blocks.
+  const terms=(glossary||'').split('\n').map(line=>line.split('=')).filter(parts=>parts.length===2&&/^[A-Za-z][A-Za-z -]*$/.test(parts[0].trim())&&parts[1].trim());
+  for(const value of [...values])values.push(value.split(/(\{[^}]*\})/g).map(part=>part.startsWith('{')?part:terms.reduce((out,[from,to])=>out.replace(new RegExp('\\b'+from.trim().replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','gi'),()=>to.trim()),part)).join(''));
+  return [...new Set(values.map(value=>formatText(entry,value,rom)))].filter(value=>value&&JSON.stringify(RomCore.tokens(value))===JSON.stringify(RomCore.tokens(text)));
+ }
+ async function repair(report,project,rom,edit){
+  const result={...report,changes:report.changes.map(c=>({...c})),issues:report.issues.map(i=>({...i})),missing:(report.missing||[]).map(i=>({...i})),formatted:report.formatted||0};
+  const byId=new Map(project.entries.map(e=>[e.id,e]));let fixed=0;
+  if(edit){
+   const change=result.changes.find(c=>c.id===edit.id);
+   if(!change||result.issues.some(i=>i.code==='identity'&&Number(i.id)===edit.id))throw Error('แถวนี้จับคู่กับต้นฉบับไม่ได้ ต้องใช้ตารางต้นฉบับที่ถูกต้อง');
+   if(typeof edit.text!=='string'||!edit.text.trim()||edit.text.length>10000)throw Error('กรอกคำแปล 1–10,000 ตัวอักษร');
+   change.translation=edit.text;change.translationChoice='';result.issues=result.issues.filter(i=>!(Number(i.id)===edit.id&&i.code==='input'));
+  }else{
+   const problemIds=new Set(result.issues.map(i=>Number(i.id)));
+   const blocked=new Set(result.issues.filter(i=>i.code==='identity'||i.code==='input').map(i=>Number(i.id)));
+   for(let i=0;i<result.changes.length;i++){
+    if(i%30===0)await new Promise(resolve=>setTimeout(resolve,0));
+    const change=result.changes[i],entry=byId.get(change.id);if(!entry||!problemIds.has(change.id)||blocked.has(change.id)||change.translationChoice==='keep-source')continue;
+    const alternatives=candidates(entry,change.translation,rom,project.glossary).filter(text=>text!==change.translation);if(!alternatives.length)continue;
+    const score=text=>{const r=TranslationQuality.entry(entry,text,rom,project.glossary);return [r.issues.filter(i=>i.severity==='error').length,r.issues.filter(i=>i.severity!=='error').length,r.bytes||Infinity];};
+    let best=score(change.translation),text=change.translation;
+    for(const candidate of alternatives){const next=score(candidate);if(next[0]<best[0]||next[0]===best[0]&&(next[1]<best[1]||next[1]===best[1]&&next[2]<best[2])){best=next;text=candidate;if(!best[0]&&!best[1])break;}}
+    if(text!==change.translation){change.translation=text;fixed++;}
+   }
+  }
+  await validate(result,project,rom);result.repairMessage=edit?'ตรวจคำแก้แล้ว ดูผลล่าสุดด้านล่าง':`แก้อัตโนมัติ ${fixed} รายการ · จัดรูปแบบ ย่อคำสุภาพเมนู และใช้ศัพท์ที่กำหนด · ไม่ตัดเนื้อหาทิ้งหรือเดาตำแหน่งโค้ด`;return result;
+ }
+ return {review,formatText,repair};
 })();
 
 if(typeof module!=="undefined")module.exports=SheetImportBatch;
