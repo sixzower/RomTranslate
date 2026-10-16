@@ -23,6 +23,7 @@ font_profiles.append({'id':'quetzal-th-native','name':'Quetzal TH 1.0.3 — ร�
 (root / 'rom-font-profiles.js').write_text('/* Verified source mappings and explicitly labelled supplements; no ROM bytes. */\nconst RomFontProfiles=' + json.dumps(font_profiles, ensure_ascii=False, separators=(',', ':')) + ';\nif(typeof module!=="undefined")module.exports=RomFontProfiles;\n')
 html = (root / 'index.html').read_text()
 version = json.loads((root / 'package.json').read_text())['version']
+html = re.sub(r' · รุ่น \d+\.\d+\.\d+</span>', ' · รุ่น ' + version + '</span>', html)
 # Version local assets so deployed HTML cannot silently reuse an old app module.
 html = re.sub(r'(src="(?!vendor/|coi-serviceworker)[^"?]+\.js)(?:\?[^"]*)?"', lambda m: m[1] + '?v=' + version + '"', html)
 html = re.sub(r'href="style\.css(?:\?[^"]*)?"', 'href="style.css?v=' + version + '"', html)

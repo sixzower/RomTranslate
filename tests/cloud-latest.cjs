@@ -10,10 +10,10 @@ async function scenario(mode){
   if(action==='delete'){assert.equal(scope,'scope');if(copies.get(args.p_id).revision!==args.p_expected)throw Error('Workspace version conflict');copies.delete(args.p_id);removed.push(args.p_id);return;}
   throw Error('Unexpected action '+action);
  }};
- const context=vm.createContext({console,Map,Set,Date,Number,JSON,TextEncoder,Error,setTimeout,clearTimeout,FontCloud,document:{getElementById:node,querySelectorAll:()=>[]},TranslationTasks:{active:()=>null,portable:p=>({...p})},RomTranslateViews:{current:()=> 'translation'},window:{RomTranslateBridge:bridge,addEventListener:()=>{}}});
+ const context=vm.createContext({console,Map,Set,Date,Number,JSON,TextEncoder,Error,setTimeout,clearTimeout,FontCloud,document:{getElementById:node,querySelectorAll:()=>[]},TranslationTasks:{active:()=>null,portable:p=>({...p})},RomTranslateViews:{current:()=> 'translation'},RomCloud:{ensure:async()=>{if(mode==='rom-failure')throw Error('ROM transfer failed');}},window:{RomCloud:{ensure:true},RomTranslateBridge:bridge,addEventListener:()=>{}}});
  vm.runInContext(fs.readFileSync('workspace-delete.js','utf8'),context);vm.runInContext(fs.readFileSync('work-manager.js','utf8'),context);
  const save=context.window.WorkManager.saveForRom();
  if(mode==='ok'){await save;assert.deepEqual(removed,[oldId]);assert.equal(copies.size,1);assert.equal(paused[0][1].cloudSyncPaused,true);}
- else {await assert.rejects(save,mode==='save-failure'?/save failed/:/บันทึกงานล่าสุดแล้ว/);assert.deepEqual(removed,[]);assert.equal(copies.size,2);assert.equal(paused.length,0);}
+ else {await assert.rejects(save,mode==='save-failure'?/save failed/:/คำแปลบันทึกแล้ว/);assert.deepEqual(removed,[]);assert.equal(copies.size,2);assert.equal(paused.length,0);}
 }
-(async()=>{for(const mode of ['ok','save-failure','keeper-changed','old-changed','scope-changed'])await scenario(mode);console.log('PASS latest-only retention: confirmed save precedes deletion; failed save, changed keeper revision, concurrent old-project edit and library switch preserve copies; removed local work pauses.');})().catch(e=>{console.error(e);process.exit(1)});
+(async()=>{for(const mode of ['ok','save-failure','rom-failure','keeper-changed','old-changed','scope-changed'])await scenario(mode);console.log('PASS latest-only retention: confirmed save precedes deletion; failed save/ROM upload, changed keeper revision, concurrent old-project edit and library switch preserve copies; removed local work pauses.');})().catch(e=>{console.error(e);process.exit(1)});

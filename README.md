@@ -2,11 +2,13 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
-## Cloud continuation (0.32.12)
+## Cloud continuation (0.32.13)
 
-The current client keeps one latest cloud workspace, using the existing authenticated workspace/ROM RPCs; no new SQL migration is required. Only the active workspace (or the most recent local workspace when the cloud is empty) is uploaded. After a confirmed save, older cloud workspaces are deleted with their observed revisions; existing foreign-key cascades free their ROM chunks. Local copies are retained and paused, and font presets are unaffected. Failed saves preserve the previous backup. Revision or connection failures stop cleanup and are reported for retry. Update other devices before using this policy there.
+The client automatically backs up the source ROM when saving a workspace through the existing private connection. The first upload sends missing 256 KiB chunks and verifies the complete hash on the server. Subsequent translation edits check the ready ROM and send workspace changes without re-uploading it. Connection progress follows confirmed chunks; interrupted backups resume missing chunks on the next sync. The existing SQL/RPCs are unchanged.
 
-In **โปรเจกต์ Cloud**, **เปิด ROM และทำงานต่อ** opens the latest cloud payload together with its matching cached or cloud ROM. Cloud chunks must pass size and SHA-256 checks before loading; translations, font, target categories and task/view state are restored through the existing workspace loader. This action reports missing/incomplete ROMs without staging an unusable workspace or closing the project dialog. If no ROM has been stored yet, upload it once from the original device. The ZIP download remains available separately.
+**โปรเจกต์ Cloud** has one primary **เปิดงานต่อ** button. It loads the latest translations, matching ROM, font, target categories and task/view state into the editor without importing JSON or choosing a local ROM. ZIP export and manual maintenance are collapsed. A verified older workspace's ROM can supply the exact same source hash for a newer workspace from previous versions; the latest translation payload is retained. If ROM bytes never reached the cloud and are absent locally, the original device must connect once to finish its automatic backup. The UI reports this condition without requesting another translation file.
+
+Only the current workspace (or the most recent local workspace if the cloud is empty) is uploaded. Older cloud workspaces and their cascading ROM chunks are removed only after the latest workspace **and ROM** are confirmed. Failed or partial uploads preserve the previous backup. Revision/connection failures stop cleanup; local copies remain paused and font presets remain. The advanced ROM-only delete also pauses workspace backup so the file is not immediately uploaded again. Update other devices before using this policy there.
 
 ## Default font
 

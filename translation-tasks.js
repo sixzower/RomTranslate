@@ -29,6 +29,7 @@ const TranslationTasks = (() => {
     p.activeWorkTask = saved.activeWorkTask;
     if (!active(p)) p.activeWorkTask = null;
     p.cloudSyncPaused=saved.cloudSyncPaused===true;p.cloudAutosave = saved.cloudAutosave === true;p.cloudScope=typeof saved.cloudScope==='string'&&/^[a-f0-9]{64}$/.test(saved.cloudScope)?saved.cloudScope:undefined;
+    p.cloudRomReady=saved.cloudRomReady===true;
     p.cloudRevision = Number.isSafeInteger(saved.cloudRevision) && saved.cloudRevision >= 0 ? saved.cloudRevision : 0;
   }
   function ensure(p) {
