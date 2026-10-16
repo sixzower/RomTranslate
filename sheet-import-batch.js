@@ -69,6 +69,7 @@ const SheetImportBatch=(()=>{
   result.changes=result.changes.filter(change=>{const entry=byId.get(change.id),blocked=blockedIds.has(change.id);const same=!blocked&&entry&&['translation','translationChoice','speaker'].every(key=>(change[key]||'')===(entry[key]||''));if(same)unchanged++;return !same;});result.unchanged+=unchanged;
   progress.combined?.(1,1);
   const expandedIds=new Set(project.entries.filter(entry=>entry.moveTextExpansion).map(entry=>entry.id));result.expandedTextRows=result.changes.filter(change=>expandedIds.has(change.id)).length;
+  const linkIds=new Set(project.entries.filter(entry=>entry.linkMessageBox).map(entry=>entry.id));result.expandedLinkRows=result.changes.filter(change=>linkIds.has(change.id)).length;
   result.formattedIds=[...formattedIds];result.formatted=formattedIds.size;
   result.errors=result.issues.filter(i=>i.severity==='error').length;
   result.warnings=result.issues.filter(i=>i.severity!=='error');progress.check();return result;

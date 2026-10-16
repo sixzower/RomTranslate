@@ -2,6 +2,12 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Link message-box text bounds (0.32.36)
+
+The screenshot entry `$309F4A` uses the link-message wrapper at `0x138D8C`: `StringExpandPlaceholders` (`0x2162DC`) writes into `gStringVar4` (`0x0203EBDC`), then the native message-box printer (`0x175004`) displays it. Its 71-byte source length is not the buffer capacity. Four exclusively verified wrapper-owned strings now allow 256 encoded bytes and use scrolling 208 px message-box layout, including the original SCROLL/PARA/VAR tokens. Call targets, scratch-buffer literal, pointer ownership and the pinned ROM hash are checked; shared/unproven strings retain their existing limits. No new machine-code patch is required for these messages.
+
+The editor now labels scrolling text as a total line count and “เลื่อนข้อความได้”, rather than a confusing line-limit ratio. Reloading restores existing words onto the corrected canonical metadata. Tests use the exact screenshot text (96 encoded bytes), build/reopen a ROM, exercise the actual native wrapper and placeholder copier in Unicorn with graphics endpoints mocked, and verify a guarded full 256-byte font-0 payload, busy-state behavior, saved registers/stack, browser status and translation persistence. This does not claim a physical multiplayer session was played through.
+
 ## Duplicate Excel import notices (0.32.35)
 
 Confirmed imports record up to 500 recent project-scoped file receipts: SHA-256 of the original workbook bytes, filename, time, accepted/draft counts and partial status. The import popup detects identical bytes even after renaming, shows the previous confirmation time and distinguishes partial imports. A changed workbook with the same filename is identified as a new version. Receipts warn without blocking deliberate reimport after undo or edits; previews, cancellation and rejected files do not create receipts.
