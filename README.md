@@ -2,6 +2,10 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Excel import audio (0.32.30)
+
+After applying a clean import, a short ascending tone confirms completion. A distinct descending tone signals unreadable files, blocked rows, missing/untranslated rows, drafts or layout failures. Partial imports retain the warning tone rather than implying everything passed. Cancellation is silent; audio uses the existing local Web Audio preference and browser gesture unlock, with no audio downloads.
+
 ## Excel import receipts (0.32.29)
 
 The review dialog and retained post-import receipt distinguish applied translations, layout failures, retained drafts, blank cells, unchanged rows and rejected identities. Success counts use accepted unique entries, never warning counts. Errors show file/sheet/original row/entry ID, source and a suggested fix; the downloadable report includes fixes and missing/blank rows. Green/red text adapts to both themes and the dialog fits mobile widths. Applying still uses the existing identity checks, one history checkpoint and blank-preservation behavior.

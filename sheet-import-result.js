@@ -12,6 +12,7 @@ const SheetImportResult=(()=>{
   return 'ตรวจข้อความตามรายละเอียด แก้ในแถวที่ระบุแล้วนำเข้าใหม่';
  }
  function rows(report){return [...report.issues,...(report.missing||[])].map(i=>({...i,fix:fix(i)}));}
+ function needsAttention(report){return !report.parts||report.issues.some(i=>i.severity==='error')||(report.missing||[]).some(i=>i.code!=='blank'||!i.alreadyTranslated);}
  function render(report,applied=false){
   const $=id=>document.getElementById(id),out=$('sheetImportOutcome'),list=$('sheetChanges'),parts=report.parts;
   out.replaceChildren();list.replaceChildren();
@@ -36,6 +37,6 @@ const SheetImportResult=(()=>{
   for(const change of changes.slice(0,30))add(list,`#${change.id} → ${change.translation}`,'success');
   $('sheetReport').disabled=!details.length;
  }
- return {render,rows,fix};
+ return {render,rows,fix,needsAttention};
 })();
 if(typeof module!=='undefined')module.exports=SheetImportResult;
