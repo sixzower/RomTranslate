@@ -2,6 +2,16 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Shared translation targets and progress (0.32.39)
+
+Target groups and subcategories are explicit fields of the existing cloud workspace, together with active/paused work scopes and their canonical entry IDs. Snapshots materialize the actual target selection, and workspace hydration restores it centrally. An explicit empty selection remains empty. Percentages are derived from the current canonical ROM entries, actual translations and keep-source choices; drafts and excluded categories do not count. No separate saved percentage can drift from the project data.
+
+Changing target checkboxes saves locally immediately and requests cloud backup after a 1.5-second pause when connected. The normal translation autosave timing remains unchanged. The group dialog shows pending versus confirmed cloud save; switch devices after confirmation. A database/network failure still leaves the local changes pending. No additional tables, ROM copies or SQL upgrade are needed for this feature. Existing installation/read migrations remain necessary if not already applied.
+
+When both devices edit different category checkboxes against a common confirmed snapshot, their per-category changes merge independently instead of conflicting over the entire target array. Ambiguous divergent selections without a common snapshot still use the existing explicit conflict flow. Translation conflicts keep their existing protection.
+
+Validation: `tests/progress-plan.cjs` covers explicit target snapshots/hydration, empty goals, exact derived progress and 512 three-way category combinations. `tests/progress-cloud.cjs` uses real PostgreSQL workspace RPCs with two isolated browser contexts and a pre-backed-up ROM fixture served through the normal chunked ROM transport. Desktop checkbox changes auto-save; fresh mobile Chromium login restores the ROM, scopes, goals and matching progress without a file chooser; reverse sync and empty-target reopen preserve the same single project. Passed on source and standalone HTML. This validates the application flow with a local test backend, not the user's live private Supabase connection or physical iOS Safari.
+
 ## Inline Excel import editing (0.32.38)
 
 The import preview now exposes editable rows even when they pass validation. Open a row to compare its source, edit Thai, and choose **ตรวจและใช้คำแก้**. The staged result displays actual bytes from the shared font allocator, the canonical ROM limit, pixel width and line count; scrolling text is labelled as total lines with scrolling. Editing clears the displayed result until explicitly rechecked. The project changes only on confirmed import. Rows are revealed in groups of 30 to keep large workbooks manageable; existing error editors remain available.

@@ -4,6 +4,14 @@ const WorkspaceSync=(()=>{
  const fields=['translation','speaker','literal','contextual','translationChoice'];
  const stable=v=>v&&typeof v==='object'?(Array.isArray(v)?v.map(stable):Object.fromEntries(Object.keys(v).sort().map(k=>[k,stable(v[k])]))):v;
  const equal=(a,b)=>JSON.stringify(stable(a))===JSON.stringify(stable(b));
+ function mergeGoals(local,remote,base){
+  if(equal(local,remote))return local?.slice();
+  if(Array.isArray(local)&&Array.isArray(remote)&&local.length===remote.length&&local.every(key=>remote.includes(key)))return remote.slice();
+  if(local===undefined)return remote?.slice();if(remote===undefined)return local.slice();
+  if(!Array.isArray(base))return undefined;
+  const l=new Set(local),r=new Set(remote),b=new Set(base);
+  return [...new Set([...remote,...local,...base])].filter(key=>l.has(key)===b.has(key)?r.has(key):l.has(key));
+ }
  function mergeTasks(local,remote,base){
   const left=new Map((local.workTasks||[]).map(t=>[t.id,t])),right=new Map((remote.workTasks||[]).map(t=>[t.id,t])),before=new Map((base?.workTasks||[]).map(t=>[t.id,t]));
   const tasks=[],terminal=s=>['completed','cancelled'].includes(s);
@@ -54,9 +62,11 @@ const WorkspaceSync=(()=>{
    if(l.source!==r.source||l.id!==r.id)throw Error('ข้อความต้นฉบับไม่ตรงกันที่ $'+Number(offset).toString(16));
    const row={...r};for(const f of fields)row[f]=choose(l[f]||'',r[f]||'',b?.[f]||'',!!base&&(!b||b.source===l.source),String(l.id),String(l.id)+':'+f);return row;
   });
-  for(const key of ['font','glossary','genre','progressCategories']){
+  for(const key of ['font','glossary','genre']){
    out[key]=choose(local[key],remote[key],base?.[key],!!base,key);
   }
+  const goals=mergeGoals(local.progressCategories,remote.progressCategories,base?.progressCategories);
+  out.progressCategories=goals===undefined?choose(local.progressCategories,remote.progressCategories,base?.progressCategories,!!base,'progressCategories'):goals;
   Object.assign(out,mergeTasks(local,remote,base));out.excelImports=imports.merge(local.excelImports,remote.excelImports);
   // Per-device navigation is not a conflicting edit to the shared translation.
   out.viewState=structuredClone(local.viewState||remote.viewState);

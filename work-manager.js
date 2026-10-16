@@ -2,7 +2,7 @@
 const WorkManager = (() => {
   const $ = id => document.getElementById(id), bridge = () => window.RomTranslateBridge;
   let busy = false, foregroundBusy = false, card = null, queued = false, timer = null, latestCloud = null, remoteReady = false, awaitingRom = null, pollingRom = false;
-  let queuedSince=0,pendingConflict=null,verifiedDisplayId=null;
+  let urgentTargets=false,queuedSince=0,pendingConflict=null,verifiedDisplayId=null;
   const sent = new Map(),resumedScopes=new Set();
   const newest=rows=>rows.slice().sort((a,b)=>(typeof b.updated_at==='number'?b.updated_at:Date.parse(b.updated_at)||0)-(typeof a.updated_at==='number'?a.updated_at:Date.parse(a.updated_at)||0)||Number(b.revision)-Number(a.revision));
   async function retainLatest(id,revision,scope){
@@ -61,6 +61,7 @@ const WorkManager = (() => {
     const suffix=p.lastCloudSavedAt?' · ล่าสุด '+time(p.lastCloudSavedAt):'';setText('cloudSaveStatus',p.cloudDeletePending?'รอตรวจผลลบสำเนา · หยุดสำรองชั่วคราว':p.cloudSyncPaused?'หยุดสำรองงานนี้'+suffix:!FontCloud.connected()?'รอเชื่อมคลังส่วนตัว'+suffix:(p.cloudSavedChange||0)<(p.lastChangedAt||0)?((p.lastLocalSavedChange||0)>=(p.lastChangedAt||0)?'บันทึกในเครื่องแล้ว · รอส่งคลาวด์':'กำลังเก็บงานในเครื่อง')+suffix:p.lastCloudSavedAt?(p.cloudRomReady?'ROM และคำแปลสำรองครบแล้ว':'คำแปลสำรองแล้ว · ROM ยังไม่พร้อม')+suffix:'ยังไม่ได้สำรอง');
   }
   function renderCurrent() {
+    bridge()?.refreshProgress?.();
     if(pendingConflict&&bridge()?.project()!==pendingConflict.project)pendingConflict=null;
     if($('workResolveConflict')){$('workResolveConflict').hidden=!pendingConflict;$('workResolveConflict').textContent='เลือกคำแปลที่ขัดกัน'+(pendingConflict?' ('+pendingConflict.error.details.length+')':'');}
     const p = bridge()?.project(), task = TranslationTasks.active(p);backupStatus(p);if($('workVerification')&&verifiedDisplayId!==(p?.workspaceId||null)){verifiedDisplayId=p?.workspaceId||null;setText('workVerification',p?.cloudVerifiedAt?'เคยตรวจรุ่น '+p.cloudVerifiedRevision+' เมื่อ '+time(p.cloudVerifiedAt)+' · กดตรวจอีกครั้งเพื่อยืนยันข้อมูลปัจจุบัน':'');$('workVerification').dataset.state='pending';}if($('workVerify'))$('workVerify').disabled=foregroundBusy||!p||!FontCloud.connected();if($('workResolveConflict'))$('workResolveConflict').disabled=foregroundBusy;if($('workVerification')&&p?.cloudVerifiedAt&&((p.cloudVerifiedChange||0)<(p.lastChangedAt||0)||Number(p.cloudRevision)>Number(p.cloudVerifiedRevision))){setText('workVerification','มีการเปลี่ยนแปลงหลังตรวจครั้งล่าสุด · กดตรวจความพร้อมข้ามเครื่องอีกครั้ง');$('workVerification').dataset.state='pending';}for(const button of document.querySelectorAll('#workCloudRows button,#workCloudActions button'))button.disabled=foregroundBusy;
@@ -188,9 +189,10 @@ const WorkManager = (() => {
       await retainLatest(p.workspaceId,revision,scope);
     }catch(e){throw Error('คำแปลบันทึกแล้ว แต่ยังสำรองงานครบชุดไม่สำเร็จ: '+e.message);}
   }
-  function schedule() {
+  function schedule({urgent=false}={}) {
+    urgentTargets ||= urgent;
     clearTimeout(timer); const p = bridge()?.project(); if (!p?.cloudAutosave || !FontCloud.connected()) return;
-    queuedSince||=Date.now();const delay=!p.cloudRevision?1500:Math.min(12000,Math.max(0,30000-(Date.now()-queuedSince)));timer=setTimeout(()=>{queuedSince=0;if(busy){queued=true;return;}run(()=>upload(),{foreground:false});},delay);
+    queuedSince||=Date.now();const delay=urgentTargets||!p.cloudRevision?1500:Math.min(12000,Math.max(0,30000-(Date.now()-queuedSince)));timer=setTimeout(()=>{if(busy){queued=true;return;}urgentTargets=false;queuedSince=0;run(()=>upload(),{foreground:false});},delay);
   }
   async function verifyCloud(){
     const p=bridge().project();if(!p)throw Error('เปิดโปรเจกต์ก่อนตรวจ');const scope=await FontCloud.workspaceScope(),stamp=p.lastChangedAt;
@@ -230,7 +232,7 @@ const WorkManager = (() => {
       onProgress(95,'กำลังตรวจรายการโปรเจกต์ล่าสุด');await listCloud();onProgress(100,'ตรวจรายการโปรเจกต์ครบแล้ว');if(warnings.length)status(warnings[0].message);return {pendingProjects:warnings};
     }finally{RomCloud.endResume?.();busy=false;renderCurrent();if(queued){queued=false;schedule();}}
   }
-  window.addEventListener('romtranslate:project-changed',e=>{renderCurrent();const p=bridge().project();if(!p)return;if(FontCloud.connected()&&!p.cloudSyncPaused){p.cloudAutosave=true;schedule();}});
+  window.addEventListener('romtranslate:project-changed',e=>{renderCurrent();const p=bridge().project();if(!p)return;if(FontCloud.connected()&&!p.cloudSyncPaused){p.cloudAutosave=true;schedule({urgent:e.detail?.targets===true});}});
   async function followShared(){if(busy||!FontCloud.connected()||document.hidden)return;try{await syncConnected();}catch(e){status(e.message);}}
   window.addEventListener('focus',followShared);setInterval(followShared,60000);
   window.addEventListener('online',schedule);document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule();});window.addEventListener('romtranslate:view',renderCurrent);

@@ -137,3 +137,5 @@ body[data-theme=dark] #fontCloudStatus[data-kind=error]{color:#ff8b94}
 .import-duplicate{font-weight:bold;border-left:3px solid var(--border);padding-left:9px;overflow-wrap:anywhere}
 
 .import-entry-preview summary{cursor:pointer;line-height:1.7;overflow-wrap:anywhere;padding:6px 0}.import-entry-preview p{white-space:pre-wrap;overflow-wrap:anywhere}[data-import-metrics]{font-size:12px;line-height:1.7}
+
+#progressCloudState{font-size:12px;color:var(--muted);line-height:1.7}#progressCloudState[data-state=saved]{color:#167b37}body[data-theme=dark] #progressCloudState[data-state=saved]{color:#62e68d}
