@@ -3,6 +3,37 @@ const WorkspaceSync=(()=>{
  const fields=['translation','speaker','literal','contextual','translationChoice'];
  const stable=v=>v&&typeof v==='object'?(Array.isArray(v)?v.map(stable):Object.fromEntries(Object.keys(v).sort().map(k=>[k,stable(v[k])]))):v;
  const equal=(a,b)=>JSON.stringify(stable(a))===JSON.stringify(stable(b));
+ function mergeTasks(local,remote,base){
+  const left=new Map((local.workTasks||[]).map(t=>[t.id,t])),right=new Map((remote.workTasks||[]).map(t=>[t.id,t])),before=new Map((base?.workTasks||[]).map(t=>[t.id,t]));
+  const tasks=[],terminal=s=>['completed','cancelled'].includes(s);
+  for(const id of new Set([...right.keys(),...left.keys()])){
+   const l=left.get(id),r=right.get(id),b=before.get(id);let task;
+   if(!l||!r){const remaining=l||r;if(b&&equal(remaining,b))continue;task=structuredClone(remaining);if(b&&task.status==='active')task.status='paused';}
+   else if(equal(l,r)||b&&equal(l,b))task=structuredClone(r);
+   else if(b&&equal(r,b))task=structuredClone(l);
+   else{
+    // Scope definitions stay coherent. Concurrent settings use the confirmed
+    // cloud copy; independent tasks/edits and the local cursor are preserved.
+    task=structuredClone(r);
+    if(b&&equal(r.name,b.name))task.name=l.name;
+    const scope=t=>[t.entryIds,t.filter,t.exportOptions];
+    if(b&&equal(scope(r),scope(b)))for(const key of ['entryIds','filter','exportOptions'])task[key]=structuredClone(l[key]);
+    if(terminal(l.status)&&!terminal(r.status))task.status=l.status;
+    else if(!terminal(r.status)&&b&&r.status===b.status)task.status=l.status;
+    task.updatedAt=Math.max(l.updatedAt,r.updatedAt);
+    if(l.position!==undefined)task.position=l.position;
+   }
+   if(l&&r&&terminal(r.status)&&!terminal(l.status))task.status=r.status;
+   if(l&&r&&terminal(l.status)&&!terminal(r.status))task.status=l.status;
+   if(task.position!==undefined&&!task.entryIds.includes(task.position))task.position=task.entryIds[0];
+   tasks.push(task);
+  }
+  if(tasks.length>100)throw Error('รวมชุดงานแล้วเกิน 100 ชุด · คำแปลยังอยู่ กรุณาลบชุดงานที่เลิกใช้ก่อนสำรอง');
+  const preferred=base&&local.activeWorkTask===base.activeWorkTask?remote.activeWorkTask:local.activeWorkTask;
+  const active=[preferred,remote.activeWorkTask,...tasks.map(t=>t.id)].find(id=>tasks.some(t=>t.id===id&&t.status==='active'))||null;
+  for(const task of tasks)if(task.status==='active'&&task.id!==active)task.status='paused';
+  return {workTasks:tasks,activeWorkTask:active};
+ }
  function reconcile(local,remote,base=null){
   if(local.romHash!==remote.romHash)throw Error('โปรเจกต์หลักใช้ ROM คนละไฟล์ · งานในเครื่องยังอยู่');
   const byOffset=p=>new Map((p?.entries||[]).map(e=>[e.romOffset,e]));
@@ -21,9 +52,10 @@ const WorkspaceSync=(()=>{
    if(l.source!==r.source||l.id!==r.id)throw Error('ข้อความต้นฉบับไม่ตรงกันที่ $'+Number(offset).toString(16));
    const row={...r};for(const f of fields)row[f]=choose(l[f]||'',r[f]||'',b?.[f]||'',!!base&&(!b||b.source===l.source),String(l.id));return row;
   });
-  for(const key of ['font','glossary','genre','progressCategories','workTasks','activeWorkTask']){
+  for(const key of ['font','glossary','genre','progressCategories']){
    out[key]=choose(local[key],remote[key],base?.[key],!!base,key);
   }
+  Object.assign(out,mergeTasks(local,remote,base));
   // Per-device navigation is not a conflicting edit to the shared translation.
   out.viewState=structuredClone(local.viewState||remote.viewState);
   if(conflicts.length){const e=Error('แก้ข้อมูลเดียวกันต่างกัน '+new Set(conflicts).size+' จุด ('+[...new Set(conflicts)].slice(0,3).join(', ')+') · ยังไม่เขียนทับทั้งสองฉบับ · ปิดการแก้ไขอีกเครื่องแล้วตรวจฉบับล่าสุดก่อน');e.workspaceConflict=true;e.fields=[...new Set(conflicts)];throw e;}

@@ -2,6 +2,12 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Merge work-task state across devices (0.32.24)
+
+Work-task arrays are merged by task ID rather than treated as a conflicting translation field. Independent tasks are retained, cursor differences do not stop backup, scope settings stay together, and only one task remains active. Completed/canceled tasks are not reactivated by another device's stale active state. Three-way deletions of unchanged tasks are honored. Simultaneous scope-setting changes use the confirmed cloud settings; unsent changes to actual translation text still use the existing conflict protection. No SQL update is required.
+
+Tests cover task cursors, active/completed/deleted states, valid scopes, unchanged inputs, preserved 7,035 translated rows and real-ROM cloud backup/resume with differing task positions.
+
 ## Visible automatic ROM restore (0.32.23)
 
 Password sign-in and the explicit retry button now retry latest-workspace restoration even if an earlier attempt was canceled or found an empty library. Ordinary background synchronization still respects cancellation. The ROM progress dialog opens before cloud workspace lookup, shows metadata preparation separately from confirmed download progress, then hands off to the ROM scanner. Missing or incomplete ROMs keep their pending translations and display an immediate reason after login instead of only a generic connection-success message. Waiting devices continue checking for a completed backup.

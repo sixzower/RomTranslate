@@ -9,4 +9,14 @@ const conflicting=structuredClone(base);conflicting.entries[0].translation='แ�
 assert.throws(()=>reconcile(local,{...remote,romHash:'b'.repeat(64)}),/คนละไฟล์/);
 assert.throws(()=>reconcile(local,{...remote,entries:[{...row(192,'ไทย'),source:'wrong'}]}),/ต้นฉบับไม่ตรง/);
 result=reconcile({...many,workspaceId:'old-local'},p([]));assert.equal(result.workspaceId,'primary');assert.equal(result.entries.length,7035);
+const Tasks=require('../translation-tasks');
+const task=(id,position=192)=>({id,name:'ชุดคำแปล',status:'active',entryIds:[192,200],position,createdAt:1,updatedAt:1,filter:{category:'all',search:'',searchField:'all',untranslated:false},exportOptions:{mode:'single',start:1,count:100,size:100,ranges:'',all:false}});
+const one='11111111-1111-4111-8111-111111111111',two='22222222-2222-4222-8222-222222222222';
+const localTasks={...many,workTasks:[task(one,200)],activeWorkTask:one},remoteTasks={...p([]),workTasks:[task(one),task(two)],activeWorkTask:two};
+result=reconcile(localTasks,remoteTasks);assert.equal(result.entries.filter(e=>e.translation).length,7035);assert.equal(result.workTasks.length,2);assert.equal(result.workTasks.find(t=>t.id===one).position,200);assert.equal(result.activeWorkTask,one);assert.equal(result.workTasks.filter(t=>t.status==='active').length,1);assert(Tasks.valid(result.workTasks));assert.equal(remoteTasks.workTasks[1].status,'active','merge mutated the original');
+const taskBase={...localTasks,workTasks:[task(one)]},l=structuredClone(taskBase),r=structuredClone(taskBase);l.workTasks[0].position=200;l.workTasks[0].updatedAt=2;r.workTasks[0].status='completed';r.workTasks[0].updatedAt=3;r.activeWorkTask=null;result=reconcile(l,r,taskBase);assert.equal(result.workTasks[0].status,'completed');assert.equal(result.activeWorkTask,null);assert(Tasks.valid(result.workTasks));
+result=reconcile({...taskBase,workTasks:[],activeWorkTask:null},taskBase,taskBase);assert.deepEqual(result.workTasks,[],'deleted unchanged task reappeared');
+result=reconcile(taskBase,{...taskBase,workTasks:[],activeWorkTask:null},taskBase);assert.deepEqual(result.workTasks,[]);
+const differentScope=structuredClone(remoteTasks);differentScope.workTasks[0].entryIds=[192];result=reconcile(localTasks,differentScope);assert.equal(result.workTasks[0].position,192);assert(Tasks.valid(result.workTasks));
+assert.throws(()=>reconcile({...localTasks,entries:[row(192,'ใหม่จากเครื่องแรก')]},{...remoteTasks,entries:[row(192,'ใหม่จากมือถือ')]}),/แก้ข้อมูลเดียวกันต่างกัน/);
 console.log('PASS primary ID adoption, 7,035 nonblank translations preserved, three-way disjoint edits, concurrent same-field conflict and ROM/source identity checks.');
