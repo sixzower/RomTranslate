@@ -43,6 +43,7 @@ const SheetImportBatch=(()=>{
   return validate(result,project,rom,progress);
  }
  async function validate(result,project,rom,progress={check(){},combined(){}}){
+  result.entryChecks=[];
   const formattedIds=new Set(result.formattedIds||[]);
   const changes=new Map(result.changes.map(c=>[c.id,c])),origins=new Map(result.changes.map(c=>[c.id,c.file]));
   // Font allocation is shared across every file and existing translation.
@@ -59,6 +60,7 @@ const SheetImportBatch=(()=>{
     if(change&&!unsafe.has(entry.id)){const formatted=formatText({...entry,translationChoice:change.translationChoice},change.translation,rom);if(formatted!==change.translation){change.translation=formatted;formattedIds.add(entry.id);}}
     const text=change?.translation||entry.translation;if(!text?.trim())continue;
     const checked=TranslationQuality.entry(change?{...entry,translationChoice:change.translationChoice}:entry,text,rom,project.glossary,allocator);
+    if(change)result.entryChecks.push({id:entry.id,offset:entry.offset,category:entry.category,source:entry.source,bytes:checked.bytes,limit:entry.capacity||entry.maxBytes||null,originalLength:entry.originalLength,expanded:!!(entry.moveTextExpansion||entry.linkMessageBox),width:checked.metrics?.width,lines:checked.metrics?.lines,maxWidth:checked.spec.width,maxLines:checked.spec.lines,scroll:checked.spec.scroll,errors:checked.issues.filter(issue=>issue.severity==='error').length});
     if(change)for(const issue of checked.issues)result.issues.push({file:origins.get(entry.id),row:change.row,id:entry.id,offset:entry.offset,category:entry.category,source:entry.source,translation:text,sheet:change.sheet,...issue});
     else if(checked.issues.some(x=>x.code==='font'&&x.message.includes('ฟอนต์เต็ม')))result.issues.push({row:0,id:entry.id,severity:'error',code:'font',message:'คำแปลรวมทั้งโปรเจกต์ใช้ฟอนต์เกินความจุ'});
    }

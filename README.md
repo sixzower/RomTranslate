@@ -2,6 +2,12 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Inline Excel import editing (0.32.38)
+
+The import preview now exposes editable rows even when they pass validation. Open a row to compare its source, edit Thai, and choose **ตรวจและใช้คำแก้**. The staged result displays actual bytes from the shared font allocator, the canonical ROM limit, pixel width and line count; scrolling text is labelled as total lines with scrolling. Editing clears the displayed result until explicitly rechecked. The project changes only on confirmed import. Rows are revealed in groups of 30 to keep large workbooks manageable; existing error editors remain available.
+
+Verified capacities from the current ROM apply during import, including the four 256-byte link messages and expanded move descriptions. An old workbook's `max_bytes=71` cannot reduce the verified link-message bound or grant extra space to unverified entries. `tests/link-message-import.cjs` imports the screenshot's exact 96-byte Thai text from a real old-budget workbook, checks 96/256 and scrolling, tests inline overflow/fix and cancel isolation, then builds/reopens the ROM with exact words and original SHA. Passed for the source app and downloadable HTML. The existing 68-entry move-description import/build regression also passes.
+
 ## Project download timeouts (0.32.37)
 
 For `เปิดโปรเจกต์ ... [57014]`, run [workspace-read-fix.sql](cloud/workspace-read-fix.sql) once in the existing Supabase SQL Editor, then open the latest website and retry the project. Existing workspace timeout SQL configures writes only; it does not fix the default read RPC budget. This upgrade preserves project IDs, revisions, translations, ROM chunks, fonts and passwords. It creates no stored copies and changes no global role timeouts. The combined installation SQL and copyable workspace setup include it.

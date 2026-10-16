@@ -15,8 +15,21 @@ const SheetImportResult=(()=>{
  function needsAttention(report){return !report.parts||report.issues.some(i=>i.severity==='error')||(report.missing||[]).some(i=>i.code!=='blank'||!i.alreadyTranslated);}
  function render(report,applied=false,actions={}){
   const $=id=>document.getElementById(id),out=$('sheetImportOutcome'),list=$('sheetChanges'),parts=report.parts;
-  out.replaceChildren();list.replaceChildren();const editorIds=new Set(),identityIds=new Set(report.issues.filter(i=>i.code==='identity').map(i=>Number(i.id))),changesById=new Map(report.changes.map(c=>[Number(c.id),c]));
+  out.replaceChildren();list.replaceChildren();const editorIds=new Set(),identityIds=new Set(report.issues.filter(i=>i.code==='identity').map(i=>Number(i.id))),changesById=new Map(report.changes.map(c=>[Number(c.id),c])),checksById=new Map((report.entryChecks||[]).map(c=>[Number(c.id),c]));
   const add=(parent,text,kind)=>{const p=document.createElement('p');p.textContent=text;if(kind)p.className='import-'+kind;parent.append(p);return p;};
+  const checkText=check=>check?[
+   Number.isFinite(check.bytes)?`${check.bytes}/${check.limit||'ไม่จำกัด'} ไบต์`:'ยังตรวจไบต์ไม่ได้',
+   Number.isFinite(check.width)?`${check.width}/${check.maxWidth} px`:'',
+   Number.isFinite(check.lines)?check.scroll?`${check.lines} บรรทัดรวม · เลื่อนข้อความได้`:`${check.lines}/${check.maxLines} บรรทัด`:'',
+   check.expanded?`ใช้พื้นที่ขยาย ${check.limit} ไบต์ตาม ROM ปัจจุบัน`:'',
+   check.errors?'ยังต้องแก้ก่อนสร้างเกม':'ผ่านเงื่อนไขเกม'
+  ].filter(Boolean).join(' · '):'';
+  function editor(block,id,change){
+   const label=document.createElement('label');label.textContent='คำแปล — แก้ได้ที่นี่';const input=document.createElement('textarea');input.value=change.translation;input.maxLength=10000;input.dataset.repairId=String(id);input.rows=3;label.append(input);block.append(label);
+   const check=checksById.get(id),status=add(block,checkText(check),check?.errors?'error':'success');status.dataset.importMetrics=String(id);status.setAttribute('role','status');
+   input.oninput=()=>{status.textContent='มีคำแก้ใหม่ · กด “ตรวจและใช้คำแก้” เพื่อคำนวณไบต์และบรรทัดอีกครั้ง';status.className='import-neutral';};
+   const button=document.createElement('button');button.textContent='ตรวจและใช้คำแก้';button.dataset.repairApply=String(id);button.onclick=()=>actions.onRepair({id,text:input.value});block.append(button);
+  }
   if(!applied){const seenFiles=new Map(),changedIds=new Set(report.changes.map(c=>c.id));for(const file of report.sourceFiles||[]){
    const previous=SheetImportHistory.prior(report.project||{},file.hash),sameName=SheetImportHistory.clean(report.project?.excelImports).some(r=>r.name===file.name&&r.hash!==file.hash);
    if(previous){add(out,`${previous.partial?'เคยนำเข้าบางส่วนของไฟล์นี้แล้ว':'เคยนำเข้าไฟล์นี้แล้ว'} · ${file.name} · ${new Date(previous.at).toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'})} · ครั้งก่อนนำเข้า ${previous.accepted} คำแปล${previous.drafts?' / '+previous.drafts+' ร่าง':''}${previous.name!==file.name?' · ชื่อเดิม '+previous.name:''}`,'neutral').classList.add('import-duplicate');const changed=(file.entryIds||[]).filter(id=>changedIds.has(id)).length;if(changed)add(out,`ไฟล์ที่เคยนำเข้านี้ต่างกับงานปัจจุบัน ${changed} รายการ · หากยืนยันนำเข้าอีกครั้ง จะใช้ค่าจากไฟล์`,'neutral');}
@@ -46,12 +59,24 @@ const SheetImportResult=(()=>{
    const id=Number(issue.id),change=changesById.get(id),editable=change&&(issue.severity==='error'||issue.code==='glossary')&&!editorIds.has(id)&&!identityIds.has(id);
    if(editable){editorIds.add(id);
     if(applied){const button=document.createElement('button');button.textContent='ไปแก้คำแปลนี้';button.onclick=()=>{document.getElementById('sheetImportDialog').close();window.RomTranslateBridge?.goToEntry(id);};block.append(button);}
-    else if(actions.onRepair){const label=document.createElement('label');label.textContent='คำแปล — แก้ได้ที่นี่';const input=document.createElement('textarea');input.value=change.translation;input.maxLength=10000;input.dataset.repairId=String(id);input.rows=3;label.append(input);block.append(label);const button=document.createElement('button');button.textContent='ตรวจและใช้คำแก้';button.dataset.repairApply=String(id);button.onclick=()=>actions.onRepair({id,text:input.value});block.append(button);}
+    else if(actions.onRepair)editor(block,id,change);
    }
    list.append(block);
   }
   if(details.length>300)add(list,`แสดง 300 / ${details.length.toLocaleString()} จุด ดาวน์โหลดรายการที่ต้องแก้เพื่อดูทั้งหมด`,'neutral');
-  for(const change of changes.slice(0,30))add(list,`#${change.id} → ${change.translation}`,'success');
+  if(!applied&&actions.onRepair){
+   const candidates=report.changes.filter(change=>!editorIds.has(Number(change.id))&&!identityIds.has(Number(change.id))),preview=document.createElement('div');list.append(preview);let shown=0;
+   const more=document.createElement('button');more.type='button';more.textContent='แสดงอีก 30 รายการ';
+   function show(){
+    for(const change of candidates.slice(shown,shown+30)){
+     const id=Number(change.id),check=checksById.get(id),card=document.createElement('details');card.className='import-detail import-entry-preview';card.dataset.importEntry=String(id);const summary=document.createElement('summary');summary.textContent=`#${id}${check?.offset?' · '+check.offset:''}${check?.category?' · '+check.category:''} · ${checkText(check)||'ดูคำแปล / แก้ไข'}`;card.append(summary);
+     if(check?.source)add(card,'ต้นฉบับ: '+check.source);
+     editor(card,id,change);preview.append(card);
+    }
+    shown=Math.min(shown+30,candidates.length);more.hidden=shown>=candidates.length;
+   }
+   more.onclick=show;show();list.append(more);
+  }else for(const change of changes.slice(0,30))add(list,`#${change.id} → ${change.translation}`,'success');
   $('sheetReport').disabled=!details.length;
  }
  return {render,rows,fix,needsAttention};
