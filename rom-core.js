@@ -63,12 +63,41 @@ function blankGlyph(b,font,id){for(let i=font.glyphs+id*64;i<font.glyphs+(id+1)*
 function parts(text){return text.match(/\{[^}]+\}|[^{}]+/g)||[];}
 function measure(text){let n=0,thai=false;for(const p of parts(text)){if(p[0]==='{')n+=encode(p).length-1;else for(const c of GAMEFONT.clusters(p)){if(/[\u0e00-\u0e7f]/.test(c)){GAMEFONT.advance(c);thai=true;n+=2;}else n+=encode(c).length-1;}}return {bytes:n+(thai?3:0),thai};}
 
-function wrapDialogue(text,b,maxWidth=208){if(maxWidth<80||maxWidth>224)throw Error('ความกว้างบทสนทนาไม่ถูกต้อง');let x=0,line=0,out='';const newline=()=>{out+=line>=1?'{SCROLL}':'\n';line=1;x=0;};for(const p of parts(text)){if(p[0]==='{'){out+=p;if(p==='{PARA}'){x=0;line=0;}else if(p==='{SCROLL}')x=0;else if(/\{(?:VAR|DYNAMIC):/i.test(p)){if(x&&x+48>maxWidth)newline();x+=48;}continue;}for(const c of GAMEFONT.clusters(p)){if(c==='\n'){newline();continue;}if(c==='\r')continue;const thai=/[\u0e00-\u0e7f]/.test(c);const width=thai?GAMEFONT.advance(c):b[PROFILE.fonts[0].widths+encode(c)[0]];if(x&&x+width>maxWidth)newline();if(c===' '&&x===0)continue;out+=c;x+=width;}}return out;}
+// Word-aware line flow. Thai has no spaces between words, so Intl.Segmenter finds
+// breakable word units; a unit moves whole to the next line and is split by cluster
+// only when it is wider than the screen. Without Segmenter the old cluster flow remains.
+const WORD_SEGMENTER=typeof Intl!=='undefined'&&Intl.Segmenter?new Intl.Segmenter('th',{granularity:'word'}):null;
+function wrapUnits(p){
+ const clusters=GAMEFONT.clusters(p),single=clusters.map(c=>[c]);if(!WORD_SEGMENTER)return single;
+ try{
+  const out=[];let opener=[];
+  for(const s of WORD_SEGMENTER.segment(p.normalize('NFC'))){
+   const cs=GAMEFONT.clusters(s.segment);if(!cs.length)continue;
+   if(/^\s+$/.test(s.segment)){if(opener.length){out.push(opener);opener=[];}for(const c of cs)out.push([c]);continue;}
+   if(!s.isWordLike&&/^[“‘"'(\[«]+$/.test(s.segment)){opener.push(...cs);continue;}
+   const last=out.at(-1);
+   if(!s.isWordLike&&!opener.length&&last&&last.length&&!/^\s$/.test(last[0])&&!/^[“‘"'(\[«]+$/.test(last.join(''))){last.push(...cs);continue;}
+   out.push([...opener,...cs]);opener=[];
+  }
+  if(opener.length)out.push(opener);
+  return out.flat().join('')===clusters.join('')?out:single;
+ }catch{return single;}
+}
+function flowText(p,st,b,maxWidth,newline){
+ const width=c=>/[฀-๿]/.test(c)?GAMEFONT.advance(c):b[PROFILE.fonts[0].widths+encode(c)[0]];
+ const put=c=>{const w=width(c);if(st.x&&st.x+w>maxWidth)newline();if(c===' '&&st.x===0)return;st.out+=c;st.x+=w;};
+ for(const unit of wrapUnits(p)){
+  if(unit.length===1){const c=unit[0];if(c==='\n'){newline();continue;}if(c==='\r')continue;put(c);continue;}
+  const w=unit.reduce((n,c)=>n+width(c),0);if(st.x&&st.x+w>maxWidth)newline();
+  if(w>maxWidth)for(const c of unit)put(c);else{st.out+=unit.join('');st.x+=w;}
+ }
+}
+function wrapDialogue(text,b,maxWidth=208){if(maxWidth<80||maxWidth>224)throw Error('ความกว้างบทสนทนาไม่ถูกต้อง');const st={x:0,out:''};let line=0;const newline=()=>{st.out+=line>=1?'{SCROLL}':'\n';line=1;st.x=0;};for(const p of parts(text)){if(p[0]==='{'){st.out+=p;if(p==='{PARA}'){st.x=0;line=0;}else if(p==='{SCROLL}')st.x=0;else if(/\{(?:VAR|DYNAMIC):/i.test(p)){if(st.x&&st.x+48>maxWidth)newline();st.x+=48;}continue;}flowText(p,st,b,maxWidth,newline);}return st.out;}
 
 // Conservative per-screen limits. Shared text may have more than one caller; check the game too.
 function screen(e){if(e.linkMessageBox)return {width:208,lines:2,scroll:true,label:'ข้อความเชื่อมต่อ'};if(e.tableScroll)return {width:208,lines:2,scroll:true,label:'ข้อความเมนู'};if(e.textTable&&['menu','trainers'].includes(e.family))return {width:128,lines:e.tableLines||1,label:'ข้อความหน้าจอ'};if(e.family==='pokemon'&&e.role==='ข้อมูลโปเกเด็กซ์')return {width:224,lines:4,wrap:true,label:'โปเกเด็กซ์'};if(e.family==='dialogue')return {width:208,lines:2,scroll:true,label:'บทสนทนา'};if(e.role?.startsWith('คำอธิบาย'))return {width:e.moveTextExpansion==='contest'?119:e.moveTextExpansion==='advisory'?96:e.family==='abilities'?160:128,lines:e.family==='abilities'?2:3,wrap:true,label:'คำอธิบาย'};return {width:e.family==='moves'?88:e.family==='abilities'?104:e.family==='items'?112:128,lines:1,label:'ชื่อ / เมนู'};}
 function pixelMetrics(text,b){let width=0,max=0,lines=1,font=1,dynamic=false;const widths=[];for(const p of parts(text)){if(p[0]==='{'){const m=/^\{CTRL:06 ([0-9a-f]{2})\}$/i.exec(p);if(m)font=parseInt(m[1],16);if(p==='{PARA}'||p==='{SCROLL}'){widths.push(width);max=Math.max(max,width);width=0;lines++;}else if(/\{(?:VAR|DYNAMIC):/i.test(p)){width+=48;dynamic=true;}else if(/^\{(?:EXTRA|GLYPH|KEY):/i.test(p)){width+=16;dynamic=true;}continue;}for(const c of GAMEFONT.clusters(p)){if(c==='\n'){widths.push(width);max=Math.max(max,width);width=0;lines++;}else if(c!=='\r'){const f=PROFILE.fonts.find(f=>f.id===font)||PROFILE.fonts[0];width+=/[\u0e00-\u0e7f]/.test(c)?GAMEFONT.advance(c):b[f.widths+encode(c)[0]];}}}widths.push(width);return {width:Math.max(max,width),lines,widths,dynamic};}
-function layoutEntry(e,text,b){const spec=screen(e);if(spec.scroll)return wrapDialogue(text,b,spec.width);if(!spec.wrap)return text;let x=0,out='';for(const p of parts(text)){if(p[0]==='{'){out+=p;if(p==='{PARA}'||p==='{SCROLL}')x=0;else if(/\{(?:VAR|DYNAMIC):/i.test(p))x+=48;continue;}for(const c of GAMEFONT.clusters(p)){if(c==='\n'){out+=c;x=0;continue;}if(c==='\r')continue;const w=/[\u0e00-\u0e7f]/.test(c)?GAMEFONT.advance(c):b[PROFILE.fonts[0].widths+encode(c)[0]];if(x&&x+w>spec.width){out+='\n';x=0;}if(c===' '&&!x)continue;out+=c;x+=w;}}return out;}
+function layoutEntry(e,text,b){const spec=screen(e);if(spec.scroll)return wrapDialogue(text,b,spec.width);if(!spec.wrap)return text;const st={x:0,out:''},newline=()=>{st.out+='\n';st.x=0;};for(const p of parts(text)){if(p[0]==='{'){st.out+=p;if(p==='{PARA}'||p==='{SCROLL}')st.x=0;else if(/\{(?:VAR|DYNAMIC):/i.test(p))st.x+=48;continue;}flowText(p,st,b,spec.width,newline);}return st.out;}
 function checkEntry(e,text,b,allocator){if(e.verified&&e.translationChoice==='keep-source'&&text===e.source)return {laidOut:text,metrics:pixelMetrics(text,b),bytes:e.originalLength,spec:screen(e),issues:[]};const issues=[];if(!e.verified)issues.push({code:'unverified',severity:'error',message:'ตำแหน่งนี้ยังไม่รับรอง'});if(JSON.stringify(tokens(text))!==JSON.stringify(tokens(e.source)))issues.push({code:'tokens',severity:'error',message:'รหัสพิเศษหาย เพิ่ม หรือสลับลำดับ'});let laidOut=text,metrics,bytes,encodedBytes;try{laidOut=layoutEntry(e,text,b);metrics=pixelMetrics(laidOut,b);if(allocator){encodedBytes=allocator.encoded(laidOut);bytes=encodedBytes.length;}else bytes=measure(laidOut).bytes+1;const limit=e.capacity||e.maxBytes;if(limit&&bytes>limit)issues.push({code:'bytes',severity:'error',message:`ยาวเกินช่อง: ใช้ ${bytes}/${limit} ไบต์ ต้องย่อคำแปล`});const spec=screen(e);if(metrics.width>spec.width)issues.push({code:'width',severity:metrics.dynamic?'warning':'error',message:`กว้าง ${metrics.width}/${spec.width} พิกเซล${metrics.dynamic?' (ประมาณค่าข้อความแปรผัน)':''}`});if(!spec.scroll&&metrics.lines>spec.lines)issues.push({code:'lines',severity:'error',message:`ใช้ ${metrics.lines}/${spec.lines} บรรทัด`});if(e.role==='คำอธิบาย')issues.push({code:'caller',severity:'warning',message:'ตรวจฟอนต์และระยะบรรทัดในหน้าจอคำอธิบายจริงด้วย'});if(metrics.dynamic)issues.push({code:'dynamic',severity:'warning',message:'มีข้อความแปรผันหรือสัญลักษณ์ ต้องตรวจในเกม'});}catch(err){issues.push({code:'font',severity:'error',message:err.message});}return {laidOut,metrics,bytes,encodedBytes,spec:screen(e),issues};}
 function fontAllocator(b,canonical){
  const reserved=new Set();for(const e of canonical)for(const token of tokens(e.source)){const match=/^\{EXTRA:([0-9A-F]{2})\}|^\{CTRL:0C ([0-9A-F]{2})\}/i.exec(token);if(match)reserved.add(parseInt(match[1]||match[2],16));}const slots=[];for(const font of PROFILE.fonts)for(let id=0x110;id<0x1e0;id++)if(!reserved.has(id-256)&&blankGlyph(b,font,id))slots.push({font,id});const bank=new Map(),images=new Map(),assignments=[];const capacity=slots.length;

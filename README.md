@@ -2,6 +2,15 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Automatic byte/layout fitting (0.32.58)
+
+Thai text from AI Excel files often overflowed the game's byte budget and wrapped badly. Two root causes are fixed:
+
+- **Word-aware wrapping.** `RomCore.layoutEntry`/`wrapDialogue` used to break at any glyph cluster, cutting Thai words in half (“ถูกโจ⏎มตี”). Lines now break between words using `Intl.Segmenter('th')`; Latin words wrap on spaces, a word wider than the screen is still split, and control blocks are untouched. Without `Segmenter` the old behaviour remains.
+- **Automatic fitting (`text-fitter.js`).** Rows that still exceed bytes, pixel width or lines are fitted from least to most invasive, stopping as soon as the row fits and keeping a change only when it is a strict improvement: **ปลอดภัย** (soft line breaks and spaces, lossless), **กระชับ** (default; shorter wording with the same meaning such as ใช้งาน→ใช้, หลังจาก→หลัง, เพิ่มขึ้น→เพิ่ม, matched only on whole words so “ทำการบ้าน” is kept) and **เข้มข้น** (also sentence-final particles ครับ/ค่ะ/นะ, opt-in). Control codes are never edited and nothing is truncated; rows that cannot be fitted stay as errors.
+
+Lossless fitting runs automatically when an Excel file is reviewed. **ลองแก้อัตโนมัติ** (import dialog) and **แก้ไขอัตโนมัติทั้งหมด** (prebuild check) use the **ระดับการย่อ** selector, and both still stage changes only and undo as one step. `node tests/text-fitter.cjs` runs without a ROM using a synthetic one.
+
 ## Direct font cards and detailed prebuild fixes (0.32.57)
 
 The Font heading always opens the library. Cards contain edit/delete/default icons only when unlocked, a separate use action, pixel previews, compatibility and active status; the duplicate library/design tabs and right inspector are removed. Locked cards can still be reordered, with order/locks synced by the existing library manifest. Editing has a single back button, compact settings/save actions and a default-for-new-work action after saving the draft. Returning to edit the same font resumes its draft. Deletion uses a named confirmation popup; lock popups are removed.

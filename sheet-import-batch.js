@@ -1,7 +1,7 @@
 /* Review all selected workbooks before changing the project. */
 const SheetImportBatch=(()=>{
  function joinSoftLines(text){return text.replace(/(\S)[ \t]*\n[ \t]*(?=\S)/g,(match,last,offset,whole)=>last+(/[ก-๛]/.test(last)&&/[ก-๛]/.test(whole[offset+match.length])?'':' '));}
- function formatText(entry,text,rom){
+ function layoutText(entry,text,rom){
   const spec=RomCore.screen(entry);if(!entry.verified||spec.scroll||entry.translationChoice==='keep-source')return text;
   try{
    let result=RomCore.layoutEntry(entry,text,rom),metrics=RomCore.pixelMetrics(result,rom);
@@ -13,6 +13,15 @@ const SheetImportBatch=(()=>{
    }
    return result;
   }catch{return text;}
+ }
+ // Layout first, then (only for rows that still overflow) lossless spacing/reflow fixes by default.
+ function formatText(entry,text,rom,glossary,level='safe'){
+  const laid=layoutText(entry,text,rom);
+  if(typeof TextFitter==='undefined'||!entry.verified||entry.translationChoice==='keep-source')return laid;
+  try{
+   const fitted=TextFitter.fit(entry,laid,{check:value=>TranslationQuality.entry(entry,value,rom,glossary),level});
+   return fitted.changed?layoutText(entry,fitted.text,rom):laid;
+  }catch{return laid;}
  }
  function canonicalText(entry,text){
   const key=t=>t.replace(/[｛｝]/g,c=>c==='｛'?'{':'}').replace(/\s+/g,'').toUpperCase();
@@ -63,7 +72,7 @@ const SheetImportBatch=(()=>{
     progress.check();
     if(i===0||i%200===0||i%32===0&&performance.now()-yielded>=16){progress.combined(i,candidates.length);await new Promise(resolve=>setTimeout(resolve,0));yielded=performance.now();}
     const entry=candidates[i],change=changes.get(entry.id);
-    if(change&&!unsafe.has(entry.id)){const formatted=formatText({...entry,translationChoice:change.translationChoice},change.translation,rom);if(formatted!==change.translation){change.translation=formatted;formattedIds.add(entry.id);}}
+    if(change&&!unsafe.has(entry.id)){const formatted=formatText({...entry,translationChoice:change.translationChoice},change.translation,rom,project.glossary);if(formatted!==change.translation){change.translation=formatted;formattedIds.add(entry.id);}}
     const text=change?.translation||entry.translation;if(!text?.trim())continue;
     const checked=TranslationQuality.entry(change?{...entry,translationChoice:change.translationChoice}:entry,text,rom,project.glossary,allocator);
     if(change)result.entryChecks.push({id:entry.id,offset:entry.offset,category:entry.category,source:entry.source,bytes:checked.bytes,limit:entry.capacity||entry.maxBytes||null,originalLength:entry.originalLength,expanded:!!(entry.moveTextExpansion||entry.linkMessageBox),width:checked.metrics?.width,lines:checked.metrics?.lines,maxWidth:checked.spec.width,maxLines:checked.spec.lines,scroll:checked.spec.scroll,errors:checked.issues.filter(issue=>issue.severity==='error').length});
@@ -82,7 +91,7 @@ const SheetImportBatch=(()=>{
   result.errors=result.issues.filter(i=>i.severity==='error').length;
   result.warnings=result.issues.filter(i=>i.severity!=='error');progress.check();return result;
  }
- function candidates(entry,text,rom,glossary){
+ function candidates(entry,text,rom,glossary,level='compact'){
   const clean=canonicalText(entry,text).replace(/\r\n?/g,'\n').replace(/[\u200b\ufeff]/g,'').replace(/[ \t]+/g,' ').replace(/ *\n */g,'\n').trim();
   const values=[clean];
   if(entry.family==='menu')values.push(clean.replace(/กรุณารอสักครู่/g,'โปรดรอ').replace(/กรุณาเลือก/g,'เลือก').replace(/ทำการบันทึก/g,'บันทึก').replace(/ไม่สามารถที่จะ/g,'ไม่สามารถ').replace(/คุณต้องการที่จะ/g,'ต้องการ'));
@@ -90,7 +99,12 @@ const SheetImportBatch=(()=>{
   // Apply only user-supplied terminology, outside control-code blocks.
   const terms=(glossary||'').split('\n').map(line=>line.split('=')).filter(parts=>parts.length===2&&/^[A-Za-z][A-Za-z -]*$/.test(parts[0].trim())&&parts[1].trim());
   for(const value of [...values])values.push(value.split(/(\{[^}]*\})/g).map(part=>part.startsWith('{')?part:terms.reduce((out,[from,to])=>out.replace(new RegExp('\\b'+from.trim().replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','gi'),()=>to.trim()),part)).join(''));
-  return [...new Set(values.map(value=>formatText(entry,value,rom)))].filter(value=>value&&sameControls(entry,text,value));
+  // Byte/pixel/line overflow: least to most invasive fitting, each kept only if it improves the row.
+  if(typeof TextFitter!=='undefined'&&entry.verified){
+   const check=value=>TranslationQuality.entry(entry,value,rom,glossary);
+   for(const step of TextFitter.levels.slice(0,Math.max(0,TextFitter.levels.indexOf(level))+1)){try{values.push(TextFitter.fit(entry,clean,{check,level:step}).text);}catch{}}
+  }
+  return [...new Set(values.map(value=>formatText(entry,value,rom,glossary)))].filter(value=>value&&sameControls(entry,text,value));
  }
  async function repair(report,project,rom,edit,progress={check(){},combined(){}}){
   const result={...report,changes:report.changes.map(c=>({...c})),issues:report.issues.map(i=>({...i})),missing:(report.missing||[]).map(i=>({...i})),formatted:report.formatted||0};
@@ -106,14 +120,14 @@ const SheetImportBatch=(()=>{
    for(let i=0;i<result.changes.length;i++){
     progress.check();if(i%30===0){progress.combined(i,result.changes.length);await new Promise(resolve=>setTimeout(resolve,0));progress.check();}
     const change=result.changes[i],entry=byId.get(change.id);if(!entry||!problemIds.has(change.id)||blocked.has(change.id)||change.translationChoice==='keep-source')continue;
-    const alternatives=candidates(entry,change.translation,rom,project.glossary).filter(text=>text!==change.translation);if(!alternatives.length)continue;
+    const alternatives=candidates(entry,change.translation,rom,project.glossary,progress.level).filter(text=>text!==change.translation);if(!alternatives.length)continue;
     const score=text=>{const r=TranslationQuality.entry(entry,text,rom,project.glossary);return [r.issues.filter(i=>i.severity==='error').length,r.issues.filter(i=>i.severity!=='error').length,r.bytes||Infinity];};
     let best=score(change.translation),text=change.translation;
     for(const candidate of alternatives){const next=score(candidate);if(next[0]<best[0]||next[0]===best[0]&&(next[1]<best[1]||next[1]===best[1]&&next[2]<best[2])){best=next;text=candidate;if(!best[0]&&!best[1])break;}}
     if(text!==change.translation){change.translation=text;fixed++;}
    }
   }
-  await validate(result,project,rom,progress);result.repairMessage=edit?'ตรวจคำแก้แล้ว ดูผลล่าสุดด้านล่าง':`แก้อัตโนมัติ ${fixed} รายการ · จัดรูปแบบ ย่อคำสุภาพเมนู และใช้ศัพท์ที่กำหนด · ไม่ตัดเนื้อหาทิ้งหรือเดาตำแหน่งโค้ด`;return result;
+  await validate(result,project,rom,progress);result.repairMessage=edit?'ตรวจคำแก้แล้ว ดูผลล่าสุดด้านล่าง':`แก้อัตโนมัติ ${fixed} รายการ · จัดบรรทัดตามคำ ลดช่องว่าง ย่อคำให้กระชับตามระดับที่เลือก และใช้ศัพท์ที่กำหนด · ไม่ตัดเนื้อหาทิ้งหรือเดาตำแหน่งโค้ด`;return result;
  }
  return {review,formatText,repair,sameControls};
 })();

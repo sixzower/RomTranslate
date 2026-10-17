@@ -152,7 +152,7 @@ async function repairSheetImport(edit){
  const original=pendingSheet;sheetRepairing=true;const controls=Array.from($('sheetImportDialog').querySelectorAll('button,textarea')).map(node=>[node,node.disabled]);for(const [node]of controls)node.disabled=true;
  statusText('sheetRepairStatus','กำลังแก้และตรวจคำแปลซ้ำ…','pending');
  try{
-  const result=await SheetImportBatch.repair(original,project,rom,edit);
+  const result=await SheetImportBatch.repair(original,project,rom,edit,{check(){},combined(){},level:$('sheetFitLevel')?.value||'compact'});
   if(pendingSheet!==original||result.project!==project)return;
   try{result.parts=TranslationTasks.splitImport(result);}catch{result.parts=undefined;}
   pendingSheet=result;SheetImportResult.render(result,false,{onRepair:repairSheetImport});
@@ -209,7 +209,7 @@ $('qualityAutoFix').onclick=async()=>{
  const original=project,signature=JSON.stringify(project.entries),font=JSON.stringify(GameFont.data()),glossary=project.glossary;
  $('qualityAutoFix').disabled=true;
  try{
-  const result=await UiOperations.run('แก้ไขคำแปลอัตโนมัติ',(signal,onProgress)=>TranslationQuality.repairAsync(original,rom,{signal,onProgress}),{cancellable:true});
+  const result=await UiOperations.run('แก้ไขคำแปลอัตโนมัติ',(signal,onProgress)=>TranslationQuality.repairAsync(original,rom,{signal,onProgress,level:$('qualityFitLevel')?.value||'compact'}),{cancellable:true});
   if(project!==original||JSON.stringify(project.entries)!==signature||JSON.stringify(GameFont.data())!==font||project.glossary!==glossary)throw Error('งานหรือฟอนต์เปลี่ยนระหว่างตรวจ กรุณาตรวจใหม่ ยังไม่ได้แก้คำแปล');
   if(result.fixed){TranslationHistory.apply(project,result.updates,'แก้คำแปลอัตโนมัติก่อนสร้าง ROM');pendingBuild=null;save(true);render();}
   qualityReport=result.report;renderQualityReport();statusText('qualityRepairStatus',`แก้อัตโนมัติแล้ว ${result.fixed} รายการ · ยังต้องแก้ ${result.remaining} รายการ`+(result.remaining?' · กดไปแก้เพื่อย่อคำหรือตรวจรหัส':' · ตรวจในเกมอีกครั้งก่อนเผยแพร่'),result.remaining?'error':'success');
