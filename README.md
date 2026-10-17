@@ -2,6 +2,10 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Local save time beside autosave (0.32.54)
+
+The local save timestamp now sits beside the automatic-save status at the lower left. The upper right contains only the cloud backup status/time. Both timestamps still use their own confirmed local/cloud save data; this changes their placement without changing save intervals or sync behavior.
+
 ## Prebuild automatic repair and compact save status (0.32.53)
 
 **ตรวจคำแปลก่อนสร้าง ROM → แก้ไขอัตโนมัติ** reuses Excel import repair to fix excess manual line breaks, shorten supported polite menu phrases and apply user terminology. It preserves control-code order and keep-source entries, applies only improvements after whole-project validation and records a single undo operation. Remaining errors keep their Go to edit buttons; missing commands or arbitrary text shortening are never guessed. The operation is cancellable before committing changes and rejects stale project/font data. `tests/quality-autofix.cjs` verifies real-ROM line repair, retained unresolved errors, keep-source, undo and cancellation in source/standalone builds.
