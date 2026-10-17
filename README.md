@@ -2,6 +2,20 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Prebuild automatic repair and compact save status (0.32.53)
+
+**ตรวจคำแปลก่อนสร้าง ROM → แก้ไขอัตโนมัติ** reuses Excel import repair to fix excess manual line breaks, shorten supported polite menu phrases and apply user terminology. It preserves control-code order and keep-source entries, applies only improvements after whole-project validation and records a single undo operation. Remaining errors keep their Go to edit buttons; missing commands or arbitrary text shortening are never guessed. The operation is cancellable before committing changes and rejects stale project/font data. `tests/quality-autofix.cjs` verifies real-ROM line repair, retained unresolved errors, keep-source, undo and cancellation in source/standalone builds.
+
+Next-error navigation now shows its error as an inline toast rather than opening another blocking modal over the destination. The build-error popup’s edit action still opens the exact affected row.
+
+Two small lines at the upper right show local-save and cloud-backup times. The project revision moves to the lower-right status area, separately labelled from the website version; the top no longer repeats the restored project name and revision.
+
+## Minimal cloud project panel and readable header (0.32.53)
+
+The Cloud project dialog groups the latest cloud work, local/cloud backup status and two main actions: **บันทึกทั้งหมดตอนนี้** and **เปิดงานต่อ**. Connection and current-work captions distinguish the saved cloud project from the open project. Deletion stays under **จัดการโปรเจกต์**. Backup/resume logic is unchanged. In the font library, **จัดการคลาวด์ → Save Cloud** explains the occasional master-catalog override while keeping automatic sync separate from that action.
+
+The header's cloud status uses bright green/red text against its dark badge in either theme, and the red titlebar keeps the same vivid color in day and dark modes. Browser checks cover text contrast of at least 4.5:1 for all three connection states in both themes, preserved action icons, mobile layout and actual ROM/cloud continuation.
+
 ## Compact Save Cloud action (0.32.52)
 
 The font-library master-catalog button is now **Save Cloud**, with a 16px outline cloud icon and a tooltip explaining that it publishes this device's current library as the cloud master. The library note explains that, while connected, every explicit **บันทึกการแก้ไข** already triggers automatic cloud sync; Save Cloud is not required after each edit. The existing pending/retry behavior remains in place when disconnected or an upload fails. Drawing strokes remain a local draft until explicitly saved.

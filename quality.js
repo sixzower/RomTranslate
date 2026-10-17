@@ -9,6 +9,17 @@ async function auditAsync(project,rom,{signal,onProgress=()=>{}}={}){
  for(let i=0;i<entries.length;i++){if(i%25===0)await tick(i,entries.length);const e=entries[i],r=entry(e,e.translation,rom,project.glossary,allocator);for(const issue of r.issues)rows.push({id:e.id,offset:e.offset,category:e.category,source:e.source,translation:e.translation,...issue});}
  await tick(entries.length,entries.length);return {rows,errors:rows.filter(x=>x.severity==='error').length,warnings:rows.filter(x=>x.severity==='warning').length,font:{used:allocator.assignments.length,capacity:allocator.capacity,clusters:allocator.clusters.size,small:allocator.assignments.filter(a=>a.font.id===0).length}};
 }
+async function repairAsync(project,rom,{signal,onProgress=()=>{}}={}){
+ const check=()=>{if(signal?.aborted)throw new DOMException('ยกเลิกการแก้ไขแล้ว','AbortError');};
+ const before=await auditAsync(project,rom,{signal,onProgress}),ids=new Set(before.rows.map(r=>r.id));
+ const changes=project.entries.filter(e=>ids.has(e.id)&&e.verified&&e.translationChoice!=='keep-source').map(e=>({id:e.id,translation:e.translation,translationChoice:e.translationChoice||''}));
+ const result=await SheetImportBatch.repair({changes,issues:before.rows,missing:[],unchanged:0},project,rom,null,{check,combined:(completed,total)=>onProgress({phase:'audit',completed,total,message:`กำลังแก้คำแปล ${completed} / ${total} รายการ`})});check();
+ const count=(rows,id,severity)=>rows.filter(r=>r.id===id&&r.severity===severity).length,original=new Map(project.entries.map(e=>[e.id,e]));
+ const updates=result.changes.filter(c=>{const e=original.get(c.id);if(!e||c.translation===e.translation||JSON.stringify(RomCore.tokens(c.translation))!==JSON.stringify(RomCore.tokens(e.translation)))return false;const errors=count(result.issues,c.id,'error'),prior=count(before.rows,c.id,'error');return errors<prior||errors===prior&&count(result.issues,c.id,'warning')<count(before.rows,c.id,'warning');}).map(c=>({id:c.id,translation:c.translation}));
+ const byId=new Map(updates.map(c=>[c.id,c])),preview={...project,entries:project.entries.map(e=>byId.has(e.id)?{...e,...byId.get(e.id)}:e)};
+ const report=await auditAsync(preview,rom,{signal,onProgress});check();if(report.errors>before.errors)throw Error('ผลรวมยังไม่ปลอดภัย จึงยังไม่เปลี่ยนคำแปล กรุณาตรวจทีละรายการ');
+ return {updates,report,fixed:updates.length,remaining:new Set(report.rows.filter(r=>r.severity==='error').map(r=>r.id)).size};
+}
 function draw(canvas,text,rom,scale=3){const ctx=canvas.getContext('2d'),w=240,h=160;canvas.width=w*scale;canvas.height=h*scale;ctx.imageSmoothingEnabled=false;ctx.fillStyle='#f8f8f8';ctx.fillRect(0,0,canvas.width,canvas.height);let x=8,y=8;for(const part of text.match(/\{[^}]+\}|[^{}]+/g)||[]){if(part[0]==='{'){if(part==='{SCROLL}'||part==='{PARA}'){x=8;y+=18;}else if(/\{(?:VAR|DYNAMIC):/.test(part)){x+=48;}continue;}for(const c of GameFont.clusters(part)){if(c==='\n'){x=8;y+=18;continue;}if(c==='\r')continue;if(/[\u0e00-\u0e7f]/.test(c)){const g=GameFont.glyph(c);for(let yy=0;yy<16;yy++)for(let xx=0;xx<16;xx++)if(g.pixels[yy][xx]){ctx.fillStyle=g.pixels[yy][xx]===1?'#202830':'#a0a8b0';ctx.fillRect((x+xx)*scale,(y+yy)*scale,scale,scale);}x+=g.width;}else{const code=RomCore.encode(c)[0],f=RomCore.profile.fonts[0];for(let tile=0;tile<4;tile++)for(let yy=0;yy<8;yy++)for(let xx=0;xx<8;xx++){const v=rom[f.glyphs+code*64+tile*16+yy*2+(xx<4?1:0)]>>(6-(xx%4)*2)&3;if(v===1||v===2){ctx.fillStyle=v===1?'#202830':'#a0a8b0';ctx.fillRect((x+(tile&1)*8+xx)*scale,(y+(tile>>1)*8+yy)*scale,scale,scale);}}x+=rom[f.widths+code];}}}}
-return {entry,audit,auditAsync,draw};})();
+return {entry,audit,auditAsync,repairAsync,draw};})();
 if(typeof module!=='undefined')module.exports=TranslationQuality;

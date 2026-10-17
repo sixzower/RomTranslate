@@ -86,7 +86,7 @@ const SheetImportBatch=(()=>{
   for(const value of [...values])values.push(value.split(/(\{[^}]*\})/g).map(part=>part.startsWith('{')?part:terms.reduce((out,[from,to])=>out.replace(new RegExp('\\b'+from.trim().replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','gi'),()=>to.trim()),part)).join(''));
   return [...new Set(values.map(value=>formatText(entry,value,rom)))].filter(value=>value&&JSON.stringify(RomCore.tokens(value))===JSON.stringify(RomCore.tokens(text)));
  }
- async function repair(report,project,rom,edit){
+ async function repair(report,project,rom,edit,progress={check(){},combined(){}}){
   const result={...report,changes:report.changes.map(c=>({...c})),issues:report.issues.map(i=>({...i})),missing:(report.missing||[]).map(i=>({...i})),formatted:report.formatted||0};
   const byId=new Map(project.entries.map(e=>[e.id,e]));let fixed=0;
   if(edit){
@@ -98,7 +98,7 @@ const SheetImportBatch=(()=>{
    const problemIds=new Set(result.issues.map(i=>Number(i.id)));
    const blocked=new Set(result.issues.filter(i=>i.code==='identity'||i.code==='input').map(i=>Number(i.id)));
    for(let i=0;i<result.changes.length;i++){
-    if(i%30===0)await new Promise(resolve=>setTimeout(resolve,0));
+    progress.check();if(i%30===0){progress.combined(i,result.changes.length);await new Promise(resolve=>setTimeout(resolve,0));progress.check();}
     const change=result.changes[i],entry=byId.get(change.id);if(!entry||!problemIds.has(change.id)||blocked.has(change.id)||change.translationChoice==='keep-source')continue;
     const alternatives=candidates(entry,change.translation,rom,project.glossary).filter(text=>text!==change.translation);if(!alternatives.length)continue;
     const score=text=>{const r=TranslationQuality.entry(entry,text,rom,project.glossary);return [r.issues.filter(i=>i.severity==='error').length,r.issues.filter(i=>i.severity!=='error').length,r.bytes||Infinity];};
@@ -107,7 +107,7 @@ const SheetImportBatch=(()=>{
     if(text!==change.translation){change.translation=text;fixed++;}
    }
   }
-  await validate(result,project,rom);result.repairMessage=edit?'ตรวจคำแก้แล้ว ดูผลล่าสุดด้านล่าง':`แก้อัตโนมัติ ${fixed} รายการ · จัดรูปแบบ ย่อคำสุภาพเมนู และใช้ศัพท์ที่กำหนด · ไม่ตัดเนื้อหาทิ้งหรือเดาตำแหน่งโค้ด`;return result;
+  await validate(result,project,rom,progress);result.repairMessage=edit?'ตรวจคำแก้แล้ว ดูผลล่าสุดด้านล่าง':`แก้อัตโนมัติ ${fixed} รายการ · จัดรูปแบบ ย่อคำสุภาพเมนู และใช้ศัพท์ที่กำหนด · ไม่ตัดเนื้อหาทิ้งหรือเดาตำแหน่งโค้ด`;return result;
  }
  return {review,formatText,repair};
 })();

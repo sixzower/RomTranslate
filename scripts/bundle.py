@@ -26,7 +26,7 @@ html = (root / 'index.html').read_text()
 version = json.loads((root / 'package.json').read_text())['version']
 (root / 'release.json').write_text(json.dumps({'format':'RomTranslate release v1','version':version})+'\n')
 (root / 'release-info.js').write_text('const AppRelease='+json.dumps({'version':version})+';\n')
-html = re.sub(r' · รุ่น \d+\.\d+\.\d+</span>', ' · รุ่น ' + version + '</span>', html)
+html = re.sub(r' · (?:รุ่น|เว็บ) \d+\.\d+\.\d+</span>', ' · เว็บ ' + version + '</span>', html)
 # Version local assets so deployed HTML cannot silently reuse an old app module.
 html = re.sub(r'(src="(?!vendor/|coi-serviceworker)[^"?]+\.js)(?:\?[^"]*)?"', lambda m: m[1] + '?v=' + version + '"', html)
 html = re.sub(r'href="style\.css(?:\?[^"]*)?"', 'href="style.css?v=' + version + '"', html)
