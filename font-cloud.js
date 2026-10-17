@@ -109,7 +109,7 @@ const FontCloud=(()=>{
   if(busy){show('กำลังซิงก์คลังอยู่ · รอให้เสร็จแล้วกดอีกครั้ง');return false;}
   if(!hasCredentials()){open();show('เชื่อมคลังส่วนตัวก่อนบันทึก','error');return false;}
   const target=window.RomTranslateBridge?.project();if(!target){show('เปิด ROM ของงานที่จะบันทึกก่อน','error');return false;}
-  if(FontEditor.isDirty()){show('มีร่างฟอนต์ที่ยังไม่ได้บันทึก · กดบันทึกฟอนต์ก่อน เพื่อให้ไปด้วยครบ','error');return false;}
+  if(FontEditor.isDirty()){show('มีร่างฟอนต์ที่ยังไม่ได้บันทึก · กดบันทึกการแก้ไขฟอนต์ก่อน เพื่อให้ไปด้วยครบ','error');return false;}
   $('workSystemSave').disabled=true;let scope,stamp,bundle;
   const ok=await run(async()=>{
    show('กำลังบันทึกคลังฟอนต์และการตั้งค่า…');FontLibrarySync.remember();await syncFonts();if(lastReport.fonts.length)throw Error('คลังฟอนต์ยังส่งไม่ครบ · '+lastReport.fonts.map(f=>f.name+': '+f.message).join(' · '));

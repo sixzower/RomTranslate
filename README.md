@@ -2,6 +2,10 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Save font edits without applying (0.32.50)
+
+The pixel editor button is now **บันทึกการแก้ไข**. It durably saves the edited preset/version and draft without changing the active project font, GameFont renderer or PixelFont preview. Saved fonts remain available in the library and cloud; applying is an explicit **ใช้กับงานนี้** action. Help and margin/positioning guidance use the new wording. The editor regression verifies active renderers remain unchanged immediately after saving and after reload, that the preset survives reload, and that explicit application still reaches actual ROM output.
+
 ## One whole-system cloud save (0.32.49)
 
 The **โปรเจกต์ Cloud** dialog now presents **บันทึกทั้งระบบลงคลาวด์** and **เปิดงานต่อ**, with deletion under the management disclosure. Redundant refresh, ZIP download, separate retry and verification buttons were removed from this dialog. Opening it still reads current server status; verification runs as part of the unified save.
