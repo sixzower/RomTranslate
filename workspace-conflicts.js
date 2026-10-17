@@ -1,8 +1,8 @@
 /* Values are displayed as text; no game text or workbook content is executable. */
 const WorkspaceConflicts=(()=>{
  const $=id=>document.getElementById(id);let finish=null;
- const fields={translation:'คำแปล',speaker:'ผู้พูด',literal:'ร่างแปล',contextual:'ร่างตามบริบท',translationChoice:'การคงต้นฉบับ',font:'ฟอนต์',glossary:'คำศัพท์อ้างอิง',genre:'แนวเกม',progressCategories:'เป้าหมายการแปล'};
- const display=(key,value)=>key==='font'?(value?.name||'ฟอนต์ไม่ระบุชื่อ'):typeof value==='string'?value:JSON.stringify(value,null,2);
+ const fields={translation:'คำแปล',speaker:'ผู้พูด',literal:'ร่างแปล',contextual:'ร่างตามบริบท',translationChoice:'การคงต้นฉบับ',font:'ฟอนต์',fontLibrarySnapshot:'คลังฟอนต์ทั้งชุด',glossary:'คำศัพท์อ้างอิง',genre:'แนวเกม',progressCategories:'เป้าหมายการแปล'};
+ const display=(key,value)=>key==='fontLibrarySnapshot'?(value?.fonts||[]).map(row=>row.font.name+' · '+(value.manifest.items.find(i=>i.id===row.id)?.locked?'ล็อก':'แก้ไขได้')).join('\n')||'ไม่มีชุดคลังฟอนต์':key==='font'?(value?.name||'ฟอนต์ไม่ระบุชื่อ'):typeof value==='string'?value:JSON.stringify(value,null,2);
  function choose(error,project){
   if(finish)return Promise.resolve(null);const rows=$('workspaceConflictRows'),choices={},details=error.details||[],sources=new Map((project.entries||[]).map(e=>[String(e.id),e.source]));let page=0;
   function render(){rows.replaceChildren();for(const item of details.slice(page*50,(page+1)*50)){const section=document.createElement('section'),title=document.createElement('strong'),source=document.createElement('p'),[id,field]=item.key.split(':');title.textContent=(fields[field||id]||item.label)+(field?' · #'+id:'');source.textContent=sources.get(id)||'';section.append(title,source);

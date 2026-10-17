@@ -62,7 +62,7 @@ const WorkspaceSync=(()=>{
    if(l.source!==r.source||l.id!==r.id)throw Error('ข้อความต้นฉบับไม่ตรงกันที่ $'+Number(offset).toString(16));
    const row={...r};for(const f of fields)row[f]=choose(l[f]||'',r[f]||'',b?.[f]||'',!!base&&(!b||b.source===l.source),String(l.id),String(l.id)+':'+f);return row;
   });
-  for(const key of ['font','glossary','genre']){
+  for(const key of ['font','glossary','genre','fontLibrarySnapshot']){
    out[key]=choose(local[key],remote[key],base?.[key],!!base,key);
   }
   const goals=mergeGoals(local.progressCategories,remote.progressCategories,base?.progressCategories);

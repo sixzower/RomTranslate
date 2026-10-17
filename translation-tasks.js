@@ -25,6 +25,7 @@ const TranslationTasks = (() => {
     if (saved.workTasks?.some(t => t.entryIds.some(id => !ids.has(id)))) throw Error('งานค้างมีรหัสข้อความที่ไม่ตรงกับ ROM');
     for(const key of ['lastChangedAt','lastLocalSavedAt','lastLocalSavedChange','lastCloudSavedAt','cloudSavedChange','lastExportedAt','cloudPendingChange','cloudVerifiedAt','cloudVerifiedRevision','cloudVerifiedChange'])p[key]=Number.isFinite(saved[key])&&saved[key]>=0?saved[key]:undefined;
     p.excelImports=imports.merge(saved.excelImports);
+    p.fontLibrarySnapshot=saved.fontLibrarySnapshot?FontLibrarySync.validateBundle(saved.fontLibrarySnapshot):undefined;
     if(!progress.validSelection(saved.progressCategories))throw Error('ข้อมูลเป้าหมายงานแปลไม่ถูกต้อง');
     p.progressCategories=saved.progressCategories?.slice();
     p.viewState=validView(saved.viewState)?structuredClone(saved.viewState):undefined;
@@ -35,6 +36,7 @@ const TranslationTasks = (() => {
     if (!active(p)) p.activeWorkTask = null;
     p.cloudSyncPaused=saved.cloudSyncPaused===true;p.cloudAutosave = saved.cloudAutosave === true;p.cloudScope=typeof saved.cloudScope==='string'&&/^[a-f0-9]{64}$/.test(saved.cloudScope)?saved.cloudScope:undefined;
     p.cloudRomReady=saved.cloudRomReady===true;
+    const origin=saved.openedBackup;p.openedBackup=origin&&origin.workspaceId===saved.workspaceId&&typeof origin.name==='string'&&origin.name.length<=200&&Number.isSafeInteger(origin.revision)&&origin.revision>0&&Number.isFinite(origin.savedAt)&&origin.savedAt>=0?structuredClone(origin):undefined;
     p.cloudRevision = Number.isSafeInteger(saved.cloudRevision) && saved.cloudRevision >= 0 ? saved.cloudRevision : 0;
   }
   function ensure(p) {
@@ -77,7 +79,7 @@ const TranslationTasks = (() => {
     return {workspaceFormat: 'RomTranslate workspace v1', version: 2, title: p.title, romHash: p.romHash,
       workspaceId: p.workspaceId, workspaceName: p.workspaceName, cloudScope:p.cloudScope, cloudRevision:p.cloudRevision||0, cloudAutosave: p.cloudAutosave === true,cloudSyncPaused:p.cloudSyncPaused===true,
       viewState:validView(p.viewState)?structuredClone(p.viewState):undefined,glossary: p.glossary || '', genre: p.genre || '', font: structuredClone(p.font),
-      excelImports:imports.merge(p.excelImports),progressCategories: progress.selection(p), workTasks: structuredClone(p.workTasks), activeWorkTask: p.activeWorkTask || null,
+      fontLibrarySnapshot:p.fontLibrarySnapshot?structuredClone(p.fontLibrarySnapshot):undefined,excelImports:imports.merge(p.excelImports),progressCategories: progress.selection(p), workTasks: structuredClone(p.workTasks), activeWorkTask: p.activeWorkTask || null,
       entries: edited.map(e => ({id: e.id, romOffset: e.romOffset, source: e.source, translation: e.translation || '', speaker: e.speaker || '', literal: e.literal || '', contextual: e.contextual || '', translationChoice: e.translationChoice || ''})),
       history: structuredClone(p.history)};
   }
