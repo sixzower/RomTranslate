@@ -2,6 +2,10 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Compact Save Cloud action (0.32.52)
+
+The font-library master-catalog button is now **Save Cloud**, with a 16px outline cloud icon and a tooltip explaining that it publishes this device's current library as the cloud master. The library note explains that, while connected, every explicit **บันทึกการแก้ไข** already triggers automatic cloud sync; Save Cloud is not required after each edit. The existing pending/retry behavior remains in place when disconnected or an upload fails. Drawing strokes remain a local draft until explicitly saved.
+
 ## Choose this device's master font catalog (0.32.51)
 
 **ฟอนต์ → ใช้คลังเครื่องนี้เป็นหลักบนคลาวด์** explicitly publishes the entire current catalog (including names, primary, order, groups and locks), even if the vault already contains a different catalog. The selection is captured before sign-in, so signing in cannot replace it before publication. It persists until a successful acknowledged sync, and failed uploads retain it for retry. This works independently of having a ROM open. Font files cannot be recovered from a screenshot; the button must be pressed on the browser that has the desired font data.
