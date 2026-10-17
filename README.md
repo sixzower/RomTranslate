@@ -2,6 +2,10 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Separate overwrite and new preset actions (0.32.55)
+
+**แก้ไขฟอนต์** now provides **บันทึกการแก้ไข** to replace the selected font's visible library slot and **บันทึก Preset** to add a new font while preserving the original. A new preset keeps the entered name when unique, otherwise appends a numbered Preset suffix. Further edits target the newly saved preset. Clicking edit on a locked font shows a red popup with an outline padlock, while the editor’s duplicate lock message is removed. Both actions respect padlocks and preserve the active game font until explicitly applied; existing cloud sync handles either save.
+
 ## Local save time beside autosave (0.32.54)
 
 The local save timestamp now sits beside the automatic-save status at the lower left. The upper right contains only the cloud backup status/time. Both timestamps still use their own confirmed local/cloud save data; this changes their placement without changing save intervals or sync behavior.
