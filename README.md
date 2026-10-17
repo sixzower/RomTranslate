@@ -2,6 +2,14 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Direct font cards and detailed prebuild fixes (0.32.57)
+
+The Font heading always opens the library. Cards contain edit/delete/default icons only when unlocked, a separate use action, pixel previews, compatibility and active status; the duplicate library/design tabs and right inspector are removed. Locked cards can still be reordered, with order/locks synced by the existing library manifest. Editing has a single back button, compact settings/save actions and a default-for-new-work action after saving the draft. Returning to edit the same font resumes its draft. Deletion uses a named confirmation popup; lock popups are removed.
+
+Excel export adds a per-project choice to keep proper names in English (default, including where a Glossary names entry conflicts) or use Thai official/transliterated names. It updates both copied and workbook prompts, is retained in project snapshots and cloud merges, and does not add excluded name categories or rewrite old translations.
+
+Prebuild repair moves to the bottom of the report. It normalizes existing code spellings only against the original tokens, Unicode/whitespace and literal line breaks, reflows lines around preserved control blocks and shortens supported menu phrases. It never invents a missing variable or drops text to meet a limit. Each affected row offers editable Thai, source codes, live byte/pixel/line counts and save/recheck in place, with undo. Unsupported glyphs and semantic shortening remain explicit errors rather than falsely passing validation.
+
 ## Highlight the active font (0.32.56)
 
 The currently applied font is marked **กำลังใช้งาน** with green neon text, a pulsing indicator and a subtle card glow. The font header repeats the active status so it remains visible when the active project font is outside the current library/filter. Merely selecting a card does not change the active indicator. Light/dark colors preserve readability; reduced-motion disables the pulse.

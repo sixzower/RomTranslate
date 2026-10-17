@@ -20,3 +20,5 @@ result=reconcile(taskBase,{...taskBase,workTasks:[],activeWorkTask:null},taskBas
 const differentScope=structuredClone(remoteTasks);differentScope.workTasks[0].entryIds=[192];result=reconcile(localTasks,differentScope);assert.equal(result.workTasks[0].position,192);assert(Tasks.valid(result.workTasks));
 assert.throws(()=>reconcile({...localTasks,entries:[row(192,'ใหม่จากเครื่องแรก')]},{...remoteTasks,entries:[row(192,'ใหม่จากมือถือ')]}),/แก้ข้อมูลเดียวกันต่างกัน/);
 console.log('PASS primary ID adoption, 7,035 nonblank translations preserved, three-way disjoint edits, concurrent same-field conflict and ROM/source identity checks.');
+
+const namingBase={...base,namePolicy:"keep"},namingLocal={...local,namePolicy:"thai"},namingRemote={...remote,namePolicy:"keep"};assert.equal(reconcile(namingLocal,namingRemote,namingBase).namePolicy,"thai");

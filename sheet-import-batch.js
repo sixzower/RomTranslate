@@ -1,19 +1,25 @@
 /* Review all selected workbooks before changing the project. */
 const SheetImportBatch=(()=>{
+ function joinSoftLines(text){return text.replace(/(\S)[ \t]*\n[ \t]*(?=\S)/g,(match,last,offset,whole)=>last+(/[ก-๛]/.test(last)&&/[ก-๛]/.test(whole[offset+match.length])?'':' '));}
  function formatText(entry,text,rom){
-  const spec=RomCore.screen(entry);
-  if(!entry.verified||!spec.wrap||spec.scroll||/[{}]/.test(text)||entry.translationChoice==='keep-source')return text;
+  const spec=RomCore.screen(entry);if(!entry.verified||spec.scroll||entry.translationChoice==='keep-source')return text;
   try{
    let result=RomCore.layoutEntry(entry,text,rom),metrics=RomCore.pixelMetrics(result,rom);
    if(metrics.lines>spec.lines){
-    // Join only single manual line breaks; retain blank paragraphs and every word/code.
-    const joined=text.replace(/(\S)[ \t]*\n[ \t]*(?=\S)/g,(match,last,offset,whole)=>last+(/[\u0e00-\u0e7f]/.test(last)&&/[\u0e00-\u0e7f]/.test(whole[offset+match.length])?'':' '));
+    // Retain paragraph boundaries, control blocks and every word while reflowing soft line breaks.
+    const joined=text.split(/(\{[^}]*\})/g).map(part=>part.startsWith('{')?part:joinSoftLines(part)).join('');
     const candidate=RomCore.layoutEntry(entry,joined,rom),next=RomCore.pixelMetrics(candidate,rom);
     if(next.lines<metrics.lines&&next.width<=spec.width)result=candidate;
    }
    return result;
   }catch{return text;}
  }
+ function canonicalText(entry,text){
+  const key=t=>t.replace(/[｛｝]/g,c=>c==='｛'?'{':'}').replace(/\s+/g,'').toUpperCase();
+  const known=new Map(RomCore.tokens(entry.source).map(token=>[key(token),token]));
+  return text.normalize('NFC').replace(/\{[^{}]+\}|｛[^｛｝]+｝/g,token=>known.get(key(token))||token).split(/(\{[^}]*\})/g).map(part=>part.startsWith('{')?part:part.replace(/\\n/g,'\n').replace(/\u00a0/g,' ').replace(/[“”]/g,'"').replace(/[‘’]/g,"'")).join('');
+ }
+ function sameControls(entry,before,after){const tokens=JSON.stringify(RomCore.tokens(after));return tokens===JSON.stringify(RomCore.tokens(before))||tokens===JSON.stringify(RomCore.tokens(entry.source));}
  async function review(files,project,rom,progress){
   if(files.length>100)throw Error('เลือกได้ครั้งละไม่เกิน 100 ไฟล์');
   if(files.reduce((n,f)=>n+f.size,0)>128*1024*1024)throw Error('ขนาดไฟล์รวมต้องไม่เกิน 128 MB');
@@ -77,14 +83,14 @@ const SheetImportBatch=(()=>{
   result.warnings=result.issues.filter(i=>i.severity!=='error');progress.check();return result;
  }
  function candidates(entry,text,rom,glossary){
-  const clean=text.replace(/\r\n?/g,'\n').replace(/[\u200b\ufeff]/g,'').replace(/[ \t]+/g,' ').replace(/ *\n */g,'\n').trim();
+  const clean=canonicalText(entry,text).replace(/\r\n?/g,'\n').replace(/[\u200b\ufeff]/g,'').replace(/[ \t]+/g,' ').replace(/ *\n */g,'\n').trim();
   const values=[clean];
-  if(entry.family==='menu')values.push(clean.replace(/กรุณารอสักครู่/g,'โปรดรอ').replace(/กรุณาเลือก/g,'เลือก'));
-  if(RomCore.screen(entry).wrap&&!/[{}]/.test(clean))values.push(clean.replace(/([^\n])\n(?=[^\n])/g,'$1 '));
+  if(entry.family==='menu')values.push(clean.replace(/กรุณารอสักครู่/g,'โปรดรอ').replace(/กรุณาเลือก/g,'เลือก').replace(/ทำการบันทึก/g,'บันทึก').replace(/ไม่สามารถที่จะ/g,'ไม่สามารถ').replace(/คุณต้องการที่จะ/g,'ต้องการ'));
+  if(!RomCore.screen(entry).scroll)values.push(clean.split(/(\{[^}]*\})/g).map(part=>part.startsWith('{')?part:joinSoftLines(part)).join(''));
   // Apply only user-supplied terminology, outside control-code blocks.
   const terms=(glossary||'').split('\n').map(line=>line.split('=')).filter(parts=>parts.length===2&&/^[A-Za-z][A-Za-z -]*$/.test(parts[0].trim())&&parts[1].trim());
   for(const value of [...values])values.push(value.split(/(\{[^}]*\})/g).map(part=>part.startsWith('{')?part:terms.reduce((out,[from,to])=>out.replace(new RegExp('\\b'+from.trim().replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','gi'),()=>to.trim()),part)).join(''));
-  return [...new Set(values.map(value=>formatText(entry,value,rom)))].filter(value=>value&&JSON.stringify(RomCore.tokens(value))===JSON.stringify(RomCore.tokens(text)));
+  return [...new Set(values.map(value=>formatText(entry,value,rom)))].filter(value=>value&&sameControls(entry,text,value));
  }
  async function repair(report,project,rom,edit,progress={check(){},combined(){}}){
   const result={...report,changes:report.changes.map(c=>({...c})),issues:report.issues.map(i=>({...i})),missing:(report.missing||[]).map(i=>({...i})),formatted:report.formatted||0};
@@ -109,7 +115,7 @@ const SheetImportBatch=(()=>{
   }
   await validate(result,project,rom,progress);result.repairMessage=edit?'ตรวจคำแก้แล้ว ดูผลล่าสุดด้านล่าง':`แก้อัตโนมัติ ${fixed} รายการ · จัดรูปแบบ ย่อคำสุภาพเมนู และใช้ศัพท์ที่กำหนด · ไม่ตัดเนื้อหาทิ้งหรือเดาตำแหน่งโค้ด`;return result;
  }
- return {review,formatText,repair};
+ return {review,formatText,repair,sameControls};
 })();
 
 if(typeof module!=="undefined")module.exports=SheetImportBatch;

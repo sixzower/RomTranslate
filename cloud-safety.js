@@ -29,7 +29,7 @@ const CloudSafety=(()=>{
  }
  async function manifest(p){
   const entries=(p.entries||[]).filter(e=>['translation','speaker','literal','contextual','translationChoice'].some(k=>e[k])).map(e=>({id:e.id,source:e.source,translation:e.translation||'',speaker:e.speaker||'',literal:e.literal||'',contextual:e.contextual||'',choice:e.translationChoice||''})).sort((a,b)=>a.id-b.id);
-  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(canonical({rom:p.romHash,entries,font:p.font,fontLibrary:p.fontLibrarySnapshot,goals:[...(p.progressCategories||[])].sort()})));
+  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(canonical({rom:p.romHash,entries,font:p.font,fontLibrary:p.fontLibrarySnapshot,goals:[...(p.progressCategories||[])].sort(),namePolicy:p.namePolicy||'keep'})));
   return {digest:[...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join(''),translations:entries.filter(e=>e.translation.trim()||e.choice==='keep-source').length,font:p.font?.name||'ฟอนต์เริ่มต้น',goals:(p.progressCategories||[]).length};
  }
  return {canonical,samePayload,putConfirmed,withWriter,manifest};
