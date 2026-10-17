@@ -2,6 +2,14 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Choose this device's master font catalog (0.32.51)
+
+**ฟอนต์ → ใช้คลังเครื่องนี้เป็นหลักบนคลาวด์** explicitly publishes the entire current catalog (including names, primary, order, groups and locks), even if the vault already contains a different catalog. The selection is captured before sign-in, so signing in cannot replace it before publication. It persists until a successful acknowledged sync, and failed uploads retain it for retry. This works independently of having a ROM open. Font files cannot be recovered from a screenshot; the button must be pressed on the browser that has the desired font data.
+
+Saving an editor draft now replaces its source's visible library slot with the new immutable content version, retaining its order, group and primary role. Old data stays available to an already-open project and historical backups, but is excluded from the current catalog on every synced device. Locks still require unlocking before editing; a saved edit remains unlocked until explicitly locked again. Editing another preset or explicitly cloning/importing a font is still separate. Saving does not apply the new font, and reload preserves the last active project font even when its library slot has a newer version. Other devices receive the latest catalog on sync/focus/reconnect; this does not introduce a continuous realtime connection or silently change their active project font.
+
+Validation: `tests/font-master.cjs` starts with a different cloud catalog, publishes five curated locked fonts across sign-in, replaces one font in place, checks order/primary/locks and cross-browser updates without a sixth card, and verifies the active renderer survives save/reload unchanged. Existing editor/ROM and library migration checks cover the surrounding flows.
+
 ## Save font edits without applying (0.32.50)
 
 The pixel editor button is now **บันทึกการแก้ไข**. It durably saves the edited preset/version and draft without changing the active project font, GameFont renderer or PixelFont preview. Saved fonts remain available in the library and cloud; applying is an explicit **ใช้กับงานนี้** action. Help and margin/positioning guidance use the new wording. The editor regression verifies active renderers remain unchanged immediately after saving and after reload, that the preset survives reload, and that explicit application still reaches actual ROM output.
