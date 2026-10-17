@@ -2,6 +2,10 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Highlight the active font (0.32.56)
+
+The currently applied font is marked **กำลังใช้งาน** with green neon text, a pulsing indicator and a subtle card glow. The font header repeats the active status so it remains visible when the active project font is outside the current library/filter. Merely selecting a card does not change the active indicator. Light/dark colors preserve readability; reduced-motion disables the pulse.
+
 ## Separate overwrite and new preset actions (0.32.55)
 
 **แก้ไขฟอนต์** now provides **บันทึกการแก้ไข** to replace the selected font's visible library slot and **บันทึก Preset** to add a new font while preserving the original. A new preset keeps the entered name when unique, otherwise appends a numbered Preset suffix. Further edits target the newly saved preset. Clicking edit on a locked font shows a red popup with an outline padlock, while the editor’s duplicate lock message is removed. Both actions respect padlocks and preserve the active game font until explicitly applied; existing cloud sync handles either save.
