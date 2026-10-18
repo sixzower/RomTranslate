@@ -186,10 +186,23 @@ async function saveQualityCorrection(entry,text,baseline){
   TranslationHistory.apply(project,[{id:entry.id,translation:text,translationChoice:''}],'แก้คำแปลจากหน้าตรวจก่อนสร้าง');pendingBuild=null;save(true);render();qualityReport=report;renderQualityReport();const errors=report.rows.filter(r=>r.id===entry.id&&r.severity==='error').length;statusText('qualityRepairStatus',errors?'บันทึกคำแก้แล้ว · แถวนี้ยังมีข้อผิดพลาด '+errors+' จุด ดูรายละเอียดและย่อต่อได้':'บันทึกคำแก้แล้ว · แถวนี้ผ่านเงื่อนไขเกม',errors?'error':'success');
  }catch(e){statusText('qualityRepairStatus',e.message,e.name==='AbortError'?'info':'error');}
 }
+const ERROR_LABELS={bytes:'ไบต์เกิน',width:'กว้างเกิน',lines:'บรรทัดเกิน',tokens:'รหัสหาย/สลับ',font:'อักขระที่ ROM ไม่รองรับ',unverified:'ตำแหน่งไม่รับรอง'};
+function errorBreakdown(rows){const ids=new Map();for(const row of rows)if(row.severity==='error'){if(!ids.has(row.code))ids.set(row.code,new Set());ids.get(row.code).add(row.id);}return [...ids].sort((x,y)=>y[1].size-x[1].size).map(([code,set])=>`${ERROR_LABELS[code]||code} ${set.size} แถว`).join(' · ')||'ไม่มี';}
+const SHORTEN_CODES=new Set(['bytes','width','lines']);
+async function exportShortenSheet(){
+ if(!project||!qualityReport)return;
+ const wanted=new Map();for(const row of qualityReport.rows)if(row.severity==='error'&&SHORTEN_CODES.has(row.code)){const item=wanted.get(row.id)||[];item.push(row.message);wanted.set(row.id,item);}
+ const entries=project.entries.filter(e=>wanted.has(e.id)&&e.translation?.trim()&&e.verified);
+ if(!entries.length){statusText('qualityRepairStatus','ไม่มีแถวที่ไบต์/ความกว้าง/บรรทัดเกินให้ส่งออก','info');return;}
+ const shorten=new Map(entries.map(e=>[e.id,{translation:e.translation,over:wanted.get(e.id).join(' · ')}]));
+ const bytes=await TranslationSheet.exportXlsx(project,entries.map(e=>({...e,translation:'',translationChoice:''})),'ย่อแถวเกินกรอบ',null,{shorten});
+ download(new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),TranslationSheet.fileNames(project,'ย่อแถวเกินกรอบ',null).source);
+ statusText('qualityRepairStatus',`ส่งออก ${entries.length} แถวให้ AI ย่อแล้ว · วางคำสั่งจากชีต Prompt แล้วนำไฟล์ [แปลแล้ว] กลับมานำเข้า ระบบจะตรวจและแก้ซ้ำให้`,'success');
+}
 function renderQualityReport(){
  const grouped=new Map();for(const issue of qualityReport.rows){if(!grouped.has(issue.id))grouped.set(issue.id,[]);grouped.get(issue.id).push(issue);}
  $('qualitySummary').textContent=`พบ ${grouped.size} ข้อความที่ควรตรวจ · ข้อผิดพลาด ${qualityReport.errors} จุด · ควรตรวจในเกม ${qualityReport.warnings} จุด · ฟอนต์ ${qualityReport.font.used}/${qualityReport.font.capacity}`;
- $('qualitySummary').dataset.kind=qualityReport.errors?'error':'success';$('qualityAutoFix').disabled=!qualityReport.rows.length;
+ $('qualitySummary').dataset.kind=qualityReport.errors?'error':'success';$('qualityAutoFix').disabled=!qualityReport.rows.length;$('qualityShorten').disabled=!qualityReport.rows.some(r=>r.severity==='error'&&SHORTEN_CODES.has(r.code));
  $('qualityRows').replaceChildren();const entries=new Map(project.entries.map(e=>[e.id,e]));
  for(const [id,issues]of [...grouped].slice(0,300)){
   const entry=entries.get(id);if(!entry)continue;const block=document.createElement('section');block.className='quality-entry';block.dataset.qualityId=String(id);const heading=document.createElement('strong');heading.textContent=`#${id} · ${entry.offset} · ${entry.category}`;
@@ -212,12 +225,12 @@ $('qualityAutoFix').onclick=async()=>{
   const result=await UiOperations.run('แก้ไขคำแปลอัตโนมัติ',(signal,onProgress)=>TranslationQuality.repairAsync(original,rom,{signal,onProgress,level:$('qualityFitLevel')?.value||'compact'}),{cancellable:true});
   if(project!==original||JSON.stringify(project.entries)!==signature||JSON.stringify(GameFont.data())!==font||project.glossary!==glossary)throw Error('งานหรือฟอนต์เปลี่ยนระหว่างตรวจ กรุณาตรวจใหม่ ยังไม่ได้แก้คำแปล');
   if(result.fixed){TranslationHistory.apply(project,result.updates,'แก้คำแปลอัตโนมัติก่อนสร้าง ROM');pendingBuild=null;save(true);render();}
-  qualityReport=result.report;renderQualityReport();statusText('qualityRepairStatus',`แก้อัตโนมัติแล้ว ${result.fixed} รายการ · ยังต้องแก้ ${result.remaining} รายการ`+(result.remaining?' · กดไปแก้เพื่อย่อคำหรือตรวจรหัส':' · ตรวจในเกมอีกครั้งก่อนเผยแพร่'),result.remaining?'error':'success');
+  qualityReport=result.report;renderQualityReport();statusText('qualityRepairStatus',`แก้อัตโนมัติแล้ว ${result.fixed} รายการ · ยังต้องแก้ ${result.remaining} รายการ`+(result.remaining?` · เหลือ: ${errorBreakdown(result.report.rows)} · แก้เองด้านบน หรือส่งออก Excel ให้ AI ย่อ`:' · ตรวจในเกมอีกครั้งก่อนเผยแพร่'),result.remaining?'error':'success');
  }catch(e){statusText('qualityRepairStatus',e.message,e.name==='AbortError'?'info':'error');}
  finally{$('qualityAutoFix').disabled=!qualityReport?.rows.length;}
 };
 async function issueDownload(rows){const bytes=await TranslationSheet.exportIssues(rows);download(new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),'romtranslate-issues.xlsx');}
-$('qualityReport').onclick=()=>issueDownload(qualityReport?.rows||[]).catch(e=>toast(e.message));$('qualityClose').onclick=()=>$('qualityDialog').close();$('sheetReport').onclick=()=>issueDownload(pendingSheet?SheetImportResult.rows(pendingSheet):[]).catch(e=>toast(e.message));$('nativePreview').onchange=preview;historyControls();
+$('qualityShorten').onclick=()=>exportShortenSheet().catch(e=>statusText('qualityRepairStatus',e.message,'error'));$('qualityReport').onclick=()=>issueDownload(qualityReport?.rows||[]).catch(e=>toast(e.message));$('qualityClose').onclick=()=>$('qualityDialog').close();$('sheetReport').onclick=()=>issueDownload(pendingSheet?SheetImportResult.rows(pendingSheet):[]).catch(e=>toast(e.message));$('nativePreview').onchange=preview;historyControls();
 // Pointer capture supports mouse and touch; keyboard arrows offer the same resize action.
 function bottomDock({box,grip,toggle,content,key,initial,min,max,collapsedHeight}){
  const panel=$(box),handle=$(grip),button=$(toggle);let height=initial,collapsed=false,drag=null;

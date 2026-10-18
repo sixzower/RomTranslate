@@ -19,14 +19,14 @@ const SheetImportBatch=(()=>{
   const laid=layoutText(entry,text,rom);
   if(typeof TextFitter==='undefined'||!entry.verified||entry.translationChoice==='keep-source')return laid;
   try{
-   const fitted=TextFitter.fit(entry,laid,{check:value=>TranslationQuality.entry(entry,value,rom,glossary),level});
+   const fitted=TextFitter.fit(entry,laid,{check:value=>TranslationQuality.entry(entry,value,rom,glossary),level,glossary});
    return fitted.changed?layoutText(entry,fitted.text,rom):laid;
   }catch{return laid;}
  }
  function canonicalText(entry,text){
   const key=t=>t.replace(/[｛｝]/g,c=>c==='｛'?'{':'}').replace(/\s+/g,'').toUpperCase();
   const known=new Map(RomCore.tokens(entry.source).map(token=>[key(token),token]));
-  return text.normalize('NFC').replace(/\{[^{}]+\}|｛[^｛｝]+｝/g,token=>known.get(key(token))||token).split(/(\{[^}]*\})/g).map(part=>part.startsWith('{')?part:part.replace(/\\n/g,'\n').replace(/\u00a0/g,' ').replace(/[“”]/g,'"').replace(/[‘’]/g,"'")).join('');
+  return text.normalize('NFC').replace(/\{[^{}]+\}|｛[^｛｝]+｝/g,token=>known.get(key(token))||token).split(/(\{[^}]*\})/g).map(part=>part.startsWith('{')?part:part.replace(/\\n/g,'\n').replace(/\u00a0/g,' ').replace(/[’‘]/g,"'").replace(/"/g,(c,i,whole)=>!i||/[\s(\[{“‘]/.test(whole[i-1])?'“':'”')).join('');
  }
  function sameControls(entry,before,after){const tokens=JSON.stringify(RomCore.tokens(after));return tokens===JSON.stringify(RomCore.tokens(before))||tokens===JSON.stringify(RomCore.tokens(entry.source));}
  async function review(files,project,rom,progress){
@@ -102,7 +102,7 @@ const SheetImportBatch=(()=>{
   // Byte/pixel/line overflow: least to most invasive fitting, each kept only if it improves the row.
   if(typeof TextFitter!=='undefined'&&entry.verified){
    const check=value=>TranslationQuality.entry(entry,value,rom,glossary);
-   for(const step of TextFitter.levels.slice(0,Math.max(0,TextFitter.levels.indexOf(level))+1)){try{values.push(TextFitter.fit(entry,clean,{check,level:step}).text);}catch{}}
+   for(const step of TextFitter.levels.slice(0,Math.max(0,TextFitter.levels.indexOf(level))+1)){try{values.push(TextFitter.fit(entry,clean,{check,level:step,glossary}).text);}catch{}}
   }
   return [...new Set(values.map(value=>formatText(entry,value,rom,glossary)))].filter(value=>value&&sameControls(entry,text,value));
  }

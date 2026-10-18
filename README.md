@@ -2,6 +2,18 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Glossary fixes and update confirmation (0.32.60)
+
+**แก้ไขอัตโนมัติทั้งหมด** and the Excel import repair now also fix glossary warnings such as “คำศัพท์ Trainer ควรเป็น เทรนเนอร์”: when the source contains the glossary's English term and the Thai text uses a known variant (ผู้ฝึกโปเกมอน, โปเกม่อน, ไอเทม, …), the variant is replaced by the glossary's Thai word. Only whole words from a built-in variant list are swapped; unknown wording is never guessed, and a swap is kept only if it removes the warning without adding errors.
+
+After the page reloads into a newer build, a banner states **อัปเดตเสร็จแล้ว · ตอนนี้ใช้รุ่น x.y.z (จากรุ่น …)** (remembered per browser), and the “มีเว็บรุ่นใหม่” banner also shows the running version. `tests/release-version.cjs` fails when `package.json`, `release.json`, `release-info.js`, the “เว็บ x.y.z” label, versioned asset URLs, README or the announcement are out of step, so every change must ship a new version (see `CLAUDE.md`).
+
+## Fix more prebuild errors automatically (0.32.59)
+
+**แก้ไขอัตโนมัติทั้งหมด** now also repairs the blocking errors that were previously left to manual work: characters the ROM font cannot draw (straight `"`, `—`, `~`, Thai digits, emoji, full-width forms → the nearest supported glyph, only when a safe replacement exists), control codes the AI dropped (leading/trailing codes, and `{PARA}`/`{SCROLL}` when the line count matches exactly; a lost mid-sentence `{VAR:..}` is never guessed), `...` → `…`, and more whole-word concise wording. Excel normalization no longer converts curly quotes to straight `"`, which the game cannot display.
+
+After a run the status lists what remains by cause (e.g. “ไบต์เกิน 120 แถว · รหัสหาย 8 แถว”). **ส่งแถวที่ยังเกินให้ AI ย่อ (Excel)** exports only the rows still over their byte/width/line limit with `current_translation`, `over_by` and a shortening prompt (including how bytes are counted); importing the returned file runs the same automatic fitting again. Rows needing real rewording or a missing in-sentence code remain explicit errors. Release rule for contributors: see `CLAUDE.md` (every change bumps the version).
+
 ## Automatic byte/layout fitting (0.32.58)
 
 Thai text from AI Excel files often overflowed the game's byte budget and wrapped badly. Two root causes are fixed:

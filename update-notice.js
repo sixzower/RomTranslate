@@ -4,7 +4,7 @@ const UpdateNotice=(()=>{
  const newer=(a,b)=>{const x=String(a).split('.').map(Number),y=String(b).split('.').map(Number);if(x.length!==3||y.length!==3||[...x,...y].some(n=>!Number.isSafeInteger(n)||n<0))return false;for(let i=0;i<3;i++){if(x[i]!==y[i])return x[i]>y[i];}return false;};
  async function check(){
   if(checking||!/^https?:$/.test(location.protocol)||!navigator.onLine||document.hidden||Date.now()-lastCheck<60000)return;checking=true;lastCheck=Date.now();
-  try{const url=new URL(location.pathname.endsWith('/download/index.html')?'../release.json':'release.json',location.href),response=await fetch(url,{cache:'no-store'});if(!response.ok)return;const data=await response.json();if(data.format!=='RomTranslate release v1'||!newer(data.version,AppRelease.version))return;latest=data.version;$('updateMessage').textContent='มีเว็บรุ่นใหม่ '+latest;$('updateBanner').hidden=false;}catch{}finally{checking=false;}
+  try{const url=new URL(location.pathname.endsWith('/download/index.html')?'../release.json':'release.json',location.href),response=await fetch(url,{cache:'no-store'});if(!response.ok)return;const data=await response.json();if(data.format!=='RomTranslate release v1'||!newer(data.version,AppRelease.version))return;latest=data.version;$('updateApply').hidden=false;$('updateMessage').textContent='มีเว็บรุ่นใหม่ '+latest+' (ตอนนี้ใช้รุ่น '+AppRelease.version+')';$('updateBanner').hidden=false;}catch{}finally{checking=false;}
  }
  async function apply(){
   if(!latest)return;const button=$('updateApply');button.disabled=true;
@@ -15,7 +15,12 @@ const UpdateNotice=(()=>{
    const next=new URL(location.href);next.searchParams.set('v',latest);location.assign(next.href);
   }catch(e){$('updateMessage').textContent=e.message;}finally{button.disabled=false;}
  }
- $('updateApply').onclick=apply;$('updateDismiss').onclick=()=>$('updateBanner').hidden=true;
+ // After an update finishes, tell the user which version they are now running.
+ function announceUpdated(){
+  try{const key='romtranslate-last-version',previous=localStorage.getItem(key);localStorage.setItem(key,AppRelease.version);
+   if(previous&&previous!==AppRelease.version&&newer(AppRelease.version,previous)){$('updateApply').hidden=true;$('updateMessage').textContent='อัปเดตเสร็จแล้ว · ตอนนี้ใช้รุ่น '+AppRelease.version+' (จากรุ่น '+previous+')';$('updateBanner').hidden=false;$('updateBanner').dataset.kind='updated';}}catch{}
+ }
+ $('updateApply').onclick=apply;$('updateDismiss').onclick=()=>{$('updateBanner').hidden=true;delete $('updateBanner').dataset.kind;};announceUpdated();
  window.addEventListener('focus',check);setInterval(check,15*60*1000);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',check,{once:true});else check();
- return {check,apply,newer};
+ return {check,apply,newer,announceUpdated};
 })();

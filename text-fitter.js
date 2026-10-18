@@ -49,12 +49,92 @@ const TextFitter=(()=>{
   ['ตนเอง',/ตนเอง/g,'ตน'],
   ['กรุณารอสักครู่',/กรุณารอสักครู่/g,'โปรดรอ'],
   ['กรุณา',/กรุณา/g,'โปรด'],
+  ['เพียงแค่',/เพียงแค่/g,'แค่'],
+  ['ในเวลาเดียวกัน',/ในเวลาเดียวกัน/g,'พร้อมกัน'],
+  ['ประสบความสำเร็จ',/ไม่ประสบความสำเร็จ|ประสบความสำเร็จ/g,m=>m.startsWith('ไม่')?'ล้มเหลว':'สำเร็จ'],
+  ['ให้ความช่วยเหลือ',/ให้ความช่วยเหลือ/g,'ช่วย'],
+  ['เกิดขึ้น',/เกิดขึ้น/g,'เกิด'],
+  ['ปรากฏขึ้น',/ปรากฏขึ้น/g,'ปรากฏ'],
+  ['ต้องการจะ',/ต้องการจะ/g,'ต้องการ'],
+  ['อยากจะ',/อยากจะ/g,'อยาก'],
+  ['โดยปกติแล้ว',/โดยปกติแล้ว|โดยทั่วไป/g,m=>m==='โดยทั่วไป'?'ทั่วไป':'ปกติ'],
+  ['ด้วยเช่นกัน',/ด้วยเช่นกัน/g,'ด้วย'],
+  ['อย่าง+คำคุณศัพท์',/อย่าง(?=แน่นอน|ชัดเจน|สมบูรณ์|เต็มที่|ปลอดภัย|ง่ายดาย|ราบรื่น)/g,''],
  ];
  // Particles are matched as whole words (Intl.Segmenter), so "คะแนน" and "ครัว" are safe.
  const POLITE=[
   ['คำลงท้าย',/นะครับ|นะคะ|นะค่ะ|นะจ๊ะ|ครับ|ค่ะ|คะ|จ้ะ|จ๊ะ|จ้า/g,''],
  ];
 
+ // Characters the game font cannot draw, with the nearest supported replacement.
+ const GLYPH_MAP={'’':"'",'—':'-','–':'-','―':'-','−':'-','~':'-','〜':'-','～':'-','[':'(',']':')','【':'(','】':')','「':'“','」':'”','『':'“','』':'”','*':'','#':'','_':' ','|':' ','\\':'/','‼':'!!','⁉':'!?','♪':'','♥':'','★':'','☆':'','※':'','\u00a0':' ','\u3000':' ','๏':'','๚':'','๛':''};
+ function substituteChar(c,previous){
+  if(/[๐-๙]/.test(c))return String.fromCharCode(c.charCodeAt(0)-0x0e50+48);
+  if(c==='"')return !previous||/[\s(\[{“‘]/.test(previous)?'“':'”';
+  if(Object.hasOwn(GLYPH_MAP,c))return GLYPH_MAP[c];
+  const folded=c.normalize('NFKC');if(folded!==c&&folded)return folded;
+  if(/\p{Extended_Pictographic}|[\ufe0f\u200d\u20e3\u200b-\u200f]/u.test(c))return '';
+  return null;
+ }
+ function replaceGlyph(text,target){
+  const out=[];let previous='';
+  for(const part of text.split(/(\{[^}]*\})/g)){
+   if(part.startsWith('{')){out.push(part);previous='}';continue;}
+   let piece='';for(const c of part){if(c===target||c.length===2&&c[0]===target){const r=substituteChar(c,previous);if(r===null)return null;piece+=r;if(r)previous=r.at(-1);}else{piece+=c;previous=c;}}out.push(piece);
+  }
+  return out.join('');
+ }
+ // Codes the AI dropped: put back leading/trailing codes and {PARA}/{SCROLL} breaks when the
+ // number of text lines matches exactly. Anything else (a lost {VAR:..} mid-sentence) is left alone.
+ const TOKEN=/\{(?:VAR|DYNAMIC|EXTRA|KEY|GLYPH):[0-9a-f]{2}\}|\{CTRL:[0-9a-f ]+\}|\{PARA\}|\{SCROLL\}/gi;
+ const BREAK=/^\{(?:PARA|SCROLL)\}$/i;
+ const tokensOf=text=>text.match(TOKEN)||[];
+ function edges(text){
+  const parts=text.split(new RegExp(`(${TOKEN.source})`,'gi')),lead=[],trail=[];
+  let i=0;while(i<parts.length&&(parts[i]===''||new RegExp(`^${TOKEN.source}$`,'i').test(parts[i]))){if(parts[i])lead.push(parts[i]);i++;}
+  let j=parts.length-1;while(j>=i&&(parts[j]===''||new RegExp(`^${TOKEN.source}$`,'i').test(parts[j]))){if(parts[j])trail.unshift(parts[j]);j--;}
+  return {lead,trail,body:parts.slice(i,j+1).join('')};
+ }
+ const isSubsequence=(small,big)=>{let at=0;for(const item of small){at=big.indexOf(item,at);if(at<0)return false;at++;}return true;};
+ function restoreCodes(source,text){
+  if(JSON.stringify(tokensOf(source))===JSON.stringify(tokensOf(text)))return text;
+  const src=edges(source),got=edges(text);
+  if(!isSubsequence(got.lead,src.lead)||!isSubsequence(got.trail,src.trail))return text;
+  let body=got.body;const wanted=tokensOf(src.body),present=tokensOf(body);
+  if(wanted.length&&!present.length&&wanted.every(t=>BREAK.test(t))){
+   const lines=body.split(/\n+/).map(x=>x.trim()).filter(Boolean);
+   if(lines.length!==wanted.length+1)return text;
+   body=lines.reduce((out,line,index)=>out+(index?wanted[index-1]:'')+line,'');
+  }
+  const next=src.lead.join('')+body+src.trail.join('');
+  return JSON.stringify(tokensOf(next))===JSON.stringify(tokensOf(source))?next:text;
+ }
+ const ELLIPSIS=/\.{3,}|。{2,}|…{2,}/g;
+ const compactPunctuation=text=>mapText(text,part=>part.replace(ELLIPSIS,'…'));
+
+ // Glossary terms: when the source has the English term but the Thai text uses a common
+ // variant spelling/synonym of the glossary's Thai word, swap it (whole words only).
+ const TERM_VARIANTS=[
+  ['เทรนเนอร์','ผู้ฝึกโปเกมอน','ผู้ฝึกสอนโปเกมอน','เทรนเนอ'],
+  ['โปเกมอน','โปเกม่อน','โปเกมอนส์','โปเกมอง'],
+  ['ไอเท็ม','ไอเทม','ไอเท็มส์','ไอเทมส์'],
+  ['โปเกบอล','โปเกบอลล์','โปเกบอล์','โปเก้บอล'],
+  ['ศูนย์โปเกมอน','โปเกมอนเซ็นเตอร์','ศูนย์พักโปเกมอน'],
+  ['ยิม','จิม'],
+ ];
+ const escapeRe=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+ function harmonizeGlossary(source,text,glossary){
+  let out=compose(text);
+  for(const line of String(glossary||'').split('\n')){
+   const n=line.indexOf('=');if(n<1)continue;
+   const term=line.slice(0,n).trim(),thai=compose(line.slice(n+1).trim());
+   if(!term||!thai||!new RegExp(`(?<![A-Za-z])${escapeRe(term)}(?![A-Za-z])`,'i').test(source||'')||out.includes(thai))continue;
+   const group=TERM_VARIANTS.find(g=>g.includes(thai));if(!group)continue;
+   const variants=group.filter(v=>v!==thai).sort((a,b)=>b.length-a.length);
+   out=applyRule(out,['glossary',new RegExp(variants.map(escapeRe).join('|'),'g'),thai]);
+  }
+  return out;
+ }
  function boundaries(part){
   if(!SEGMENTER)return null;
   const set=new Set([0,part.length]);
@@ -66,7 +146,7 @@ const TextFitter=(()=>{
    const bounds=boundaries(part);
    // Without a word segmenter we cannot tell word edges apart, so no wording is changed.
    if(!bounds)return part;
-   return part.replace(re,(...args)=>{const match=args[0],offset=args.at(-2);return bounds.has(offset)&&bounds.has(offset+match.length)?to:match;});
+   return part.replace(re,(...args)=>{const match=args[0],offset=args.at(-2);return bounds.has(offset)&&bounds.has(offset+match.length)?(typeof to==='function'?to(match):to):match;});
   });
  }
  // "word\nword": a soft line break inside running text. Thai joins without a space.
@@ -91,21 +171,36 @@ const TextFitter=(()=>{
 
  /* fit(entry, text, {check, level}) → {text, ok, changed, steps, before, after}
   * check(text) must return RomCore.checkEntry-style {issues, bytes, metrics, spec}. */
- function fit(entry,text,{check,level='compact'}={}){
+ function fit(entry,text,{check,level='compact',glossary=''}={}){
   if(typeof check!=='function')throw Error('TextFitter ต้องมีฟังก์ชันตรวจ');
   const rank=Math.max(0,LEVELS.indexOf(level)),steps=[];
   let current=text,result=check(current),now=score(result,entry);const before=now;
   const finish=()=>({text:current,ok:now.fit===0&&now.other===0,fits:now.fit===0,changed:current!==text,steps,before,after:now,issues:result.issues});
-  const attempt=(next,label)=>{
+  // `force` accepts a change that removes a blocking error even though hidden byte/width
+  // errors may appear once the row can be measured at all.
+  const attempt=(next,label,force=false)=>{
    if(next===current)return false;
    let nextResult;try{nextResult=check(next);}catch{return false;}
    const next_=score(nextResult,entry);
-   if(!better(next_,now))return false;
+   if(!(force?(typeof force==='function'?force(nextResult):next_.other<now.other):better(next_,now)))return false;
    current=next;result=nextResult;now=next_;steps.push(label);return true;
   };
   const done=()=>now.fit===0;
+  // 0. Glossary wording (a warning, but one the user asked to be consistent).
+  const glossaryCount=r=>r.issues.filter(i=>i.code==='glossary').length;
+  if(glossary&&glossaryCount(result))attempt(harmonizeGlossary(entry.source,current,glossary),'glossary',r=>{const s=score(r,entry);return glossaryCount(r)<glossaryCount(result)&&s.fit<=now.fit&&s.other<=now.other;});
+  // 1. Blocking problems first: dropped codes, then glyphs the font cannot draw.
+  if(now.other){
+   attempt(restoreCodes(entry.source||'',current),'codes',true);
+   for(let guard=0;guard<40;guard++){
+    const issue=result.issues.find(i=>i.code==='font'&&i.severity==='error'),match=issue&&/สำหรับ “(.*?)”(?: —|$)|ไม่รองรับ (\S+)$/su.exec(issue.message);if(!match)break;
+    const next=replaceGlyph(current,match[1]||match[2]);if(next===null||!attempt(next,'glyph',nr=>!nr.issues.some(i=>i.message===issue.message)))break;
+   }
+  }
   if(done())return finish();
-  // Spacing and line breaks are only touched when the entry does not fit.
+  attempt(compactPunctuation(current),'ellipsis');
+  if(done())return finish();
+  // 2. Spacing and line breaks are only touched when the entry does not fit.
   attempt(tidySpaces(current),'tidy');
   if(!done())attempt(joinSoftLines(current),'reflow');
   const dropSpaces=()=>{
@@ -122,6 +217,6 @@ const TextFitter=(()=>{
   if(rank>=1&&!done())dropSpaces();
   return finish();
  }
- return {fit,levels:LEVELS,rules:{compact:COMPACT.map(r=>r[0]),aggressive:POLITE.map(r=>r[0])},joinSoftLines,tidySpaces,score};
+ return {fit,levels:LEVELS,rules:{compact:COMPACT.map(r=>r[0]),aggressive:POLITE.map(r=>r[0])},joinSoftLines,tidySpaces,restoreCodes,harmonizeGlossary,replaceGlyph,substituteChar,score};
 })();
 if(typeof module!=='undefined')module.exports=TextFitter;
