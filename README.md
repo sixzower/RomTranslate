@@ -2,6 +2,12 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## AI shortening inside the auto-fix button (0.32.61)
+
+Rows that stay over their byte limit need real rewording, which fixed rules cannot do. Open **ให้ AI ช่วยย่อแถวที่ไบต์ยังเกิน** in the prebuild check, pick Gemini or Claude, paste an API key, tick the consent box, and **แก้ไขอัตโนมัติทั้งหมด** will, after the deterministic repair, send only the rows still over their byte/width/line limit to the model (up to 3 rounds, 10 rows per request, each retry carrying the exact “ใช้ N/M ไบต์” feedback).
+
+A proposal is applied only if `TranslationQuality.verifyRewrite` passes: control codes identical and in order, no byte/width/line error and no new error. Everything else is discarded, so the project never receives unchecked text; the result is one undoable history step, followed by a fresh audit and a status line (“AI ย่อสำเร็จ x/y แถว”). Cancel works between requests. The key lives only in this browser's localStorage (never in the project, history, cloud backup or Excel), prompts never contain it, and no text is sent unless the consent box is ticked. Without a key the button behaves as before and says how many rows need rewording. `node tests/ai-shorten.cjs` runs without network.
+
 ## Glossary fixes and update confirmation (0.32.60)
 
 **แก้ไขอัตโนมัติทั้งหมด** and the Excel import repair now also fix glossary warnings such as “คำศัพท์ Trainer ควรเป็น เทรนเนอร์”: when the source contains the glossary's English term and the Thai text uses a known variant (ผู้ฝึกโปเกมอน, โปเกม่อน, ไอเทม, …), the variant is replaced by the glossary's Thai word. Only whole words from a built-in variant list are swapped; unknown wording is never guessed, and a swap is kept only if it removes the warning without adding errors.

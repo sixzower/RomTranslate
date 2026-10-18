@@ -217,6 +217,30 @@ function renderQualityReport(){
  if(grouped.size>300){const more=document.createElement('p');more.textContent='แสดง 300 จาก '+grouped.size+' ข้อความ · แก้แล้วตรวจใหม่เพื่อดูรายการที่เหลือ หรือดาวน์โหลดรายงานทั้งหมด';$('qualityRows').append(more);}
 }
 $('qualityButton').onclick=async()=>{if(!project||UiOperations.busy)return;try{qualityReport=await runQualityAudit();renderQualityReport();$('qualityRepairStatus').textContent='';$('qualityDialog').showModal();}catch(e){toast(e.message,e.name==='AbortError'?'info':'error');}};
+// Optional AI step for rows that need real rewording. Proposals are verified row by row.
+function bindAiSettings(){
+ const box=$('aiShortenBox');if(!box)return;const current=AiShorten.settings();
+ $('aiProvider').value=current.provider;$('aiModel').value=current.model;$('aiKey').value=current.key;$('aiConsent').checked=current.consent;
+ const store=()=>{const provider=$('aiProvider').value;AiShorten.save({provider,model:$('aiModel').value.trim()||AiShorten.PROVIDERS[provider].model,key:$('aiKey').value.trim(),consent:$('aiConsent').checked});};
+ $('aiProvider').onchange=()=>{$('aiModel').value=AiShorten.PROVIDERS[$('aiProvider').value].model;store();};
+ for(const id of ['aiModel','aiKey','aiConsent'])$(id).onchange=store;
+}
+bindAiSettings();
+async function aiShortenRemaining(report){
+ const config=AiShorten.settings(),wanted=new Map();
+ for(const row of report.rows)if(row.severity==='error'&&SHORTEN_CODES.has(row.code)){if(!wanted.has(row.id))wanted.set(row.id,[]);wanted.get(row.id).push(row.message);}
+ const entries=project.entries.filter(e=>wanted.has(e.id)&&e.translation?.trim()&&e.verified&&e.translationChoice!=='keep-source');
+ if(!entries.length)return null;
+ if(!AiShorten.ready(config))return {skipped:true,count:entries.length};
+ const original=project,signature=JSON.stringify(project.entries),byId=new Map(entries.map(e=>[e.id,e]));
+ const rows=entries.map(e=>{const spec=RomCore.screen(e);return {id:e.id,source:e.source,current:e.translation,limits:{bytes:e.capacity||e.maxBytes||null,width:spec.width,lines:spec.scroll?null:spec.lines},problem:wanted.get(e.id).join(' · ')};});
+ const verify=(id,text)=>TranslationQuality.verifyRewrite(byId.get(id),text,rom,project.glossary);
+ const result=await UiOperations.run('ให้ AI ย่อคำแปล',(signal,onProgress)=>AiShorten.run({rows,settings:config,verify,signal,onProgress,glossary:project.glossary}),{cancellable:true});
+ if(project!==original||JSON.stringify(project.entries)!==signature)throw Error('งานเปลี่ยนระหว่างให้ AI ย่อ ยังไม่ได้แก้คำแปล กรุณาลองใหม่');
+ const updates=[...result.accepted].map(([id,translation])=>({id,translation,translationChoice:''}));
+ if(updates.length){TranslationHistory.apply(project,updates,'ให้ AI ย่อคำแปลก่อนสร้าง ROM');pendingBuild=null;save(true);render();}
+ return {fixed:updates.length,failed:result.failed.length,attempted:rows.length};
+}
 $('qualityAutoFix').onclick=async()=>{
  if(!project||UiOperations.busy)return;
  const original=project,signature=JSON.stringify(project.entries),font=JSON.stringify(GameFont.data()),glossary=project.glossary;
@@ -225,7 +249,15 @@ $('qualityAutoFix').onclick=async()=>{
   const result=await UiOperations.run('แก้ไขคำแปลอัตโนมัติ',(signal,onProgress)=>TranslationQuality.repairAsync(original,rom,{signal,onProgress,level:$('qualityFitLevel')?.value||'compact'}),{cancellable:true});
   if(project!==original||JSON.stringify(project.entries)!==signature||JSON.stringify(GameFont.data())!==font||project.glossary!==glossary)throw Error('งานหรือฟอนต์เปลี่ยนระหว่างตรวจ กรุณาตรวจใหม่ ยังไม่ได้แก้คำแปล');
   if(result.fixed){TranslationHistory.apply(project,result.updates,'แก้คำแปลอัตโนมัติก่อนสร้าง ROM');pendingBuild=null;save(true);render();}
-  qualityReport=result.report;renderQualityReport();statusText('qualityRepairStatus',`แก้อัตโนมัติแล้ว ${result.fixed} รายการ · ยังต้องแก้ ${result.remaining} รายการ`+(result.remaining?` · เหลือ: ${errorBreakdown(result.report.rows)} · แก้เองด้านบน หรือส่งออก Excel ให้ AI ย่อ`:' · ตรวจในเกมอีกครั้งก่อนเผยแพร่'),result.remaining?'error':'success');
+  qualityReport=result.report;renderQualityReport();
+  let report=result.report,remaining=result.remaining,fixed=result.fixed,extra='';
+  statusText('qualityRepairStatus',`แก้อัตโนมัติแล้ว ${fixed} รายการ · กำลังตรวจแถวที่ยังเกิน…`,'info');
+  try{
+   const ai=await aiShortenRemaining(report);
+   if(ai?.skipped)extra=` · ${ai.count} แถวต้องเรียบเรียงให้สั้นลง: เปิด “ให้ AI ช่วยย่อ” ด้านบนแล้วใส่ API key ปุ่มนี้จะย่อให้เอง`;
+   else if(ai){fixed+=ai.fixed;qualityReport=await runQualityAudit();report=qualityReport;remaining=new Set(report.rows.filter(r=>r.severity==='error').map(r=>r.id)).size;renderQualityReport();extra=` · AI ย่อสำเร็จ ${ai.fixed}/${ai.attempted} แถว${ai.failed?` (${ai.failed} แถวยังย่อไม่พอ ลองกดอีกครั้งหรือแก้เอง)`:''}`;}
+  }catch(e){if(e.name==='AbortError')extra=' · ยกเลิกการให้ AI ย่อ';else extra=' · ให้ AI ย่อไม่สำเร็จ: '+e.message;}
+  statusText('qualityRepairStatus',`แก้อัตโนมัติแล้ว ${fixed} รายการ · ยังต้องแก้ ${remaining} รายการ`+(remaining?` · เหลือ: ${errorBreakdown(report.rows)}`:' · ตรวจในเกมอีกครั้งก่อนเผยแพร่')+extra,remaining?'error':'success');
  }catch(e){statusText('qualityRepairStatus',e.message,e.name==='AbortError'?'info':'error');}
  finally{$('qualityAutoFix').disabled=!qualityReport?.rows.length;}
 };

@@ -20,6 +20,17 @@ async function repairAsync(project,rom,{signal,onProgress=()=>{},level='compact'
  const report=await auditAsync(preview,rom,{signal,onProgress});check();if(report.errors>before.errors)throw Error('ผลรวมยังไม่ปลอดภัย จึงยังไม่เปลี่ยนคำแปล กรุณาตรวจทีละรายการ');
  return {updates,report,fixed:updates.length,remaining:new Set(report.rows.filter(r=>r.severity==='error').map(r=>r.id)).size};
 }
+// Verdict for a proposed rewrite (e.g. from the AI shortening step): control codes unchanged and
+// no byte/width/line error, without adding any other error. `text` is the laid-out text to store.
+function verifyRewrite(e,text,rom,glossary=''){
+ const fit=new Set(['bytes','width','lines']),errors=r=>r.issues.filter(i=>i.severity==='error');
+ if(!text||!text.trim()||text.length>10000)return {ok:false,feedback:'ข้อความว่างหรือยาวเกินไป'};
+ if(!SheetImportBatch.sameControls(e,e.translation,text))return {ok:false,feedback:'รหัสคำสั่งต้องเหมือน current ทุกตัว ลำดับเดิม'};
+ const formatted=SheetImportBatch.formatText(e,text,rom,glossary),after=errors(entry(e,formatted,rom,glossary)),over=after.filter(i=>fit.has(i.code)),other=after.filter(i=>!fit.has(i.code)),before=errors(entry(e,e.translation,rom,glossary)).filter(i=>!fit.has(i.code)).length;
+ if(other.length>before)return {ok:false,feedback:other[0].message};
+ if(over.length)return {ok:false,feedback:'ยังเกิน: '+over.map(i=>i.message).join(' · ')+' · ย่อให้สั้นลงอีก'};
+ return {ok:true,text:formatted};
+}
 function draw(canvas,text,rom,scale=3){const ctx=canvas.getContext('2d'),w=240,h=160;canvas.width=w*scale;canvas.height=h*scale;ctx.imageSmoothingEnabled=false;ctx.fillStyle='#f8f8f8';ctx.fillRect(0,0,canvas.width,canvas.height);let x=8,y=8;for(const part of text.match(/\{[^}]+\}|[^{}]+/g)||[]){if(part[0]==='{'){if(part==='{SCROLL}'||part==='{PARA}'){x=8;y+=18;}else if(/\{(?:VAR|DYNAMIC):/.test(part)){x+=48;}continue;}for(const c of GameFont.clusters(part)){if(c==='\n'){x=8;y+=18;continue;}if(c==='\r')continue;if(/[\u0e00-\u0e7f]/.test(c)){const g=GameFont.glyph(c);for(let yy=0;yy<16;yy++)for(let xx=0;xx<16;xx++)if(g.pixels[yy][xx]){ctx.fillStyle=g.pixels[yy][xx]===1?'#202830':'#a0a8b0';ctx.fillRect((x+xx)*scale,(y+yy)*scale,scale,scale);}x+=g.width;}else{const code=RomCore.encode(c)[0],f=RomCore.profile.fonts[0];for(let tile=0;tile<4;tile++)for(let yy=0;yy<8;yy++)for(let xx=0;xx<8;xx++){const v=rom[f.glyphs+code*64+tile*16+yy*2+(xx<4?1:0)]>>(6-(xx%4)*2)&3;if(v===1||v===2){ctx.fillStyle=v===1?'#202830':'#a0a8b0';ctx.fillRect((x+(tile&1)*8+xx)*scale,(y+(tile>>1)*8+yy)*scale,scale,scale);}}x+=rom[f.widths+code];}}}}
-return {entry,audit,auditAsync,repairAsync,draw};})();
+return {entry,audit,auditAsync,repairAsync,verifyRewrite,draw};})();
 if(typeof module!=='undefined')module.exports=TranslationQuality;

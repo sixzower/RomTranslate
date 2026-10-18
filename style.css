@@ -207,3 +207,4 @@ body[data-theme=dark] #fontCloudStatus[data-kind=error]{color:#ff8b94}
 
 .fit-level{display:inline-flex;align-items:center;gap:8px;font-size:13px}.fit-level select{min-height:34px;max-width:100%}.fit-level[hidden]{display:none}
 #updateBanner[data-kind="updated"]{border-color:#16733c}
+.ai-shorten{margin:12px 0;padding:8px 12px;border:1px solid var(--border,#445);border-radius:8px}.ai-shorten summary{cursor:pointer;font-weight:600}.ai-shorten label{display:flex;flex-direction:column;gap:4px;margin:8px 0;font-size:13px}.ai-shorten input[type=text],.ai-shorten input[type=password],.ai-shorten input:not([type]),.ai-shorten select{min-height:36px}.ai-shorten .ai-consent{flex-direction:row;align-items:flex-start;gap:8px}

@@ -136,6 +136,16 @@ const composed=text=>text.replace(/\u0e4d([\u0e48-\u0e4b]?)\u0e32/g,'$1\u0e33');
  assert.equal(TextFitter.harmonizeGlossary(plain.source,'ผู้ฝึกโปเกมอน',glossary),'ผู้ฝึกโปเกมอน');
 }
 
+// 6c. Rewrites proposed by the AI step are accepted only when they really fit and keep the codes.
+{
+ const entry=description('{VAR:01} hits',24,{id:5,family:'abilities'});entry.translation='{VAR:01}ทำความเสียหายอย่างรุนแรงมากมาย';
+ assert(!TranslationQuality.verifyRewrite(entry,'{VAR:01}ทำความเสียหายอย่างรุนแรงมากมายเหลือเกิน',rom).ok,'still too long');
+ assert(/รหัสคำสั่ง/.test(TranslationQuality.verifyRewrite(entry,'ทำความเสียหาย',rom).feedback),'dropped code');
+ assert(/รหัสคำสั่ง/.test(TranslationQuality.verifyRewrite(entry,'{VAR:02}โจมตี',rom).feedback),'changed code');
+ const ok=TranslationQuality.verifyRewrite(entry,'{VAR:01}โจมตีแรง',rom);assert(ok.ok,JSON.stringify(ok));assert.deepEqual(RomCore.tokens(ok.text),['{VAR:01}']);
+ assert(!TranslationQuality.verifyRewrite(entry,'   ',rom).ok);
+}
+
 // 7. End to end through the import repair used by both Excel import and the prebuild report.
 (async()=>{
  const entry=description('Raises the Attack stat of the user when hit by a move.',76,{id:77,offset:'$4D'});
