@@ -1,0 +1,50 @@
+const {chromium}=require('playwright');
+const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),assert=require('node:assert/strict');
+const base=process.env.QA_TEST_URL||'http://127.0.0.1:5173';
+const dir=fs.mkdtempSync(path.join(os.tmpdir(),'sixz-qa-test-'));
+(async()=>{
+ const {sha256,MANIFEST}=await import('../qa/core.mjs');
+ const bytes=new Uint8Array(0x1000);bytes[0xb2]=0x96;bytes.set(Buffer.from('BPRE'),0xac);let sum=0x19;for(let i=0xa0;i<=0xbc;i++)sum+=bytes[i];bytes[0xbd]=(-sum)&255;
+ bytes.set([1,2,255],0x200);new DataView(bytes.buffer).setUint32(0x300,0x08000200,true);
+ const romPath=path.join(dir,'fixture.gba');fs.writeFileSync(romPath,bytes);
+ const manifest={format:MANIFEST,romSHA256:await sha256(bytes),game:'QA test game',build:'test',fontName:'test font',entries:[{id:'TEXT-1',kind:'menu',source:'Settings',translation:'ตั้งค่า',offset:512,length:3,sha256:await sha256(bytes.slice(512,515)),sites:[768]}]};
+ const manifestPath=path.join(dir,'fixture.qa-manifest.json');fs.writeFileSync(manifestPath,JSON.stringify(manifest));
+ const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',args:['--no-sandbox','--enable-unsafe-swiftshader']});
+ try{
+ const context=await browser.newContext({viewport:{width:1440,height:1000}}),page=await context.newPage(),errors=[],remote=[];
+ page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(!r.url().startsWith(base)&&!r.url().startsWith('data:')&&!r.url().startsWith('blob:'))remote.push(r.url());});
+ await page.goto(base);await page.waitForFunction(()=>!document.getElementById('openRom').disabled);assert.equal(await page.locator('nav button').count(),4);assert.equal(await page.getByText('เครื่องมือแปลเดิม').count(),0);
+ await page.locator('#romInput').setInputFiles(romPath);await page.waitForFunction(()=>!document.getElementById('loadedOverview').hidden);
+ await page.locator('#auditButton').click();await page.waitForFunction(()=>document.getElementById('auditBadge').textContent==='ตรวจทั่วไปแล้ว');assert((await page.locator('#auditScope').textContent()).includes('เพิ่มข้อมูล'));
+ await page.locator('#dataInput').setInputFiles(manifestPath);await page.waitForFunction(()=>document.getElementById('totalTexts').textContent==='1');
+ await page.locator('#auditButton').click();await page.waitForFunction(()=>document.getElementById('auditBadge').textContent==='ตรวจข้อมูลผ่าน');
+ await page.locator('[data-view=texts]').click();await page.locator('#textSearch').fill('ตั้งค่า');assert.equal(await page.locator('.text-row').count(),1);await page.locator('.text-row').click();assert((await page.locator('#inspector').textContent()).includes('3 ไบต์'));
+ await page.locator('#inspector button').getByText('✓ ตรวจแล้ว ผ่าน',{exact:true}).click();await page.waitForFunction(()=>document.getElementById('coverageValue').textContent==='100%');
+ await page.locator('#inspector button').getByText('แจ้งปัญหา',{exact:true}).click();await page.locator('#issueNote').fill('สระถูกตัดที่หน้าตั้งค่า');await page.locator('#issueForm button[type=submit]').click();await page.waitForFunction(()=>!document.getElementById('issueDialog').open);
+ await page.locator('[data-view=issues]').click();assert((await page.locator('#issueList').textContent()).includes('สระถูกตัด'));await page.locator('#issueList').getByText('ดูข้อความ',{exact:true}).click();assert.equal(await page.locator('#textSearch').inputValue(),'TEXT-1');assert(await page.locator('#inspector').isVisible());
+ await page.reload();await page.waitForFunction(()=>document.getElementById('totalTexts').textContent==='1');await page.locator('[data-view=issues]').click();assert.equal(await page.locator('.issue-card').count(),1);
+ let download=page.waitForEvent('download');await page.locator('#exportReport').click();const reportPath=path.join(dir,'report.json');await(await download).saveAs(reportPath);const report=JSON.parse(fs.readFileSync(reportPath));assert.equal(report.notes.length,1);assert.equal(report.romBase64,undefined);
+ await page.locator('.more-menu summary').click();await page.locator('#openBackup').click();download=page.waitForEvent('download');await page.locator('#downloadBackup').click();const backupPath=path.join(dir,'backup.sixz-qa.json');await(await download).saveAs(backupPath);const backup=JSON.parse(fs.readFileSync(backupPath));assert.equal(Buffer.from(backup.romBase64,'base64').length,bytes.length);assert.equal(backup.manifest.entries.length,1);
+ const second=await browser.newContext(),p2=await second.newPage();p2.on('pageerror',e=>errors.push(e.message));await p2.goto(base);await p2.waitForFunction(()=>!document.getElementById('openRom').disabled);await p2.locator('#dataInput').setInputFiles(backupPath);await p2.locator('#confirmYes').click();await p2.waitForFunction(()=>document.getElementById('totalTexts').textContent==='1');assert((await p2.locator('#savedStatus').textContent()).includes('บันทึกบนเครื่อง'));
+ // Reject wrong-ROM sidecars without changing the active matched data.
+ const bad=path.join(dir,'bad.json');fs.writeFileSync(bad,JSON.stringify({...manifest,romSHA256:'0'.repeat(64)}));await p2.locator('#dataInput').setInputFiles(bad);await p2.locator('#noticeDialog').waitFor({state:'visible'});assert((await p2.locator('#noticeMessage').textContent()).includes('คนละฉบับ'));await p2.locator('#noticeDialog [data-close]').click();assert.equal(await p2.locator('#totalTexts').textContent(),'1');
+ // Both palettes and narrow layouts, including dialog close buttons.
+ for(const width of [1440,390,320]){await p2.setViewportSize({width,height:844});for(const name of ['overview','texts','game','issues']){await p2.locator('[data-view='+name+']').click();assert(await p2.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'overflow '+width+' '+name);}await p2.locator('#themeToggle').click();}
+ await p2.locator('.more-menu summary').click();await p2.locator('#helpOpen').click();assert(await p2.locator('#helpDialog .dialog-x').isVisible());await p2.locator('#helpDialog .dialog-x').click();
+ // A cancelled/failed import never clears the existing ROM or review notes.
+ const broken=path.join(dir,'broken.json');fs.writeFileSync(broken,'{invalid');await p2.locator('#dataInput').setInputFiles(broken);await p2.locator('#noticeDialog').waitFor({state:'visible'});await p2.locator('#noticeDialog [data-close]').click();assert.equal(await p2.locator('#totalTexts').textContent(),'1');
+ assert.deepEqual(errors,[]);assert.deepEqual(remote,[]);console.log('PASS browser upload, bounded audit, sidecar match/rejection, search, manual review, issues/navigation, reload, report, portable cross-browser ROM restore, themes, mobile and invalid-file preservation; no remote requests');
+ await second.close();
+ if(process.argv[2]){
+  assert(process.argv[3],'Real-ROM test requires sidecar path');
+  const real=await browser.newContext({viewport:{width:1440,height:1050}}),p=await real.newPage(),realErrors=[];p.on('pageerror',e=>realErrors.push(e.message));await p.goto(base);await p.waitForFunction(()=>crossOriginIsolated&&!document.getElementById('openRom').disabled);
+  await p.locator('#romInput').setInputFiles(process.argv[2]);await p.waitForFunction(()=>!document.getElementById('loadedOverview').hidden);await p.locator('#dataInput').setInputFiles(process.argv[3]);await p.waitForFunction(()=>document.getElementById('navTextCount').textContent!=='0');await p.locator('#auditButton').click();await p.waitForFunction(()=>document.getElementById('auditBadge').textContent==='ตรวจข้อมูลผ่าน',null,{timeout:60000});
+  await p.locator('[data-view=texts]').click();await p.locator('.text-row').first().click();await p.locator('[data-view=game]').click();await p.locator('#gameLaunch').click();await p.waitForFunction(()=>!document.getElementById('gamePause').disabled,null,{timeout:70000});await p.waitForTimeout(16000);
+  await p.locator('#gamePause').click();await p.locator('#checkpointName').fill('จุดทดสอบจริง');await p.locator('#checkpointSave').click();await p.waitForFunction(()=>document.getElementById('checkpointCount').textContent==='1 / 10').catch(async error=>{console.error('checkpoint notice:',await p.locator('#noticeMessage').textContent());throw error;});
+  await p.locator('#captureIssue').click();await p.locator('#issueDialog').waitFor({state:'visible'});assert(await p.locator('#issueScreenshot').isVisible(),'native screenshot missing');const png=await p.locator('#issueScreenshot').getAttribute('src');assert(png.startsWith('data:image/png;base64,iVBOR'));await p.locator('#issueNote').fill('ตรวจภาพจาก ROM จริง');await p.locator('#issueForm button[type=submit]').click();await p.waitForFunction(()=>!document.getElementById('issueDialog').open);
+  await p.locator('#checkpointList').getByText('เปิดฉาก',{exact:true}).click();await p.locator('#confirmYes').click();await p.waitForFunction(()=>!document.getElementById('operationDialog').open);assert.equal(await p.locator('#gamePause').textContent(),'พักเกม');
+  await p.reload();await p.waitForFunction(()=>document.getElementById('checkpointCount').textContent==='1 / 10');await p.locator('[data-view=game]').click();await p.locator('#checkpointList').getByText('เปิดฉาก',{exact:true}).click();await p.waitForFunction(()=>!document.getElementById('gamePause').disabled,null,{timeout:70000});await p.waitForFunction(()=>!document.getElementById('operationDialog').open);
+  await p.screenshot({path:process.env.QA_SCREENSHOT||'/tmp/sixz-qa-real-game.png',fullPage:true});assert.deepEqual(realErrors,[]);console.log('PASS actual ROM/sidecar audit, native game boot, native PNG capture, checkpoint save/reopen and reload-to-checkpoint');await real.close();
+ }
+ }finally{await browser.close();fs.rmSync(dir,{recursive:true,force:true});}
+})().catch(error=>{console.error(error);process.exitCode=1;});
