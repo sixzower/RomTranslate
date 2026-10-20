@@ -1,6 +1,6 @@
 {
   "name": "sixz-rom-qa",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "scripts": {
     "dev": "python3 -m http.server 5173 --bind 0.0.0.0",

@@ -1,7 +1,7 @@
-import {header} from './core.mjs?v=1.0.0';
+import {header} from './core.mjs?v=1.0.1';
 let factory, core, initializing, game = false, paused = false, active = false, sound = false, hash = '', romPath = '', savePath = '';
 const canvas = () => document.getElementById('gameCanvas');
-let listener = () => {}, saveTimer;
+let listener = () => {}, saveTimer, initEpoch = 0;
 const state = () => ({game, paused, sound, hash});
 const update = () => listener(state());
 export function onState(fn) { listener = fn; update(); }
@@ -11,15 +11,21 @@ function release() {
 }
 async function init() {
   if (!crossOriginIsolated || typeof SharedArrayBuffer === 'undefined') throw Error('เบราว์เซอร์ยังไม่พร้อมรันเกม ลองรีเฟรชหนึ่งครั้ง หรือใช้ Chrome / Edge รุ่นล่าสุด');
-  if (!initializing) initializing = (async () => {
+  if (!initializing) {
+    const epoch = ++initEpoch; let timer;
+    const pending = (async () => {
     factory ||= (await import('../vendor/mgba.js')).default;
     const module = await factory({canvas: canvas(), print: () => {}, printErr: s => console.warn('mGBA:', s)});
     await module.FSInit();
+    if (epoch !== initEpoch) { try { module.quitGame(); } catch {} throw Error('ยกเลิกตัวเล่นเกมเดิมแล้ว'); }
     module.toggleInput(false); module.setLogger(() => {}); module.setVolume(0);
     module.addCoreCallbacks({saveDataUpdatedCallback: () => { clearTimeout(saveTimer); saveTimer = setTimeout(() => module.FSSync().catch(() => window.dispatchEvent(new CustomEvent('qa:game-error', {detail: 'บันทึกเซฟเกมในเครื่องไม่สำเร็จ กรุณาส่งออก .sav ก่อนปิดเว็บ'}))), 500); }, coreCrashedCallback: () => { game = false; update(); window.dispatchEvent(new CustomEvent('qa:game-error', {detail: 'เกมหยุดทำงาน ลองเปิด ROM ใหม่และบันทึกรายงานปัญหา'})); }});
     core = module;
     return module;
-  })().catch(error => { initializing = null; throw error; });
+  })();
+    initializing = Promise.race([pending, new Promise((_, reject) => { timer = setTimeout(() => reject(Error('เตรียมตัวเล่นเกมนานเกินไป ลองรีเฟรชหรือเปิด ROM อีกครั้ง')), 45000); })])
+      .catch(error => { initEpoch++; initializing = null; throw error; }).finally(() => clearTimeout(timer));
+  }
   return initializing;
 }
 export async function play(bytes, digest) {
@@ -85,19 +91,33 @@ export async function importSave(bytes) {
   core.FS.writeFile(savePath, bytes);
   await core.FSSync(); reset();
 }
+function statePath() { return core.filePaths().saveStatePath + '/qa-' + hash + '.ss1'; }
 export async function checkpoint() {
   if (!game) throw Error('เปิดเกมและไปยังฉากที่ต้องการก่อน');
   release();
-  if (!core.forceAutoSaveState()) throw Error('สร้างจุดทดสอบไม่สำเร็จ');
-  const saved = core.getAutoSaveState();
-  if (!saved?.data?.length) throw Error('ตัวเล่นเกมยังไม่ส่งข้อมูลจุดทดสอบ');
-  return new Uint8Array(saved.data);
+  core.pauseGame();
+  try {
+    if (!core.saveState(1)) throw Error('สร้างจุดทดสอบไม่สำเร็จ');
+    const bytes = core.FS.readFile(statePath());
+    if (!bytes.length) throw Error('ตัวเล่นเกมยังไม่ส่งข้อมูลจุดทดสอบ');
+    return new Uint8Array(bytes);
+  } finally {
+    if (active && !paused) core.resumeGame();
+  }
 }
 export async function restoreCheckpoint(bytes, digest) {
   if (!game || digest !== hash) throw Error('จุดทดสอบนี้ต้องใช้กับ ROM ฉบับเดิมเท่านั้น');
   release();
-  await core.uploadAutoSaveState(core.autoSaveStateName, bytes);
-  if (!core.loadAutoSaveState()) throw Error('จุดทดสอบนี้เปิดไม่สำเร็จ');
+  core.FS.writeFile(statePath(), bytes);
+  // The worker can still be starting immediately after loadGame. Check the native
+  // return value, with a bounded retry, rather than treating a loaded ROM as a restored state.
+  let restored = false;
+  for (let attempt = 0; attempt < 40; attempt++) {
+    if (core.loadState(1)) { restored = true; break; }
+    core.resumeGame();
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+  if (!restored) throw Error('จุดทดสอบนี้เปิดไม่สำเร็จ อาจเป็นข้อมูลจากตัวเล่นเกมคนละรุ่น');
   paused = false;
   if (active) core.resumeGame(); else core.pauseGame();
   if (!sound || !active) core.pauseAudio(); update();

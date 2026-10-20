@@ -1,6 +1,10 @@
-# Sixz ROM QA Studio 1.0.0
+# Sixz ROM QA Studio 1.0.1
 
 RomTranslate is now a local-first ROM inspection and playtest workspace. The old Excel translation pipeline, AI settings, font editor, patch builder, cloud login and Supabase client have been removed from the application. Existing remote database contents and older browser databases are not modified or deleted.
+
+## 1.0.1 — checkpoint readiness
+
+Capture and restore checkpoints through the native state-slot API, retry worker-startup races within a bounded interval, surface initialization timeouts, and verify native restore success rather than only checking that a game is loaded. Native screenshots use the emulator screenshots directory correctly.
 
 ## What works
 

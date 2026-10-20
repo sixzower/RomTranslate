@@ -1,6 +1,6 @@
-import {FORMAT, MANIFEST, header, sha256, validateManifest, auditROM, filterEntries, hex} from './core.mjs?v=1.0.0';
-import * as store from './store.mjs?v=1.0.0';
-import * as emulator from './emulator.mjs?v=1.0.0';
+import {FORMAT, MANIFEST, header, sha256, validateManifest, auditROM, filterEntries, hex} from './core.mjs?v=1.0.1';
+import * as store from './store.mjs?v=1.0.1';
+import * as emulator from './emulator.mjs?v=1.0.1';
 const $ = id => document.getElementById(id);
 const labels = {story:'บทสนทนา / เนื้อเรื่อง','extra-story':'บทพูดและข้อมูลเพิ่มเติม',description:'คำอธิบาย',battle:'ข้อความต่อสู้',menu:'เมนู','intro-warning':'คำเตือนเริ่มเกม','opening-narration':'เกริ่นเรื่อง'};
 const reviewLabels = {unseen:'ยังไม่ตรวจในเกม',passed:'ตรวจแล้ว ผ่าน',issue:'พบปัญหา'};
