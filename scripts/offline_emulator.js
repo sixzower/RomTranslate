@@ -1,0 +1,1 @@
+(()=>{const $=id=>document.getElementById(id);$('emulatorTab').onclick=()=>{RomTranslateViews.show('game');$('emuStatus').textContent='การเล่น GBA ต้องเปิดเวอร์ชันเว็บออนไลน์: https://sixzower.github.io/RomTranslate/';};for(const id of ['emuBuild','emuOpen','emuFullscreen'])$(id).onclick=()=>{window.open('https://sixzower.github.io/RomTranslate/','_blank','noopener');};})();

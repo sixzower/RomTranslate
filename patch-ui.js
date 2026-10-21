@@ -1,0 +1,11 @@
+const PatchUI=(()=>{
+ const $=id=>document.getElementById(id);let busy=false;
+ const name=value=>(value||'translated.gba').replace(/[\\/:*?"<>|\x00-\x1f]/g,'-').replace(/\.gba$/i,'');
+ function status(text,kind='pending'){$('patchStatus').dataset.kind=kind;$('patchStatus').textContent=text;}
+ function state(){for(const id of ['patchExport','patchApply','patchSource','patchFile','patchClose'])$(id).disabled=busy;}
+ async function run(work){if(busy)return;busy=true;state();try{await UiOperations.run('กำลังเตรียมไฟล์แพตช์',work);}catch(e){status(e.message,'error');window.UiShell?.notify(e.message,true);}finally{busy=false;state();}}
+ async function read(input){const f=input.files[0];if(!f)throw Error('เลือกไฟล์ ROM ต้นฉบับและแพตช์ให้ครบ');if(f.size>64*1024*1024)throw Error('ไฟล์ต้องไม่เกิน 64 MB');return {bytes:new Uint8Array(await f.arrayBuffer()),name:f.name};}
+ $('patchOpen').onclick=()=>{$('patchDialog').showModal();status('เลือกสร้างแพตช์จากโปรเจกต์ หรือใช้แพตช์กับ ROM ต้นฉบับ','info');};$('patchClose').onclick=()=>$('patchDialog').close();$('patchDialog').addEventListener('cancel',e=>{if(busy)e.preventDefault();});
+ $('patchExport').onclick=()=>run(async()=>{const snapshot=RomTranslateBridge.patchSnapshot();status('กำลังตรวจคำแปลและสร้าง ROM…');await new Promise(resolve=>setTimeout(resolve,0));const result=await RomCore.patch(snapshot.source,snapshot.entries,snapshot.options);status('กำลังสร้างแพตช์ BPS…');const patch=await RomPatch.create(snapshot.source,result.bytes,snapshot.name);RomTranslateBridge.download(new Blob([patch],{type:'application/octet-stream'}),name(snapshot.name)+'-translation.bps');status('ดาวน์โหลดแพตช์แล้ว · '+patch.length.toLocaleString()+' ไบต์ · แก้ไข '+result.count+' ข้อความ · ใช้กับ ROM ต้นฉบับที่ตรงกัน','success');});
+ $('patchApply').onclick=()=>run(async()=>{status('กำลังอ่านไฟล์และตรวจแพตช์…');const original=await read($('patchSource')),patch=await read($('patchFile'));const result=await RomPatch.apply(original.bytes,patch.bytes);RomTranslateBridge.download(new Blob([result.bytes],{type:'application/octet-stream'}),name(original.name)+'-patched.gba');status('ตรวจต้นฉบับและผลลัพธ์ผ่านแล้ว ดาวน์โหลด .gba พร้อมเล่น · '+result.bytes.length.toLocaleString()+' ไบต์','success');});
+})();
