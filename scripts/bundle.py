@@ -30,8 +30,10 @@ html = re.sub(r' · (?:รุ่น|เว็บ) \d+\.\d+\.\d+</span>', ' · �
 # Version local assets so deployed HTML cannot silently reuse an old app module.
 html = re.sub(r'(src="(?!vendor/|coi-serviceworker)[^"?]+\.js)(?:\?[^"]*)?"', lambda m: m[1] + '?v=' + version + '"', html)
 html = re.sub(r'href="style\.css(?:\?[^"]*)?"', 'href="style.css?v=' + version + '"', html)
+html = re.sub(r'href="translated-rom-editor\.css(?:\?[^"]*)?"', 'href="translated-rom-editor.css?v=' + version + '"', html)
 (root / 'index.html').write_text(html)
-css = (root / 'style.css').read_text()
+css = (root / 'style.css').read_text() + '\n' + (root / 'translated-rom-editor.css').read_text()
+html = re.sub(r'<link rel="stylesheet" href="translated-rom-editor\.css(?:\?[^"]*)?">', '', html)
 prompt_font = (root / 'fonts/Prompt-Regular.ttf').read_bytes()
 assert hashlib.sha256(prompt_font).hexdigest() == 'dbd497803cec3caffbc6b7f599ca6fed8beea0ed7e0ad1e098130c5ebbc4fd42', 'Prompt font checksum mismatch'
 css = css.replace("url('fonts/Prompt-Regular.ttf')", "url('data:font/ttf;base64," + base64.b64encode(prompt_font).decode() + "')")
@@ -39,7 +41,7 @@ css = css.replace("url('fonts/Prompt-Regular.ttf')", "url('data:font/ttf;base64,
 css = re.sub(r"@import url\([^;]+;\s*", '', css, count=1)
 js = (root / 'app.js').read_text().replace('</script', '<\\/script')
 html = re.sub(r'<link rel="stylesheet" href="style\.css(?:\?[^"]*)?">', lambda _: '<style>' + css + '</style>', html)
-for name in ('theme.js', 'vendor/exceljs.min.js', 'imperium-profile.js', 'font-layout.js', 'game-font.js', 'move-text-runtime.js', 'rom-core.js', 'legacy-glyph-map.js', 'pixel-font.js', 'history.js', 'text-fitter.js', 'ai-shorten.js', 'quality.js', 'xlsx-loader.js', 'sheet-table.js', 'sheet.js', 'bundled-fonts.js', 'font-presets.js', 'font-library-sync.js', 'progress.js', 'sheet-import-history.js', 'translation-tasks.js', 'views.js', 'font-editor.js', 'font-positioning.js', 'sheet-batches.js', 'rom-patch.js', 'sheet-drop.js', 'sheet-import-result.js', 'sheet-import-batch.js', 'sheet-progress.js', 'ui-operations.js', 'app.js', 'patch-ui.js', 'cloud-config.js', 'admin-schema.js', 'completion-sounds.js', 'workspace-reader.js', 'font-cloud.js', 'workspace-schema.js', 'workspace-delete.js', 'release-info.js', 'workspace-conflicts.js', 'cloud-safety.js', 'workspace-sync.js', 'work-manager.js', 'rom-cloud-schema.js', 'rom-cloud.js', 'rom-font-profiles.js', 'rom-font.js', 'rom-font-ui.js', 'font-workspace.js', 'update-notice.js', 'ui-shell.js', 'row-selection.js', 'remaining-overview.js'):
+for name in ('theme.js', 'vendor/exceljs.min.js', 'imperium-profile.js', 'font-layout.js', 'game-font.js', 'move-text-runtime.js', 'rom-core.js', 'legacy-glyph-map.js', 'pixel-font.js', 'history.js', 'text-fitter.js', 'ai-shorten.js', 'quality.js', 'xlsx-loader.js', 'sheet-table.js', 'sheet.js', 'bundled-fonts.js', 'font-presets.js', 'font-library-sync.js', 'progress.js', 'sheet-import-history.js', 'translation-tasks.js', 'views.js', 'font-editor.js', 'font-positioning.js', 'sheet-batches.js', 'rom-patch.js', 'sheet-drop.js', 'sheet-import-result.js', 'sheet-import-batch.js', 'sheet-progress.js', 'ui-operations.js', 'translated-rom-profiles.js', 'translated-rom-core.js', 'translated-rom-editor.js', 'app.js', 'patch-ui.js', 'cloud-config.js', 'admin-schema.js', 'completion-sounds.js', 'workspace-reader.js', 'font-cloud.js', 'workspace-schema.js', 'workspace-delete.js', 'release-info.js', 'workspace-conflicts.js', 'cloud-safety.js', 'workspace-sync.js', 'work-manager.js', 'rom-cloud-schema.js', 'rom-cloud.js', 'rom-font-profiles.js', 'rom-font.js', 'rom-font-ui.js', 'font-workspace.js', 'update-notice.js', 'ui-shell.js', 'row-selection.js', 'remaining-overview.js'):
     js = (root / name).read_text().replace('</script', '<\\/script')
     html = re.sub(r'<script src="' + re.escape(name) + r'(?:\?[^"]*)?"></script>', lambda _: '<script>' + js + '</script>', html)
 html = html.replace('</body>', '<template id="prompt-font-license"><pre>' + escape('\n'.join(line.rstrip() for line in (root / 'fonts/Prompt-OFL.txt').read_text().splitlines())) + '</pre></template></body>')

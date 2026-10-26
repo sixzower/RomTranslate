@@ -2,6 +2,14 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Edit translated Sixz ROMs (1.0.3)
+
+Opening a verified translated Azoth, Odyssey or Glazed file now enters a dedicated local editor, without requiring an Imperium original. Reader metadata covers the delivered builds listed in `translated-rom-profiles.js` (Azoth001–011, Odyssey040 and Glazed009). It contains offsets and font mappings, not ROM binaries or source dialogue. Fonts and text are read from the uploaded file. Graphic text and unverified/unknown formats are not advertised as extracted.
+
+Search, category filtering, Thai bitmap previews, editable control tokens, local draft persistence and JSON backup are available. GBA export validates all edits before writing; it preserves variables and control/page codes, refuses missing glyphs, byte overflow, additional lines and wider layouts, and writes only inside verified text spans. It never repoints pointers or replaces game/font code. More spacious text or new glyphs require rebuilding the game with its original tooling. Unchanged exports are byte-identical. Edited exports can be reopened using immutable header/font signatures and validated text spans. Draft imports require the exact input ROM hash.
+
+Tests: `node tests/translated-rom.cjs` uses the local private delivered ROMs; `node tests/translated-rom-browser.cjs` checks file upload, Thai editing, download/reopen, themes and narrow screens. The legacy Imperium workflow remains separate.
+
 ## Restore the translation workspace (1.0.2)
 
 Restores the translation editor and its version 0.32.61 functionality, replacing the QA studio redesign. ROM import, Thai editing, Excel workflows, fonts, cloud workspace controls, and verified auto-fix/AI shortening are available again. This release uses version 1.0.2 so browsers running 1.0.1 receive the update.
