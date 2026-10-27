@@ -2,6 +2,10 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Azoth update download (1.0.4)
+
+`azoth-update.html` converts the exact private Sixz TH 011/012 ROMs to 013 locally in the browser and downloads one GBA. It fixes the Professor caption frame clipping and restores the original scene's photo-selection wording. Input and output SHA-256 checks, expected-byte checks, and bounded edits prevent patching a different ROM. An existing 013 can be downloaded unchanged. No ROM is hosted or uploaded; only the small guarded deltas are public. Edited or other versions are explicitly rejected. Gameplay beyond the tested opening is not certified complete.
+
 ## Edit translated Sixz ROMs (1.0.3)
 
 Opening a verified translated Azoth, Odyssey or Glazed file now enters a dedicated local editor, without requiring an Imperium original. Reader metadata covers the delivered builds listed in `translated-rom-profiles.js` (Azoth001–011, Odyssey040 and Glazed009). It contains offsets and font mappings, not ROM binaries or source dialogue. Fonts and text are read from the uploaded file. Graphic text and unverified/unknown formats are not advertised as extracted.
