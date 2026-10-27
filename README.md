@@ -2,6 +2,12 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Two LoongPlaeDo sites (1.0.9)
+
+The selected mockup directions are implemented as two complete sites: `patch/handheld/` is a light Handheld OS with a game rail, LCD preview and patch console; `patch/collection/` is a warm, dark Game Collection with physical cartridges on a wooden shelf and a paper patch station. Both share one guarded local patch engine, support all three games and include direct links to each other. `patch/` opens the handheld design by default. The exact brand and download credit are now **LoongPlaeDo**. In-game credit graphics remain unchanged as previously requested.
+
+`patch/app.js` resolves catalog, worker and BPS paths relative to its script URL so nested designs work without duplicated data. The new cover illustrations are decorative original artwork, not screenshots. `scripts/build_patch_designs.py` reproducibly builds the two HTML pages from the shared catalog. Tests cover real ROM downloads from each design, nested worker/asset paths, game selection, changed filenames, cancellation, wrong files, responsive layout and no uploads.
+
 ## Long Play Do branding and Advance theme (1.0.8)
 
 The patch site is now **Long Play Do**, with the credit **LongPlayDo** and `By LongPlayDo.gba` downloads. An original Advance-style purple handheld, visible A/B and D-pad controls, cartridge shells, contacts and a miniature game cartridge strengthen the retro theme. The layout remains responsive and all ROM processing stays local. The published BPS metadata uses the new output names; input/output ROM bytes and hashes are unchanged by this website branding update. In-game title/copyright graphics are separate assets and have not been silently relabelled by a webpage-only change.
