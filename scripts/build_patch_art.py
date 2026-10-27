@@ -17,6 +17,7 @@ for x in [67,76,87,94]:s+=rect(x,42,3,18,'#9caa8e')+rect(x-1,43,4,2,'#eee8c8')
 s+=rect(78,48,8,14,'#4d7064')+rect(74,74,13,30,'#cbd2ab')+rect(70,89,22,6,'#cbd2ab')
 for x,y in [(5,38),(21,48),(38,55),(120,43),(138,47),(111,65),(2,75),(29,78),(141,82)]:s+=tree(x,y,'#597d67','#72947a')
 s+=flowers(r,60,['#dce6b8','#6d987a','#b2c99c'])+player(77,82)
+forest_scene=s
 (D/'odyssey.svg').write_text(svg(s))
 s=rect(0,0,160,104,'#f4cba0')+rect(0,26,160,22,'#e6b18b')+rect(114,13,16,16,'#f9dfad')+rect(111,17,22,8,'#f9dfad')
 s+=poly('0,65 0,45 16,45 16,35 30,35 30,40 45,40 45,55 66,55 66,49 85,49 85,38 105,38 105,49 118,49 118,43 141,43 141,55 160,55 160,71','#b39385')
@@ -38,4 +39,26 @@ for x,y in [(6,66),(24,75),(129,64),(144,80)]:s+=tree(x,y,'#395760','#56777a')
 s+=rect(57,82,3,2,'#d3c599')+rect(107,85,3,2,'#d3c599')+player(76,86)
 (D/'azoth.svg').write_text(svg(s))
 (D/'club.svg').write_text(svg(rect(0,16,160,72,'#233e35')+rect(16,0,128,104,'#233e35')+rect(24,16,112,72,'#d2ec6b')+rect(41,31,9,42,'#233e35')+rect(25,47,42,10,'#233e35')+rect(100,32,15,15,'#233e35')+rect(118,51,15,15,'#233e35')))
-print('4 original pixel SVG illustrations created')
+handheld='''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 292">
+<g stroke="#293e38" stroke-width="3" stroke-linejoin="round">
+<path d="M47 49Q49 34 73 34h61v17H47Z" fill="#b2b4c1"/>
+<path d="M346 34h61q24 0 26 15v2h-87Z" fill="#b2b4c1"/>
+<path d="M82 46H398Q443 46 457 88l12 68q8 48-35 67l-57 21q-16 7-44 7H147q-28 0-44-7l-57-21Q3 204 11 156l12-68Q37 46 82 46Z" fill="#74739f"/>
+<path d="M82 39H398Q443 39 457 81l12 68q8 48-35 67l-57 21q-16 7-44 7H147q-28 0-44-7l-57-21Q3 197 11 149l12-68Q37 39 82 39Z" fill="#a29acb"/>
+<path d="M89 48H391Q434 48 445 85" fill="none" stroke="#c5bee3"/>
+<rect x="127" y="56" width="226" height="155" rx="9" fill="#3b424c"/>
+<rect x="144" y="70" width="192" height="124" rx="2" fill="#cfe1bd"/>
+</g>
+<g transform="translate(145 71) scale(1.1875)" shape-rendering="crispEdges">'''+forest_scene+'''</g>
+<rect x="145" y="71" width="190" height="123" fill="#e5edca" opacity=".08"/>
+<text x="240" y="207" text-anchor="middle" fill="#d9d8e5" font-family="monospace" font-weight="bold" font-size="8" letter-spacing="1.7">LONG PLAY DO · ADVANCE</text>
+<g fill="#42465c" stroke="#293e38" stroke-width="2" stroke-linejoin="round"><path d="M58 103h21v20h20v21H79v20H58v-20H38v-21h20Z"/><circle cx="422" cy="109" r="17"/><circle cx="390" cy="145" r="17"/></g>
+<path d="M64 109h9v9h-9ZM43 129h9v9h-9" fill="#70718c"/>
+<g font-family="monospace" font-weight="bold" font-size="14" fill="#d8d5eb" text-anchor="middle"><text x="422" y="114">A</text><text x="390" y="150">B</text></g>
+<g fill="#565771" stroke="#293e38" stroke-width="1.5"><rect x="197" y="224" width="24" height="7" rx="3.5" transform="rotate(-12 197 224)"/><rect x="244" y="224" width="24" height="7" rx="3.5" transform="rotate(-12 244 224)"/></g>
+<g font-family="monospace" font-size="5" fill="#3e4053" text-anchor="middle"><text x="209" y="238">SELECT</text><text x="256" y="238">START</text></g>
+<circle cx="370" cy="77" r="4" fill="#d2ec6b" stroke="#425b45" stroke-width="1.5"/>
+<g fill="#686488"><rect x="343" y="221" width="3" height="12" rx="1" transform="rotate(-23 343 221)"/><rect x="350" y="219" width="3" height="12" rx="1" transform="rotate(-23 350 219)"/><rect x="357" y="217" width="3" height="12" rx="1" transform="rotate(-23 357 217)"/><rect x="364" y="215" width="3" height="12" rx="1" transform="rotate(-23 364 215)"/></g>
+</svg>'''
+(D/'handheld.svg').write_text(handheld)
+print('Original pixel landscapes, controller and Advance-style handheld created')

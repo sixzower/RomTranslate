@@ -2,6 +2,10 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Long Play Do branding and Advance theme (1.0.8)
+
+The patch site is now **Long Play Do**, with the credit **LongPlayDo** and `By LongPlayDo.gba` downloads. An original Advance-style purple handheld, visible A/B and D-pad controls, cartridge shells, contacts and a miniature game cartridge strengthen the retro theme. The layout remains responsive and all ROM processing stays local. The published BPS metadata uses the new output names; input/output ROM bytes and hashes are unchanged by this website branding update. In-game title/copyright graphics are separate assets and have not been silently relabelled by a webpage-only change.
+
 ## Retro patch library (1.0.7)
 
 `patch/` is a dedicated retro-style local patcher for the latest Odyssey040, Glazed009 and Azoth013 releases. Public translation filenames follow `Pokemon Title - TH v.x.y By Sixz.gba`; Odyssey/Glazed launch on this page as v1.0 and Azoth remains v2.3. Three original pixel landscapes, a cartridge graphic, responsive game selection, drag/drop, detected-game selection, honest download progress and a cancellable Web Worker make the flow work on desktop and mobile. Existing translation tools and the Azoth-only updater remain available.
