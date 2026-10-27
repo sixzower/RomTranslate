@@ -1,5 +1,5 @@
 {
-  "format": "LoongPlaeDo patch library v1",
+  "format": "LongPlaeDo patch library v1",
   "games": [
     {
       "id": "odyssey",
@@ -8,7 +8,7 @@
       "version": "1.0",
       "internalBuild": "040",
       "base": "Odyssey v4.0.3",
-      "filename": "Pokemon Odyssey - TH v.1.0 By LoongPlaeDo.gba",
+      "filename": "Pokemon Odyssey - TH v.1.0 By LongPlaeDo.gba",
       "targetSize": 33554432,
       "targetSHA256": "229b0f265810efb15928ae8d121f7af89e2f86b147dafb0c019b4e3638513cc2",
       "variants": [
@@ -29,7 +29,7 @@
       "version": "1.0",
       "internalBuild": "009",
       "base": "Glazed v9.1.0",
-      "filename": "Pokemon Glazed - TH v.1.0 By LoongPlaeDo.gba",
+      "filename": "Pokemon Glazed - TH v.1.0 By LongPlaeDo.gba",
       "targetSize": 33554432,
       "targetSHA256": "1a156d9bdef4461f8c7a8afaf6c920f5484b838f59109216062693b7c1db2735",
       "variants": [
@@ -50,7 +50,7 @@
       "version": "2.3",
       "internalBuild": "013",
       "base": "Azoth Mercury English Beta7",
-      "filename": "Pokemon Azoth Mercury - TH v.2.3 By LoongPlaeDo.gba",
+      "filename": "Pokemon Azoth Mercury - TH v.2.3 By LongPlaeDo.gba",
       "targetSize": 33554432,
       "targetSHA256": "1f64fed3dfeedd5c69bc9b5b944701e5cb9a56616993f409614b04c5098d8607",
       "variants": [

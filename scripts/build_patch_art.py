@@ -51,7 +51,7 @@ handheld='''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 292">
 </g>
 <g transform="translate(145 71) scale(1.1875)" shape-rendering="crispEdges">'''+forest_scene+'''</g>
 <rect x="145" y="71" width="190" height="123" fill="#e5edca" opacity=".08"/>
-<text x="240" y="207" text-anchor="middle" fill="#d9d8e5" font-family="monospace" font-weight="bold" font-size="8" letter-spacing="1.7">LONG PLAY DO · ADVANCE</text>
+<text x="240" y="207" text-anchor="middle" fill="#d9d8e5" font-family="monospace" font-weight="bold" font-size="8" letter-spacing="1.7">LongPlaeDo · ADVANCE</text>
 <g fill="#42465c" stroke="#293e38" stroke-width="2" stroke-linejoin="round"><path d="M58 103h21v20h20v21H79v20H58v-20H38v-21h20Z"/><circle cx="422" cy="109" r="17"/><circle cx="390" cy="145" r="17"/></g>
 <path d="M64 109h9v9h-9ZM43 129h9v9h-9" fill="#70718c"/>
 <g font-family="monospace" font-weight="bold" font-size="14" fill="#d8d5eb" text-anchor="middle"><text x="422" y="114">A</text><text x="390" y="150">B</text></g>

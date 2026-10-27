@@ -2,6 +2,12 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## LongPlaeDo Handheld OS (1.0.10)
+
+**LongPlaeDo** is the exact website brand and download credit. Handheld OS is the canonical design at `patch/` → `patch/handheld/`, with the compact molded shell, vertical game cards, LCD artwork, D-pad and coral download control based on mockup 01. Game Collection remains an alternate view linked in the footer. Artwork is decorative and does not represent gameplay screenshots. Existing ROM bytes, in-game credits and all published BPS bytes are unchanged.
+
+Share a release with a website link such as `https://sixzower.github.io/RomTranslate/patch/?game=odyssey` (also `glazed` or `azoth`). The selected game survives the landing-page redirect and game selection updates the shareable URL. Every future translated release should be published as a BPS patch plus exact input/patch/output checksums in the catalog, then shared through this website; complete ROMs stay private. Browser file selection and patching run locally, with no ROM upload. To add a release, configure its private source/target and public filename in `scripts/build_patch_site.cjs`, verify the byte-exact BPS roundtrip, add its artwork, and rebuild pages with `scripts/build_patch_designs.py`. Never copy private `.gba` inputs or outputs into the site.
+
 ## Two LoongPlaeDo sites (1.0.9)
 
 The selected mockup directions are implemented as two complete sites: `patch/handheld/` is a light Handheld OS with a game rail, LCD preview and patch console; `patch/collection/` is a warm, dark Game Collection with physical cartridges on a wooden shelf and a paper patch station. Both share one guarded local patch engine, support all three games and include direct links to each other. `patch/` opens the handheld design by default. The exact brand and download credit are now **LoongPlaeDo**. In-game credit graphics remain unchanged as previously requested.
