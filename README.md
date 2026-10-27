@@ -2,6 +2,10 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## User-facing ROM filenames (1.0.5)
+
+Azoth downloads now use `Pokemon Azoth Mercury TH v2.3 By Sixz.gba`, as requested. Public translation versions are separate from internal build IDs: v2.3 corresponds to build013, with identical ROM bytes. Future translation projects start at TH v1.0 By Sixz and advance on delivered upgrades. The local updater's wording and filename now follow that convention.
+
 ## Azoth update download (1.0.4)
 
 `azoth-update.html` converts the exact private Sixz TH 011/012 ROMs to 013 locally in the browser and downloads one GBA. It fixes the Professor caption frame clipping and restores the original scene's photo-selection wording. Input and output SHA-256 checks, expected-byte checks, and bounded edits prevent patching a different ROM. An existing 013 can be downloaded unchanged. No ROM is hosted or uploaded; only the small guarded deltas are public. Edited or other versions are explicitly rejected. Gameplay beyond the tested opening is not certified complete.
