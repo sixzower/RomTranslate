@@ -2,6 +2,10 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Match the requested filename punctuation (1.0.6)
+
+Downloads use `Pokemon Azoth Mercury - TH v.2.3 By Sixz.gba`, matching the user's exact title / hyphen / TH / version / credit convention. This is a filename-only refinement; ROM bytes remain unchanged.
+
 ## User-facing ROM filenames (1.0.5)
 
 Azoth downloads now use `Pokemon Azoth Mercury TH v2.3 By Sixz.gba`, as requested. Public translation versions are separate from internal build IDs: v2.3 corresponds to build013, with identical ROM bytes. Future translation projects start at TH v1.0 By Sixz and advance on delivered upgrades. The local updater's wording and filename now follow that convention.
