@@ -1,0 +1,33 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),crypto=require('node:crypto'),{chromium}=require('playwright');
+const base=process.env.PATCH_SITE_URL||'http://127.0.0.1:5178/patch/',hash=b=>crypto.createHash('sha256').update(b).digest('hex');
+const cases=[
+ ['odyssey','/workspace/attachments/55764238-a10f-42ab-b43f-6f85a47bf532/Pokemon_Odyssey_v4.0.3.gba'],
+ ['glazed','/workspace/artifacts/glazed-sixz/source/Pokemon_Glazed_9.1.0.gba'],
+ ['azoth','/workspace/artifacts/azoth-sixz/source/Pokemon_Azoth_Mercury_English_Beta7.gba'],
+ ['azoth','/workspace/artifacts/azoth-sixz/translation-011/Pokemon_Azoth_Mercury_Beta7-Sixz-TH-011.gba'],
+ ['azoth','/workspace/artifacts/azoth-sixz/translation-012/Pokemon_Azoth_Mercury_Beta7-Sixz-TH-012.gba'],
+ ['azoth','/workspace/artifacts/Pokemon Azoth Mercury - TH v.2.3 By Sixz.gba']
+];
+const catalog=require('../patch/catalog.json');
+(async()=>{const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/chromium',args:['--no-sandbox']});try{
+ const page=await browser.newPage({viewport:{width:1440,height:1100},deviceScaleFactor:1}),errors=[],uploads=[],requests=[];page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{requests.push(r.url());if(r.method()!=='GET')uploads.push(r.url());});
+ await page.goto(base);await page.waitForFunction(()=>!document.getElementById('rom').disabled);await page.evaluate(()=>document.fonts.ready);assert(!requests.some(x=>x.endsWith('.bps')),'No patches downloaded before requested');
+ fs.mkdirSync('/workspace/artifacts/patch-site',{recursive:true});await page.screenshot({path:'/workspace/artifacts/patch-site/desktop.png',fullPage:true});
+ for(const width of [320,390,768,1024,1440]){await page.setViewportSize({width,height:1000});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Horizontal overflow at '+width);}await page.setViewportSize({width:390,height:844});await page.screenshot({path:'/workspace/artifacts/patch-site/mobile.png',fullPage:true});
+ for(const [id,file]of cases){await page.locator('#rom').setInputFiles(file);await page.waitForFunction(()=>!document.getElementById('download').disabled);assert.equal(await page.locator('[aria-pressed=true]').getAttribute('data-game'),id);const g=catalog.games.find(g=>g.id===id),event=page.waitForEvent('download',{timeout:60000});await page.locator('#download').click();const d=await event,out='/tmp/patch-site-'+id+'-'+cases.findIndex(x=>x[1]===file)+'.gba';assert.equal(d.suggestedFilename(),g.filename);await d.saveAs(out);assert.equal(hash(fs.readFileSync(out)),g.targetSHA256);await page.waitForFunction(()=>document.getElementById('patcher').getAttribute('aria-busy')==='false');assert(await page.locator('#status-text').textContent().then(s=>s.includes('สร้างไฟล์')));console.log(id,file.split('/').at(-1),'-> exact GBA download PASS');}
+ // Wrong content/renamed files cannot bypass identity checks.
+ await page.locator('#rom').setInputFiles({name:'Pokemon Azoth Mercury.gba',mimeType:'application/octet-stream',buffer:Buffer.alloc(1024)});await page.waitForFunction(()=>document.getElementById('status').dataset.kind==='error');assert(await page.locator('#download').isDisabled());
+ await page.locator('#rom').setInputFiles({name:'game.zip',mimeType:'application/zip',buffer:Buffer.alloc(100)});await page.waitForFunction(()=>document.getElementById('status-text').textContent.includes('ZIP'));
+ // Drop path uses the same guarded reader, without navigating away.
+ await page.locator('#dropzone').evaluate(el=>{const dt=new DataTransfer();dt.items.add(new File([new Uint8Array(16)],'drop.gba'));el.dispatchEvent(new DragEvent('drop',{bubbles:true,dataTransfer:dt}));});await page.waitForFunction(()=>document.getElementById('status').dataset.kind==='error');assert.equal(new URL(page.url()).pathname,'/patch/');
+ await page.locator('[data-game=odyssey]').click();await page.locator('#rom').setInputFiles(cases[0][1]);await page.waitForFunction(()=>!document.getElementById('download').disabled);
+ await page.route('**/data/odyssey-original.bps',r=>r.fulfill({status:503,body:'offline'}));await page.locator('#download').click();await page.waitForFunction(()=>document.getElementById('status').dataset.kind==='error');assert((await page.locator('#status-text').textContent()).includes('503'));assert.equal(await page.locator('#download').isDisabled(),false);await page.unroute('**/data/odyssey-original.bps');
+ // A cancelled download must not emit a late result or leave controls locked.
+ await page.route('**/data/odyssey-original.bps',async r=>{await new Promise(x=>setTimeout(x,600));try{await r.fulfill({status:200,body:fs.readFileSync('/workspace/RomTranslate/patch/data/odyssey-original.bps')});}catch{}});await page.locator('#download').click();await page.locator('#cancel').click();await page.waitForTimeout(800);assert(await page.locator('#download').isDisabled());assert((await page.locator('#status-text').textContent()).includes('ยกเลิก'));await page.unroute('**/data/odyssey-original.bps');
+ // Corruption is rejected before creating a download.
+ await page.locator('#rom').setInputFiles(cases[0][1]);await page.waitForFunction(()=>!document.getElementById('download').disabled);const corrupt=fs.readFileSync('/workspace/RomTranslate/patch/data/odyssey-original.bps');corrupt[30]^=1;await page.route('**/data/odyssey-original.bps',r=>r.fulfill({status:200,body:corrupt}));await page.locator('#download').click();await page.waitForFunction(()=>document.getElementById('status').dataset.kind==='error');assert((await page.locator('#status-text').textContent()).includes('เสียหาย'));await page.unroute('**/data/odyssey-original.bps');
+ assert.deepEqual(errors,[]);assert.deepEqual(uploads,[]);
+ const broken=await browser.newPage();await broken.route('**/catalog.json*',r=>r.fulfill({status:503,body:''}));await broken.goto(base);await broken.waitForFunction(()=>document.getElementById('status').dataset.kind==='error');assert(await broken.locator('#rom').isDisabled());
+ console.log('All3 games + both Azoth updates + current file, game detection, filename/hash checks, mobile layouts, drag/drop, wrong files, offline/retry, cancellation, corrupt patch, no uploads and no page errors PASS');
+ }finally{await browser.close();}
+})().catch(e=>{console.error(e);process.exit(1)});

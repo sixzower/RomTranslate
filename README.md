@@ -2,6 +2,14 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Retro patch library (1.0.7)
+
+`patch/` is a dedicated retro-style local patcher for the latest Odyssey040, Glazed009 and Azoth013 releases. Public translation filenames follow `Pokemon Title - TH v.x.y By Sixz.gba`; Odyssey/Glazed launch on this page as v1.0 and Azoth remains v2.3. Three original pixel landscapes, a cartridge graphic, responsive game selection, drag/drop, detected-game selection, honest download progress and a cancellable Web Worker make the flow work on desktop and mobile. Existing translation tools and the Azoth-only updater remain available.
+
+Only standard BPS patches and version/hash metadata are hosted. `scripts/build_patch_site.cjs` reads private originals/translated files locally and verifies every generated patch against the target byte-for-byte. It must not be run without those private files and never copies complete ROMs into the public site. Odyssey4.0.3, Glazed9.1.0 and Azoth English Beta7 are supported, plus Azoth Thai011/012 updates. Input SHA-256, patch SHA-256/CRC and output SHA-256/CRC are verified. Already-current files can be downloaded unchanged. ROM processing remains in the browser with no ROM uploads, analytics, cloud login or API keys. Game cards show released versions, not a claim of complete whole-game playtesting.
+
+`node tests/patch-site.cjs` checks real browser downloads against all three private delivered ROMs, existing Azoth updates, wrong/corrupt files, cancellation, network failure, drag/drop and narrow screens. Start a local HTTP server on port5178 first (`PATCH_SITE_URL` can override it).
+
 ## Match the requested filename punctuation (1.0.6)
 
 Downloads use `Pokemon Azoth Mercury - TH v.2.3 By Sixz.gba`, matching the user's exact title / hyphen / TH / version / credit convention. This is a filename-only refinement; ROM bytes remain unchanged.

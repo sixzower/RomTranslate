@@ -1,0 +1,84 @@
+{
+  "format": "Sixz patch library v1",
+  "games": [
+    {
+      "id": "odyssey",
+      "title": "Odyssey",
+      "subtitle": "การผจญภัยครั้งใหม่ รออยู่ในตลับเดิม",
+      "version": "1.0",
+      "internalBuild": "040",
+      "base": "Odyssey v4.0.3",
+      "filename": "Pokemon Odyssey - TH v.1.0 By Sixz.gba",
+      "targetSize": 33554432,
+      "targetSHA256": "229b0f265810efb15928ae8d121f7af89e2f86b147dafb0c019b4e3638513cc2",
+      "variants": [
+        {
+          "label": "Odyssey v4.0.3",
+          "sourceSHA256": "b94db68895c74a2254c71e61a77b81c8f244ea0d2b29bafaa07d440125b0c85c",
+          "sourceSize": 33554432,
+          "patch": "data/odyssey-original.bps",
+          "patchSize": 1068891,
+          "patchSHA256": "d9d1486cff10c379fe51763232fc37b6e87a5a8843e5fd957131853441d7d9fb"
+        }
+      ]
+    },
+    {
+      "id": "glazed",
+      "title": "Glazed",
+      "subtitle": "ออกเดินทางไกล ไปกับเรื่องราวภาษาไทย",
+      "version": "1.0",
+      "internalBuild": "009",
+      "base": "Glazed v9.1.0",
+      "filename": "Pokemon Glazed - TH v.1.0 By Sixz.gba",
+      "targetSize": 33554432,
+      "targetSHA256": "1a156d9bdef4461f8c7a8afaf6c920f5484b838f59109216062693b7c1db2735",
+      "variants": [
+        {
+          "label": "Glazed v9.1.0",
+          "sourceSHA256": "b8eb851615963a498719a6a451f1bfc32bb1137fbd6d841a8894b6c15e7dd448",
+          "sourceSize": 33554432,
+          "patch": "data/glazed-original.bps",
+          "patchSize": 640723,
+          "patchSHA256": "4fb9b68eef2118d76096a1090bf54dc1553113c89292a7e266e666184382eb65"
+        }
+      ]
+    },
+    {
+      "id": "azoth",
+      "title": "Azoth Mercury",
+      "subtitle": "กลับสู่โลก Pokémon ในฉบับที่อ่านคุ้นเคย",
+      "version": "2.3",
+      "internalBuild": "013",
+      "base": "Azoth Mercury English Beta7",
+      "filename": "Pokemon Azoth Mercury - TH v.2.3 By Sixz.gba",
+      "targetSize": 33554432,
+      "targetSHA256": "1f64fed3dfeedd5c69bc9b5b944701e5cb9a56616993f409614b04c5098d8607",
+      "variants": [
+        {
+          "label": "Azoth Mercury English Beta7",
+          "sourceSHA256": "9d453d967165ed01b39d5cac5c9fcb0a87e512bc77865dd66f8797482a156ef9",
+          "sourceSize": 33554432,
+          "patch": "data/azoth-original.bps",
+          "patchSize": 1089528,
+          "patchSHA256": "e495e9b54788ef1289d13df0ded6d42fc2595abb03ff062d3817c8dae88f330a"
+        },
+        {
+          "label": "Azoth Sixz TH 011",
+          "sourceSHA256": "5cb368637346e218cb15780ac3ee7b84baee459e84c472ec0e51851c1ca87842",
+          "sourceSize": 33554432,
+          "patch": "data/azoth-update-011.bps",
+          "patchSize": 674,
+          "patchSHA256": "e2cadd0b79e04b77c8cd8cc1476161fe6fd044a25e32256ba699c3dac4128cd6"
+        },
+        {
+          "label": "Azoth Sixz TH 012",
+          "sourceSHA256": "6746972f0bd0097af1911cb14694c4be3a9f844edbf5d88e5df8020ed0fc8a85",
+          "sourceSize": 33554432,
+          "patch": "data/azoth-update-012.bps",
+          "patchSize": 669,
+          "patchSHA256": "d2d1aba0839e23c59e4c818eaa7fa149c48dd65d3d14bf7cd75cdfda4fe25655"
+        }
+      ]
+    }
+  ]
+}
