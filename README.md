@@ -2,6 +2,10 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Elite Redux tracked catalog completion (1.0.14)
+
+THv1.2 closes the latest345source offsets:194native BattleTower partner messages, plus151original-native tutor/exchange description sources. All13,773 tracked offsets are installed (100% of this catalog,0pending). Source/Thai context review, native variable bounds,226description pages and native L+R transitions were checked; full-game discovery, all consumer variants and storyline playtesting remain incomplete. Original2.65.4.1b and bothTHv1.0/v1.1 can update locally toTHv1.2.
+
 ## Elite Redux recheck and cover (1.0.13)
 
 Elite Redux TH v1.1 adds the previous278 held source offsets: bounded runtime formatting for237 variable-message consumers (236 new source offsets), native frame-gated legacy options,14 Thai Braille inscriptions with10 original alphabet keys retained, and an AmuletCoin description derived from native custom mechanics. Patch URLs include their SHA-256 so a browser cannot silently reuse an older patch after an update. It includes original decorative cover art and supports patching the original2.65.4.1b ROM or the priorTHv1.0 locally in the browser.

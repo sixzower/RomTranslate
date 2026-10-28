@@ -83,34 +83,42 @@
     {
       "id": "elite-redux",
       "title": "Elite Redux",
-      "subtitle": "ฉบับรีเช็คภาษาไทย · เพิ่มบทพูดและปริศนา",
-      "version": "1.1",
-      "internalBuild": "019",
+      "subtitle": "แปลครบรายการที่พบ · ฟอนต์ Sixz",
+      "version": "1.2",
+      "internalBuild": "021",
       "base": "Elite Redux 2.65.4.1b",
-      "filename": "Pokemon Elite Redux - TH v.1.1 By LongPlaeDo.gba",
+      "filename": "Pokemon Elite Redux - TH v.1.2 By LongPlaeDo.gba",
       "targetSize": 33554432,
-      "targetSHA256": "42abad18f5f9d484ae9dc4e40baece22f8910d67700e3a02f5650282b9886a45",
+      "targetSHA256": "71fb9bca05798ae6bf9d84174c911f18d9739948402f15f045ead7d30f38103c",
       "variants": [
         {
           "label": "Elite Redux 2.65.4.1b",
           "sourceSHA256": "926098fa9f6b29b469fa351e80e4f018285006ad10a4eb5bc255d14d6d54acfc",
           "sourceSize": 33554432,
           "patch": "data/elite-redux-original.bps",
-          "patchSize": 1552802,
-          "patchSHA256": "cf71606312ab8fc9b404e6a442b4c40bf4c106e6b6bccb9033de2779aed26e3e"
+          "patchSize": 1626286,
+          "patchSHA256": "e7b6175f1f52edf5a60840f6b3dac73406c058517e16f88a799c7e2bd6a94780"
         },
         {
           "label": "Elite Redux TH v.1.0",
           "sourceSHA256": "d6a1d8cfffcb89783b45fca82524e341a4794a478f0af9f41d1402f828e96ef3",
           "sourceSize": 33554432,
           "patch": "data/elite-redux-update-1-0.bps",
-          "patchSize": 528037,
-          "patchSHA256": "0751a5cbba339d0dc4718e4175dc0c25cda1e5a7f692e3cbbe05353e76db9ef7"
+          "patchSize": 601528,
+          "patchSHA256": "7cde2dfb02e47321a929a1a9242e82dd5ef8a36bf8ca0d30380ff36dfc960a16"
+        },
+        {
+          "label": "Elite Redux TH v.1.1",
+          "sourceSHA256": "42abad18f5f9d484ae9dc4e40baece22f8910d67700e3a02f5650282b9886a45",
+          "sourceSize": 33554432,
+          "patch": "data/elite-redux-update-1-1.bps",
+          "patchSize": 73817,
+          "patchSHA256": "67cff13e91ec7f492f5acb6bbdb4310da30be04726a9d741ec863727951a7776"
         }
       ],
       "releaseStage": "beta",
-      "notice": "ฉบับทดสอบ: ยังมีบทพูดจากตารางที่ค้นพบเพิ่มรอตรวจและแปล ยังไม่ได้เล่นทดสอบครบทั้งเกม",
-      "knownCatalogProgress": 97.5
+      "notice": "ฉบับทดสอบ: แปลครบรายการที่ตรวจพบแล้ว ยังไม่ได้เล่นทดสอบครบทุกเหตุการณ์ และอาจพบข้อความจากส่วนอื่นเพิ่มเติม",
+      "knownCatalogProgress": 100
     }
   ]
 }
