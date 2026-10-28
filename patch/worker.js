@@ -1,5 +1,5 @@
 'use strict';
-importScripts('../rom-patch.js?v=1.0.10');
+importScripts('../rom-patch.js?v=1.0.11');
 let source=null,game=null,variant=null,current=false;
 const hash=async b=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',b)),x=>x.toString(16).padStart(2,'0')).join('');
 const phase=text=>postMessage({type:'phase',text});

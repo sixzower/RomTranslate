@@ -2,6 +2,10 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Elite Redux Thai beta (1.0.11)
+
+The patch library now includes Elite Redux 2.65.4.1b as an explicitly labelled Thai beta, with a progress page at `elite-redux-update.html`. It has 12,809 installed source offsets out of the 13,087 currently tracked (97.88%); the remaining 278, undiscovered text and other unverified consumers prevent a whole-game completion claim. The tested opening, font, pages and guarded buffer checks are scoped regression evidence, not full-game playtesting. Source/patch/output SHA-256 checks and local browser patching apply to Redux as to the existing games; the three prior games and their BPS bytes remain unchanged.
+
 ## LongPlaeDo Handheld OS (1.0.10)
 
 **LongPlaeDo** is the exact website brand and download credit. Handheld OS is the canonical design at `patch/` → `patch/handheld/`, with the compact molded shell, vertical game cards, LCD artwork, D-pad and coral download control based on mockup 01. Game Collection remains an alternate view linked in the footer. Artwork is decorative and does not represent gameplay screenshots. Existing ROM bytes, in-game credits and all published BPS bytes are unchanged.
