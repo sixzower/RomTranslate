@@ -2,6 +2,10 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Elite Redux typography fixes (1.0.15)
+
+THv1.3 fixes the Sixz ฬ andฬิ aliases that previously displayed asล andลิ. All11affected core contexts are reflowed, with667unrelatedUnicodecluster shapes and widths unchanged. OwnedThai shadow uses a lighter existing palette entry without foreground/background palette writes; nativefield oldRGB214/214/206 ->231/239/231. Birch's attentioncall now usesเฮ้. Nativefreshroute reachesclockandBirch, with0changedpixelsoutsidecaption versusv1.2; the user-reported verticalstripes were not reproduced and are not claimed fixed. Original and THv1.0/v1.1/v1.2 updatepaths are supported.
+
 ## Elite Redux tracked catalog completion (1.0.14)
 
 THv1.2 closes the latest345source offsets:194native BattleTower partner messages, plus151original-native tutor/exchange description sources. All13,773 tracked offsets are installed (100% of this catalog,0pending). Source/Thai context review, native variable bounds,226description pages and native L+R transitions were checked; full-game discovery, all consumer variants and storyline playtesting remain incomplete. Original2.65.4.1b and bothTHv1.0/v1.1 can update locally toTHv1.2.
