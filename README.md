@@ -2,6 +2,12 @@
 
 Static Thai ROM translation workspace. The game stays on the user's device. Live site: https://sixzower.github.io/RomTranslate/ . The downloadable `download/index.html` supports local editing and Excel; threaded mGBA testing uses the live site.
 
+## Elite Redux recheck and cover (1.0.12)
+
+Elite Redux TH v1.1 adds the previous278 held source offsets: bounded runtime formatting for237 variable-message consumers (236 new source offsets), native frame-gated legacy options,14 Thai Braille inscriptions with10 original alphabet keys retained, and an AmuletCoin description derived from native custom mechanics. It includes original decorative cover art and supports patching the original2.65.4.1b ROM or the priorTHv1.0 locally in the browser.
+
+The wider scan found686 additional native-table source offsets (671 whole-source groups). Of these,341 field-dialogue offsets (329 language groups) now have whole-message substitution guarded against concatenated buffers, with568 native page checks and4092 fallback/buffer guard cases.345 offsets remain to review, so this remains a beta. The expanded tracked inventory is13,428/13,773 (97.5%); this is not a whole-game completeness percentage. Raw correlations contain names, duplicates and unproven consumers, and must not be blindly installed. Native glyph/page/buffer checks do not certify full-game playtesting.
+
 ## Elite Redux Thai beta (1.0.11)
 
 The patch library now includes Elite Redux 2.65.4.1b as an explicitly labelled Thai beta, with a progress page at `elite-redux-update.html`. It has 12,809 installed source offsets out of the 13,087 currently tracked (97.88%); the remaining 278, undiscovered text and other unverified consumers prevent a whole-game completion claim. The tested opening, font, pages and guarded buffer checks are scoped regression evidence, not full-game playtesting. Source/patch/output SHA-256 checks and local browser patching apply to Redux as to the existing games; the three prior games and their BPS bytes remain unchanged.

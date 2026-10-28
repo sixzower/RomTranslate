@@ -83,26 +83,34 @@
     {
       "id": "elite-redux",
       "title": "Elite Redux",
-      "subtitle": "รุ่นทดสอบภาษาไทย · กำลังเก็บข้อความตกหล่น",
-      "version": "1.0",
-      "internalBuild": "015",
+      "subtitle": "ฉบับรีเช็คภาษาไทย · เพิ่มบทพูดและปริศนา",
+      "version": "1.1",
+      "internalBuild": "019",
       "base": "Elite Redux 2.65.4.1b",
-      "filename": "Pokemon Elite Redux - TH v.1.0 By LongPlaeDo.gba",
+      "filename": "Pokemon Elite Redux - TH v.1.1 By LongPlaeDo.gba",
       "targetSize": 33554432,
-      "targetSHA256": "d6a1d8cfffcb89783b45fca82524e341a4794a478f0af9f41d1402f828e96ef3",
+      "targetSHA256": "42abad18f5f9d484ae9dc4e40baece22f8910d67700e3a02f5650282b9886a45",
       "variants": [
         {
           "label": "Elite Redux 2.65.4.1b",
           "sourceSHA256": "926098fa9f6b29b469fa351e80e4f018285006ad10a4eb5bc255d14d6d54acfc",
           "sourceSize": 33554432,
           "patch": "data/elite-redux-original.bps",
-          "patchSize": 1435782,
-          "patchSHA256": "bf9762326b96accd2e4a5094270030f2114a0540b90a6f473ff92d8b790ead50"
+          "patchSize": 1552802,
+          "patchSHA256": "cf71606312ab8fc9b404e6a442b4c40bf4c106e6b6bccb9033de2779aed26e3e"
+        },
+        {
+          "label": "Elite Redux TH v.1.0",
+          "sourceSHA256": "d6a1d8cfffcb89783b45fca82524e341a4794a478f0af9f41d1402f828e96ef3",
+          "sourceSize": 33554432,
+          "patch": "data/elite-redux-update-1-0.bps",
+          "patchSize": 528037,
+          "patchSHA256": "0751a5cbba339d0dc4718e4175dc0c25cda1e5a7f692e3cbbe05353e76db9ef7"
         }
       ],
       "releaseStage": "beta",
-      "notice": "ฉบับทดสอบ: ยังมีข้อความอังกฤษบางส่วน และยังไม่ได้ทดสอบเล่นครบทั้งเกม",
-      "knownCatalogProgress": 97.88
+      "notice": "ฉบับทดสอบ: ยังมีบทพูดจากตารางที่ค้นพบเพิ่มรอตรวจและแปล ยังไม่ได้เล่นทดสอบครบทั้งเกม",
+      "knownCatalogProgress": 97.5
     }
   ]
 }

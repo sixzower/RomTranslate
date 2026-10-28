@@ -104,3 +104,5 @@
 .release-note[hidden]{display:none}.release-note a{color:#5f390d;text-decoration:underline;white-space:nowrap;font-weight:bold}
 .shelf-stage{min-width:0}.shelf-games{grid-template-columns:repeat(4,minmax(0,1fr))}
 @media(max-width:590px){.handheld-theme .game-list{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.handheld-theme .game-card{padding:3px}.handheld-theme .cover-name{font-size:10px;overflow-wrap:normal}.handheld-theme .cover-name small{font-size:7px}.handheld-theme .mini-cover{min-height:110px}.handheld-theme .mini-badge{font-size:5px;left:3px}.handheld-theme .card-meta>span{font-size:3.5px}.beta-badge{font-size:7px;margin-top:4px}.release-note{font-size:10px}.collection-theme .shelf-stage{overflow-x:auto}.collection-theme .shelf-games{grid-template-columns:repeat(4,minmax(65px,1fr));gap:9px}.collection-theme .case-title strong{font-size:11px}.collection-theme .case-title small{font-size:7px}}
+
+.world-elite-redux,body[data-game="elite-redux"] .screen-art{background-image:linear-gradient(180deg,#09152f33,#07132911 65%,#07132966),url('assets/elite-redux-cover.webp');background-size:cover;background-position:center 48%}
